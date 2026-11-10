@@ -11,8 +11,6 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD:-Kabhyan@2026}
     volumes:
       - mariadb_data:/var/lib/mysql
-    ports:
-      - "${DB_PORT:-3306}:3306"
     networks:
       - kabhyan_network
     healthcheck:
@@ -29,8 +27,6 @@ services:
     command: redis-server --appendonly yes --requirepass "${REDIS_PASSWORD:-}"
     volumes:
       - redis_data:/data
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
     networks:
       - kabhyan_network
     healthcheck:
@@ -73,10 +69,11 @@ services:
       RUN_SEEDERS: "${RUN_SEEDERS:-false}"
     volumes:
       - backend_storage:/var/www/html/storage
-    ports:
-      - "${BACKEND_PORT:-8000}:80"
+    expose:
+      - "80"
     networks:
       - kabhyan_network
+      - dokploy-network
 
   # Next.js 16 Frontend Web Application (Standalone Node.js Runtime)
   frontend:
@@ -93,10 +90,11 @@ services:
       NODE_ENV: production
       PORT: 3000
       NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}"
-    ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+    expose:
+      - "3000"
     networks:
       - kabhyan_network
+      - dokploy-network
 
 volumes:
   mariadb_data:
@@ -109,4 +107,6 @@ volumes:
 networks:
   kabhyan_network:
     driver: bridge
+  dokploy-network:
+    external: true
 
