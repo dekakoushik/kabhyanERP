@@ -1,0 +1,112 @@
+services:
+  # MariaDB Database Service
+  mariadb:
+    image: mariadb:11.4
+    container_name: kabhyan_mariadb
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${DB_DATABASE:-kabhyan_erp}
+      MYSQL_USER: ${DB_USERNAME:-kabhyan_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-Kabhyan@2026}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    networks:
+      - kabhyan_network
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis In-Memory Cache & Session Store
+  redis:
+    image: redis:7-alpine
+    container_name: kabhyan_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass "${REDIS_PASSWORD:-}"
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - kabhyan_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Laravel 13 Backend API (PHP 8.3-FPM + Nginx + Supervisor)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: kabhyan_backend
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      APP_NAME: "${APP_NAME:-KabhyanERP}"
+      APP_ENV: "${APP_ENV:-production}"
+      APP_KEY: "${APP_KEY:-base64:XQ0XmYmGZlE8wB2c3d4E5f6G7h8I9j0K1l2M3n4O5p8=}"
+      APP_DEBUG: "${APP_DEBUG:-false}"
+      APP_URL: "${BACKEND_URL:-http://localhost:8000}"
+      DB_CONNECTION: mysql
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-kabhyan_erp}
+      DB_USERNAME: ${DB_USERNAME:-kabhyan_user}
+      DB_PASSWORD: ${DB_PASSWORD:-Kabhyan@2026}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: "${REDIS_PASSWORD:-}"
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      RUN_MIGRATIONS: "${RUN_MIGRATIONS:-true}"
+      RUN_SEEDERS: "${RUN_SEEDERS:-false}"
+    volumes:
+      - backend_storage:/var/www/html/storage
+    ports:
+      - "${BACKEND_PORT:-8000}:80"
+    networks:
+      - kabhyan_network
+
+  # Next.js 16 Frontend Web Application (Standalone Node.js Runtime)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}"
+    container_name: kabhyan_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}"
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    networks:
+      - kabhyan_network
+
+volumes:
+  mariadb_data:
+    driver: local
+  redis_data:
+    driver: local
+  backend_storage:
+    driver: local
+
+networks:
+  kabhyan_network:
+    driver: bridge
+
