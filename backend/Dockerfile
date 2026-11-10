@@ -25,7 +25,11 @@ RUN apk add --no-cache \
     oniguruma-dev \
     libxml2-dev \
     linux-headers \
-    && docker-php-ext-install pdo_mysql bcmath mbstring pcntl xml opcache gd
+    $PHPIZE_DEPS \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && docker-php-ext-install pdo_mysql bcmath mbstring pcntl xml opcache gd \
+    && apk del $PHPIZE_DEPS
 
 # Configure PHP for production
 RUN { \

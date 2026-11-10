@@ -62,6 +62,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: "${REDIS_PASSWORD:-}"
+      REDIS_CLIENT: "${REDIS_CLIENT:-predis}"
       CACHE_STORE: redis
       SESSION_DRIVER: redis
       QUEUE_CONNECTION: redis
