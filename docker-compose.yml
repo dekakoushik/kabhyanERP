@@ -67,7 +67,7 @@ services:
       SESSION_DRIVER: redis
       QUEUE_CONNECTION: redis
       RUN_MIGRATIONS: "${RUN_MIGRATIONS:-true}"
-      RUN_SEEDERS: "${RUN_SEEDERS:-false}"
+      RUN_SEEDERS: "${RUN_SEEDERS:-true}"
     volumes:
       - backend_storage:/var/www/html/storage
     expose:

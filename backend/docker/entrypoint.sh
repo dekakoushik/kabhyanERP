@@ -25,8 +25,9 @@ if [ "$RUN_MIGRATIONS" = "true" ]; then
     php artisan migrate --force --isolated
 fi
 
-if [ "$RUN_SEEDERS" = "true" ]; then
-    echo "Running Database Seeders..."
+# Ensure default users and system settings exist if not already seeded
+if [ "$RUN_SEEDERS" = "true" ] || [ -z "$RUN_SEEDERS" ]; then
+    echo "Ensuring SuperAdmin and system settings are seeded..."
     php artisan db:seed --force
 fi
 
