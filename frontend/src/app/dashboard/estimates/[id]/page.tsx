@@ -28,8 +28,6 @@ import {
   Send,
 } from "lucide-react";
 
-export const dynamic = "force-dynamic";
-
 function EstimateDetailContent({
   estimateParam,
 }: {
