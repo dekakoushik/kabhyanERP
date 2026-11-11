@@ -176,9 +176,10 @@ class DatabaseSeeder extends Seeder
         );
 
         // 8. Estimates Seeding
-        $est1 = Estimate::updateOrCreate(
-            ['estimate_number' => 'EST-2026-001'],
-            [
+        $est1 = Estimate::withTrashed()->where('estimate_number', 'EST-2026-001')->first();
+        if ($est1) {
+            $est1->restore();
+            $est1->update([
                 'project_id' => $p2->id,
                 'created_by' => $superadmin->id,
                 'client_name' => 'Rajesh Sharma',
@@ -194,8 +195,27 @@ class DatabaseSeeder extends Seeder
                 'discount_rate' => 5.00,
                 'notes' => 'Proposal includes 3 months warranty, architecture documentation, and staging deployment.',
                 'terms_and_conditions' => 'Payment terms: 50% mobilization advance, 50% upon final acceptance testing. Valid for 30 days.',
-            ]
-        );
+            ]);
+        } else {
+            $est1 = Estimate::create([
+                'estimate_number' => 'EST-2026-001',
+                'project_id' => $p2->id,
+                'created_by' => $superadmin->id,
+                'client_name' => 'Rajesh Sharma',
+                'client_company' => 'Apex Infra Solutions Ltd',
+                'client_email' => 'rajesh.sharma@apexinfra.in',
+                'client_phone' => '+91 98200 12345',
+                'client_address' => 'Bandra Kurla Complex, Mumbai, Maharashtra 400051',
+                'estimate_date' => now()->toDateString(),
+                'expiry_date' => now()->addDays(30)->toDateString(),
+                'status' => 'sent',
+                'currency' => 'INR',
+                'tax_rate' => 18.00,
+                'discount_rate' => 5.00,
+                'notes' => 'Proposal includes 3 months warranty, architecture documentation, and staging deployment.',
+                'terms_and_conditions' => 'Payment terms: 50% mobilization advance, 50% upon final acceptance testing. Valid for 30 days.',
+            ]);
+        }
         $est1->items()->delete();
         $est1->items()->createMany([
             [
@@ -225,9 +245,10 @@ class DatabaseSeeder extends Seeder
         ]);
         $est1->recalculateTotals();
 
-        $est2 = Estimate::updateOrCreate(
-            ['estimate_number' => 'EST-2026-002'],
-            [
+        $est2 = Estimate::withTrashed()->where('estimate_number', 'EST-2026-002')->first();
+        if ($est2) {
+            $est2->restore();
+            $est2->update([
                 'project_id' => $p3->id,
                 'created_by' => $manager->id,
                 'client_name' => 'Ananya Sen',
@@ -243,8 +264,27 @@ class DatabaseSeeder extends Seeder
                 'discount_rate' => 0.00,
                 'notes' => 'Accepted quotation for automated software documentation and AI portal pipeline.',
                 'terms_and_conditions' => 'Net 30 days after invoice generation.',
-            ]
-        );
+            ]);
+        } else {
+            $est2 = Estimate::create([
+                'estimate_number' => 'EST-2026-002',
+                'project_id' => $p3->id,
+                'created_by' => $manager->id,
+                'client_name' => 'Ananya Sen',
+                'client_company' => 'Kolkata FinTech Innovations',
+                'client_email' => 'a.sen@kolkatafintech.in',
+                'client_phone' => '+91 98310 98765',
+                'client_address' => 'Sector V, Salt Lake, Kolkata, West Bengal 700091',
+                'estimate_date' => now()->subDays(5)->toDateString(),
+                'expiry_date' => now()->addDays(25)->toDateString(),
+                'status' => 'accepted',
+                'currency' => 'INR',
+                'tax_rate' => 18.00,
+                'discount_rate' => 0.00,
+                'notes' => 'Accepted quotation for automated software documentation and AI portal pipeline.',
+                'terms_and_conditions' => 'Net 30 days after invoice generation.',
+            ]);
+        }
         $est2->items()->delete();
         $est2->items()->createMany([
             [
