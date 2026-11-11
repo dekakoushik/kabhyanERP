@@ -107,48 +107,69 @@ class SettingController extends Controller
     {
         $validated = $request->validate([
             'email' => 'required|email',
+            'mail_host' => 'nullable|string',
+            'mail_port' => 'nullable',
+            'mail_username' => 'nullable|string',
+            'mail_password' => 'nullable|string',
+            'mail_encryption' => 'nullable|string',
+            'mail_from_address' => 'nullable|string',
+            'mail_from_name' => 'nullable|string',
         ]);
 
         $recipient = $validated['email'];
 
         try {
-            // Apply current database or passed settings dynamically before test
-            $host = SystemSetting::get('mail_host', config('mail.mailers.smtp.host'));
-            $port = SystemSetting::get('mail_port', config('mail.mailers.smtp.port'));
-            $username = SystemSetting::get('mail_username', config('mail.mailers.smtp.username'));
-            $password = SystemSetting::get('mail_password', config('mail.mailers.smtp.password'));
-            $encryption = SystemSetting::get('mail_encryption', config('mail.mailers.smtp.scheme'));
-            $fromAddress = SystemSetting::get('mail_from_address', config('mail.from.address'));
-            $fromName = SystemSetting::get('mail_from_name', config('mail.from.name', 'Kabhyan ERP'));
+            // Prefer settings passed directly in request (live unsaved inputs in form), fallback to DB/config
+            $host = $validated['mail_host'] ?? SystemSetting::get('mail_host', config('mail.mailers.smtp.host'));
+            $port = (int) ($validated['mail_port'] ?? SystemSetting::get('mail_port', config('mail.mailers.smtp.port', 587)));
+            $username = $validated['mail_username'] ?? SystemSetting::get('mail_username', config('mail.mailers.smtp.username'));
+            $password = $validated['mail_password'] ?? SystemSetting::get('mail_password', config('mail.mailers.smtp.password'));
+            $encryption = $validated['mail_encryption'] ?? SystemSetting::get('mail_encryption', config('mail.mailers.smtp.scheme'));
+            $fromAddress = $validated['mail_from_address'] ?? SystemSetting::get('mail_from_address', config('mail.from.address', 'no-reply@kabhyan.com'));
+            $fromName = $validated['mail_from_name'] ?? SystemSetting::get('mail_from_name', config('mail.from.name', 'Kabhyan Technologies'));
+
+            // If user selects port 465 or ssl, use ssl scheme; if 587 or tls, use tls scheme
+            $scheme = null;
+            if ($encryption === 'ssl' || $port === 465) {
+                $scheme = 'smtps';
+            } elseif ($encryption === 'tls' || $port === 587) {
+                $scheme = 'smtp'; // Symfony mailer handles STARTTLS on standard smtp scheme
+            }
 
             config([
                 'mail.default' => 'smtp',
+                'mail.mailers.smtp.transport' => 'smtp',
                 'mail.mailers.smtp.host' => $host,
-                'mail.mailers.smtp.port' => (int) $port,
+                'mail.mailers.smtp.port' => $port,
+                'mail.mailers.smtp.encryption' => ($encryption === 'null' || empty($encryption)) ? null : $encryption,
+                'mail.mailers.smtp.scheme' => $scheme,
                 'mail.mailers.smtp.username' => $username,
                 'mail.mailers.smtp.password' => $password,
-                'mail.mailers.smtp.scheme' => ($encryption === 'null' || empty($encryption)) ? null : $encryption,
                 'mail.from.address' => $fromAddress,
                 'mail.from.name' => $fromName,
             ]);
 
+            // Re-bind fresh mailer transport to avoid cached socket connections
+            app()->forgetInstance('mailer');
+            \Illuminate\Support\Facades\Mail::clearResolvedInstances();
+
             \Illuminate\Support\Facades\Mail::raw(
-                "Hello,\n\nThis is a test email sent from Kabhyan ERP to verify your SMTP mail configuration.\n\n" .
-                "Server Host: {$host}\n" .
-                "Server Port: {$port}\n" .
+                "Hello,\n\nThis is a verification test email sent from Kabhyan ERP.\n\n" .
+                "SMTP Server: {$host}\n" .
+                "SMTP Port: {$port}\n" .
                 "Encryption: " . ($encryption ?: 'None') . "\n" .
                 "From: {$fromName} <{$fromAddress}>\n" .
                 "Timestamp: " . now()->toDateTimeString() . " (" . config('app.timezone') . ")\n\n" .
-                "If you received this message, your SMTP mail delivery pipeline is working properly!",
+                "If you received this message, your SMTP mail pipeline is verified and fully operational!",
                 function ($message) use ($recipient, $fromAddress, $fromName) {
                     $message->to($recipient)
                         ->from($fromAddress, $fromName)
-                        ->subject("Kabhyan ERP: SMTP Configuration Test Email");
+                        ->subject("Kabhyan ERP: SMTP Configuration Verification");
                 }
             );
 
             return response()->json([
-                'message' => "Test email successfully dispatched to {$recipient}.",
+                'message' => "Test email successfully sent to {$recipient}!",
             ]);
         } catch (\Throwable $e) {
             return response()->json([

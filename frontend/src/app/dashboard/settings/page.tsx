@@ -198,7 +198,16 @@ function SettingsContent() {
       setTestEmailResult(null);
       const res = await api.request("/settings/test-email", {
         method: "POST",
-        body: JSON.stringify({ email: testEmailAddress }),
+        body: JSON.stringify({
+          email: testEmailAddress,
+          mail_host: formState["mail_host"] || undefined,
+          mail_port: formState["mail_port"] || undefined,
+          mail_username: formState["mail_username"] || undefined,
+          mail_password: formState["mail_password"] || undefined,
+          mail_encryption: formState["mail_encryption"] || undefined,
+          mail_from_address: formState["mail_from_address"] || undefined,
+          mail_from_name: formState["mail_from_name"] || undefined,
+        }),
       });
       setTestEmailResult({
         success: true,
