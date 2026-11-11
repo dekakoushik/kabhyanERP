@@ -548,9 +548,12 @@ export default function EstimatesPage() {
                   {estimates.map((est) => (
                     <tr key={est.id} className="hover:bg-slate-50/60 transition">
                       <td className="py-4 px-6 whitespace-nowrap">
-                        <span className="inline-block whitespace-nowrap font-mono font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100">
+                        <Link
+                          href={`/dashboard/estimates/${est.estimate_number}`}
+                          className="inline-block whitespace-nowrap font-mono font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-800 px-2.5 py-1 rounded-md border border-blue-100 transition"
+                        >
                           {est.estimate_number}
-                        </span>
+                        </Link>
                       </td>
                       <td className="py-4 px-6">
                         <p className="font-bold text-slate-900 text-sm">{est.client_name}</p>
@@ -635,13 +638,13 @@ export default function EstimatesPage() {
                       </td>
                       <td className="py-4 px-6 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => setPreviewEstimate(est)}
-                            title="Preview Print / PDF"
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 cursor-pointer"
+                          <Link
+                            href={`/dashboard/estimates/${est.estimate_number}`}
+                            title="Open Document View"
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition"
                           >
                             <Eye className="w-4 h-4" />
-                          </button>
+                          </Link>
                           <button
                             onClick={() => openEditModal(est)}
                             title="Edit Estimate"

@@ -73,6 +73,16 @@ class ProformaInvoice extends Model
     }
 
     /**
+     * Dual-lookup route binding: allows finding by proforma_number (e.g. PI-2026-001) or numeric id.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->where('proforma_number', $value)
+                    ->orWhere('id', $value)
+                    ->firstOrFail();
+    }
+
+    /**
      * Recalculate totals from items.
      */
     public function recalculateTotals(): void

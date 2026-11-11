@@ -87,6 +87,16 @@ class Invoice extends Model
     }
 
     /**
+     * Dual-lookup route binding: allows finding by invoice_number (e.g. INV-2026-081) or numeric id.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->where('invoice_number', $value)
+                    ->orWhere('id', $value)
+                    ->firstOrFail();
+    }
+
+    /**
      * Compute subtotal, taxes, discounts, and payment balances.
      */
     public function recalculateTotals(): void

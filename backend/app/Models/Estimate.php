@@ -69,6 +69,16 @@ class Estimate extends Model
     }
 
     /**
+     * Dual-lookup route binding: allows finding by estimate_number (e.g. EST-2026-001) or numeric id.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->where('estimate_number', $value)
+                    ->orWhere('id', $value)
+                    ->firstOrFail();
+    }
+
+    /**
      * Compute subtotal, taxes, discounts, and total amount from items.
      */
     public function recalculateTotals(): void
