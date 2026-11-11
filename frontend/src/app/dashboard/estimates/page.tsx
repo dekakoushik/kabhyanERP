@@ -306,6 +306,21 @@ export default function EstimatesPage() {
     window.print();
   };
 
+  const formatDate = (dateStr?: string | null) => {
+    if (!dateStr) return "N/A";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr.split("T")[0];
+      return d.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    } catch {
+      return dateStr.split("T")[0] || dateStr;
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "accepted":
@@ -323,7 +338,7 @@ export default function EstimatesPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className={`space-y-6 ${previewEstimate ? "print:hidden" : ""}`}>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -485,9 +500,9 @@ export default function EstimatesPage() {
                       </td>
                       <td className="py-4 px-6 text-slate-600">
                         <div className="flex flex-col">
-                          <span>{est.estimate_date}</span>
+                          <span>{formatDate(est.estimate_date)}</span>
                           {est.expiry_date && (
-                            <span className="text-[10px] text-slate-400">Exp: {est.expiry_date}</span>
+                            <span className="text-[10px] text-slate-400">Exp: {formatDate(est.expiry_date)}</span>
                           )}
                         </div>
                       </td>
@@ -961,10 +976,10 @@ export default function EstimatesPage() {
 
       {/* Modal: Corporate Print & PDF Preview */}
       {previewEstimate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs print-modal-overlay">
+          <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] print-modal-container">
             {/* Top Toolbar */}
-            <div className="px-6 py-3.5 bg-slate-800 text-white flex items-center justify-between shrink-0">
+            <div className="px-6 py-3.5 bg-slate-800 text-white flex items-center justify-between shrink-0 print-modal-toolbar">
               <div className="flex items-center gap-2 text-xs font-medium">
                 <FileCheck className="w-4 h-4 text-emerald-400" />
                 <span>Estimate Preview: <strong className="font-mono text-white">{previewEstimate.estimate_number}</strong></span>
@@ -1000,7 +1015,7 @@ export default function EstimatesPage() {
             </div>
 
             {/* Printable Document Body */}
-            <div ref={printRef} className="p-8 sm:p-12 overflow-y-auto bg-white text-slate-900 print:p-0">
+            <div ref={printRef} className="p-8 sm:p-12 overflow-y-auto bg-white text-slate-900 print-document-body">
               {/* Document Header */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-8 border-b border-slate-200">
                 <div>
@@ -1028,11 +1043,11 @@ export default function EstimatesPage() {
                     #{previewEstimate.estimate_number}
                   </p>
                   <p className="text-xs text-slate-500 mt-1">
-                    Date: <strong className="text-slate-800">{previewEstimate.estimate_date}</strong>
+                    Date: <strong className="text-slate-800">{formatDate(previewEstimate.estimate_date)}</strong>
                   </p>
                   {previewEstimate.expiry_date && (
                     <p className="text-xs text-slate-500">
-                      Valid Until: <strong className="text-slate-800">{previewEstimate.expiry_date}</strong>
+                      Valid Until: <strong className="text-slate-800">{formatDate(previewEstimate.expiry_date)}</strong>
                     </p>
                   )}
                   <div className="mt-2">
@@ -1120,7 +1135,7 @@ export default function EstimatesPage() {
               </div>
 
               {/* Total Calculation Strip */}
-              <div className="flex justify-end pt-4 border-t border-slate-200">
+              <div className="flex justify-end pt-4 border-t border-slate-200 print-avoid-break">
                 <div className="w-full sm:w-72 space-y-1.5 text-xs">
                   <div className="flex justify-between text-slate-600">
                     <span>Subtotal:</span>
@@ -1158,7 +1173,7 @@ export default function EstimatesPage() {
               </div>
 
               {/* Notes & Terms in Preview */}
-              <div className="mt-8 pt-6 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs text-slate-500">
+              <div className="mt-8 pt-6 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs text-slate-500 print-avoid-break">
                 {previewEstimate.notes && (
                   <div>
                     <span className="font-bold uppercase text-slate-700 block mb-1">Notes:</span>
@@ -1174,7 +1189,7 @@ export default function EstimatesPage() {
               </div>
 
               {/* Footer Signature Block */}
-              <div className="mt-12 pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-400">
+              <div className="mt-12 pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-400 print-avoid-break">
                 <div>
                   <p>Kabhyan Technologies • Digital Workspace</p>
                 </div>

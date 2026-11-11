@@ -88,3 +88,4 @@ class SystemNotification extends Model
         ]);
     }
 }
+

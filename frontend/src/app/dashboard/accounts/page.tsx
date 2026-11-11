@@ -23,6 +23,7 @@ import {
   Clock,
   Loader2,
   Plus,
+  Printer,
 } from "lucide-react";
 
 function AccountsContent() {
@@ -80,7 +81,7 @@ function AccountsContent() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 print:hidden">
           <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-2xs">
             <Calendar className="w-3.5 h-3.5 text-slate-400 mr-2" />
             <select
@@ -94,6 +95,14 @@ function AccountsContent() {
             </select>
           </div>
 
+          <button
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs tracking-wide shadow-xs transition cursor-pointer"
+          >
+            <Printer className="w-4 h-4" />
+            <span>Print / PDF Report</span>
+          </button>
+
           <Link
             href="/dashboard/expenses"
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-xs transition cursor-pointer"
@@ -101,6 +110,20 @@ function AccountsContent() {
             <Plus className="w-4 h-4" />
             <span>Record Expense</span>
           </Link>
+        </div>
+      </div>
+
+      {/* Official Printable Statement Banner (Only visible during print) */}
+      <div className="hidden print:block mb-6 pb-4 border-b-2 border-slate-900">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-black text-slate-900 tracking-tight">KABHYAN TECHNOLOGIES PRIVATE LIMITED</h2>
+            <p className="text-xs text-slate-500 font-medium">Annual Financial Accounts & Cashflow Statement (FY {year})</p>
+          </div>
+          <div className="text-right text-xs text-slate-500">
+            <p>Generated: {new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
+            <p className="text-[10px] text-slate-400">Enterprise Audited Report</p>
+          </div>
         </div>
       </div>
 

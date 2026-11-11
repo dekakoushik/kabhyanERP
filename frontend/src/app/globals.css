@@ -27,3 +27,140 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* ==========================================================================
+   Kabhyan ERP Global Enterprise Print Stylesheet
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm;
+  }
+
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Universal Element Hiding in Print */
+  aside,
+  header,
+  nav,
+  button:not(.force-print),
+  .no-print,
+  .print-hidden,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Expand Layout Containers for Full-Width Paper Printing */
+  main,
+  div[class*="min-h-screen"],
+  div[class*="flex-1"] {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  /* When printing a document preview modal (Estimates, Invoices, Proforma) */
+  .print-modal-overlay {
+    position: static !important;
+    inset: auto !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    z-index: auto !important;
+  }
+
+  .print-modal-container {
+    position: static !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: none !important;
+    height: auto !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  .print-modal-toolbar {
+    display: none !important;
+  }
+
+  .print-document-body {
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    display: block !important;
+  }
+
+  /* Avoid cutting off sensitive sections across page breaks */
+  .print-avoid-break {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  table {
+    page-break-inside: auto !important;
+    width: 100% !important;
+  }
+
+  tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
+  }
+
+  /* Clean up borders and backgrounds for printable tables */
+  .print-clean-table th {
+    background-color: #f8fafc !important;
+    color: #334155 !important;
+    border-bottom: 2px solid #cbd5e1 !important;
+  }
+
+  .print-clean-table td {
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+}

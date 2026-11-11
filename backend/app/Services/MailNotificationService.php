@@ -481,3 +481,4 @@ class MailNotificationService
         return self::send($user->email, $subject, $html, $user->name, $resetUrl, "Reset My Password");
     }
 }
+

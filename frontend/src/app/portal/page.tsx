@@ -204,7 +204,7 @@ function PortalContent() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
       {/* Top Corporate Portal Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-2xs">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-2xs print:hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Image
@@ -255,7 +255,7 @@ function PortalContent() {
       </header>
 
       {/* Navigation Sub-Bar */}
-      <div className="bg-white border-b border-slate-200">
+      <div className="bg-white border-b border-slate-200 print:hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-6 text-xs font-bold">
           <button
             onClick={() => setActiveTab("overview")}
@@ -607,7 +607,7 @@ function PortalContent() {
 
       {/* Modal: Client Raises Ticket */}
       {createTicketOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs print:hidden">
           <div className="bg-white w-full max-w-xl rounded-2xl shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div className="flex items-center gap-2">
@@ -732,7 +732,7 @@ function PortalContent() {
 
       {/* Modal: Client Views Thread & Replies */}
       {selectedTicket && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs print:hidden">
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
             {/* Header */}
             <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
