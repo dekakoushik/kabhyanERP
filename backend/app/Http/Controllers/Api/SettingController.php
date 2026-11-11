@@ -129,19 +129,24 @@ class SettingController extends Controller
             $fromName = $validated['mail_from_name'] ?? SystemSetting::get('mail_from_name', config('mail.from.name', 'Kabhyan Technologies'));
 
             // Build a dynamic standalone Symfony EsmtpTransport to guarantee direct port & encryption binding
-            $schemePrefix = '';
-            if ($encryption === 'ssl' || $port === 465) {
-                $transport = new \Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport(
-                    $host,
-                    $port,
-                    true // direct TLS/SSL
-                );
-            } else {
-                $transport = new \Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport(
-                    $host,
-                    $port,
-                    false // opportunistic / STARTTLS
-                );
+            $isDirectTls = ($encryption === 'ssl' || $port === 465);
+            $transport = new \Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport(
+                $host,
+                $port,
+                $isDirectTls
+            );
+
+            // Configure socket stream options for SSL/TLS cert validation & timeout
+            $streamOptions = [
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true,
+                ],
+            ];
+            $stream = $transport->getStream();
+            if (method_exists($stream, 'setStreamOptions')) {
+                $stream->setStreamOptions($streamOptions);
             }
 
             if (!empty($username)) {
