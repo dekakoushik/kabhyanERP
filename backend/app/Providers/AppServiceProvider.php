@@ -24,44 +24,37 @@ class AppServiceProvider extends ServiceProvider
     {
         // Dynamically override mail configuration from database system settings if present
         try {
-            if (Schema::hasTable('system_settings')) {
-                $mailMailer = SystemSetting::get('mail_mailer');
-                $mailHost = SystemSetting::get('mail_host');
-                $mailPort = SystemSetting::get('mail_port');
-                $mailUsername = SystemSetting::get('mail_username');
-                $mailPassword = SystemSetting::get('mail_password');
-                $mailEncryption = SystemSetting::get('mail_encryption');
-                $mailFromAddress = SystemSetting::get('mail_from_address');
-                $mailFromName = SystemSetting::get('mail_from_name');
+            if (!app()->runningInConsole() && Schema::hasTable('system_settings')) {
+                $settings = SystemSetting::where('group', 'email_smtp')->pluck('value', 'key');
 
-                if ($mailMailer) {
-                    Config::set('mail.default', $mailMailer);
+                if (isset($settings['mail_mailer'])) {
+                    Config::set('mail.default', $settings['mail_mailer']);
                 }
-
-                if ($mailHost) {
-                    Config::set('mail.mailers.smtp.host', $mailHost);
+                if (isset($settings['mail_host'])) {
+                    Config::set('mail.mailers.smtp.host', $settings['mail_host']);
                 }
-                if ($mailPort) {
-                    Config::set('mail.mailers.smtp.port', (int) $mailPort);
+                if (isset($settings['mail_port'])) {
+                    Config::set('mail.mailers.smtp.port', (int) $settings['mail_port']);
                 }
-                if ($mailUsername) {
-                    Config::set('mail.mailers.smtp.username', $mailUsername);
+                if (isset($settings['mail_username'])) {
+                    Config::set('mail.mailers.smtp.username', $settings['mail_username']);
                 }
-                if ($mailPassword) {
-                    Config::set('mail.mailers.smtp.password', $mailPassword);
+                if (isset($settings['mail_password'])) {
+                    Config::set('mail.mailers.smtp.password', $settings['mail_password']);
                 }
-                if ($mailEncryption) {
-                    Config::set('mail.mailers.smtp.scheme', $mailEncryption === 'null' ? null : $mailEncryption);
+                if (isset($settings['mail_encryption'])) {
+                    $enc = $settings['mail_encryption'];
+                    Config::set('mail.mailers.smtp.scheme', ($enc === 'null' || empty($enc)) ? null : $enc);
                 }
-                if ($mailFromAddress) {
-                    Config::set('mail.from.address', $mailFromAddress);
+                if (isset($settings['mail_from_address'])) {
+                    Config::set('mail.from.address', $settings['mail_from_address']);
                 }
-                if ($mailFromName) {
-                    Config::set('mail.from.name', $mailFromName);
+                if (isset($settings['mail_from_name'])) {
+                    Config::set('mail.from.name', $settings['mail_from_name']);
                 }
             }
         } catch (\Throwable $e) {
-            // Silently continue if database not yet migrated or connected
+            // Silently continue if database or Redis not yet ready
         }
     }
 }
