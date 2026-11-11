@@ -4,13 +4,17 @@ set -e
 echo "==> Bootstrapping Kabhyan ERP Backend..."
 
 # Ensure storage directories exist with write permissions
-mkdir -p /var/www/html/storage/framework/cache/data \
+mkdir -p /var/www/html/storage/app/public/brand \
+         /var/www/html/storage/framework/cache/data \
          /var/www/html/storage/framework/sessions \
          /var/www/html/storage/framework/views \
          /var/www/html/storage/logs \
          /var/www/html/bootstrap/cache
 
-chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+# Ensure Laravel public storage symlink exists
+php artisan storage:link || true
+
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/storage
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # If APP_KEY is missing or empty, generate one

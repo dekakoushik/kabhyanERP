@@ -237,5 +237,68 @@ class SettingController extends Controller
             ], 422);
         }
     }
+
+    /**
+     * Upload specialized corporate brand logo asset.
+     */
+    public function uploadBrandAsset(Request $request)
+    {
+        $validated = $request->validate([
+            'type' => 'required|in:logo_primary,logo_document,logo_icon,logo_dark',
+            'file' => 'required|file|mimes:png,jpg,jpeg,svg,webp|max:3072',
+        ]);
+
+        $file = $request->file('file');
+        $type = $validated['type'];
+
+        // Determine destination folder inside public storage
+        $destinationPath = public_path('storage/brand');
+        if (!file_exists($destinationPath)) {
+            mkdir($destinationPath, 0775, true);
+        }
+
+        $extension = $file->getClientOriginalExtension();
+        $filename = "{$type}_" . time() . ".{$extension}";
+
+        $file->move($destinationPath, $filename);
+        $publicUrl = "/storage/brand/{$filename}";
+
+        // Save into SystemSetting
+        $settingKey = "company_{$type}";
+        SystemSetting::set($settingKey, $publicUrl, 'company');
+
+        return response()->json([
+            'message' => 'Brand asset uploaded successfully',
+            'key' => $settingKey,
+            'url' => $publicUrl,
+        ]);
+    }
+
+    /**
+     * Delete or reset a brand asset to default.
+     */
+    public function deleteBrandAsset(string $type)
+    {
+        if (!in_array($type, ['logo_primary', 'logo_document', 'logo_icon', 'logo_dark'])) {
+            return response()->json(['message' => 'Invalid brand asset type'], 422);
+        }
+
+        $settingKey = "company_{$type}";
+        $current = SystemSetting::get($settingKey);
+
+        if ($current && str_starts_with($current, '/storage/brand/')) {
+            $filePath = public_path(ltrim($current, '/'));
+            if (file_exists($filePath)) {
+                @unlink($filePath);
+            }
+        }
+
+        SystemSetting::set($settingKey, '', 'company');
+
+        return response()->json([
+            'message' => 'Brand asset reset to default',
+            'key' => $settingKey,
+        ]);
+    }
 }
 
