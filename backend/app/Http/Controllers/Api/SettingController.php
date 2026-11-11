@@ -128,45 +128,46 @@ class SettingController extends Controller
             $fromAddress = $validated['mail_from_address'] ?? SystemSetting::get('mail_from_address', config('mail.from.address', 'no-reply@kabhyan.com'));
             $fromName = $validated['mail_from_name'] ?? SystemSetting::get('mail_from_name', config('mail.from.name', 'Kabhyan Technologies'));
 
-            // If user selects port 465 or ssl, use ssl scheme; if 587 or tls, use tls scheme
-            $scheme = null;
+            // Build a dynamic standalone Symfony EsmtpTransport to guarantee direct port & encryption binding
+            $schemePrefix = '';
             if ($encryption === 'ssl' || $port === 465) {
-                $scheme = 'smtps';
-            } elseif ($encryption === 'tls' || $port === 587) {
-                $scheme = 'smtp'; // Symfony mailer handles STARTTLS on standard smtp scheme
+                $transport = new \Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport(
+                    $host,
+                    $port,
+                    true // direct TLS/SSL
+                );
+            } else {
+                $transport = new \Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport(
+                    $host,
+                    $port,
+                    false // opportunistic / STARTTLS
+                );
             }
 
-            config([
-                'mail.default' => 'smtp',
-                'mail.mailers.smtp.transport' => 'smtp',
-                'mail.mailers.smtp.host' => $host,
-                'mail.mailers.smtp.port' => $port,
-                'mail.mailers.smtp.encryption' => ($encryption === 'null' || empty($encryption)) ? null : $encryption,
-                'mail.mailers.smtp.scheme' => $scheme,
-                'mail.mailers.smtp.username' => $username,
-                'mail.mailers.smtp.password' => $password,
-                'mail.from.address' => $fromAddress,
-                'mail.from.name' => $fromName,
-            ]);
+            if (!empty($username)) {
+                $transport->setUsername($username);
+            }
+            if (!empty($password)) {
+                $transport->setPassword($password);
+            }
 
-            // Re-bind fresh mailer transport to avoid cached socket connections
-            app()->forgetInstance('mailer');
-            \Illuminate\Support\Facades\Mail::clearResolvedInstances();
+            $symfonyMailer = new \Symfony\Component\Mailer\Mailer($transport);
 
-            \Illuminate\Support\Facades\Mail::raw(
-                "Hello,\n\nThis is a verification test email sent from Kabhyan ERP.\n\n" .
-                "SMTP Server: {$host}\n" .
-                "SMTP Port: {$port}\n" .
-                "Encryption: " . ($encryption ?: 'None') . "\n" .
-                "From: {$fromName} <{$fromAddress}>\n" .
-                "Timestamp: " . now()->toDateTimeString() . " (" . config('app.timezone') . ")\n\n" .
-                "If you received this message, your SMTP mail pipeline is verified and fully operational!",
-                function ($message) use ($recipient, $fromAddress, $fromName) {
-                    $message->to($recipient)
-                        ->from($fromAddress, $fromName)
-                        ->subject("Kabhyan ERP: SMTP Configuration Verification");
-                }
-            );
+            $emailMessage = (new \Symfony\Component\Mime\Email())
+                ->from(new \Symfony\Component\Mime\Address($fromAddress, $fromName))
+                ->to($recipient)
+                ->subject("Kabhyan ERP: SMTP Configuration Verification")
+                ->text(
+                    "Hello,\n\nThis is a verification test email sent from Kabhyan ERP.\n\n" .
+                    "SMTP Server: {$host}\n" .
+                    "SMTP Port: {$port}\n" .
+                    "Encryption: " . ($encryption ?: 'None') . "\n" .
+                    "From: {$fromName} <{$fromAddress}>\n" .
+                    "Timestamp: " . now()->toDateTimeString() . " (" . config('app.timezone') . ")\n\n" .
+                    "If you received this message, your SMTP mail pipeline is verified and fully operational!"
+                );
+
+            $symfonyMailer->send($emailMessage);
 
             return response()->json([
                 'message' => "Test email successfully sent to {$recipient}!",
