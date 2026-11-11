@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition, useRef, Suspense } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { api, ProformaInvoice, ProformaInvoiceItem, ProformaInvoiceStats, Project } from "@/lib/api";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Receipt,
@@ -420,13 +421,13 @@ function ProformaContent() {
           </p>
         </div>
 
-        <button
-          onClick={openCreateModal}
+        <Link
+          href="/dashboard/proforma/create"
           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold shadow-xs hover:shadow-sm transition cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Create Proforma Invoice</span>
-        </button>
+        </Link>
       </div>
 
       {/* Stats Summary Strip */}
