@@ -5,6 +5,7 @@ import AdminLayout from "@/components/AdminLayout";
 import { api, Estimate, EstimateItem, EstimateStats, Project } from "@/lib/api";
 import Image from "next/image";
 import Link from "next/link";
+import { formatDate, getDueDateStatus } from "@/lib/date";
 import {
   FileText,
   Search,
@@ -409,11 +410,11 @@ export default function EstimatesPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Client Quotations & Estimates
-            </h2>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              Estimates & Proposals
+            </h1>
             <p className="text-xs sm:text-sm text-slate-500">
-              Generate itemized billable proposals with tax, discounts, and terms for clients.
+              Manage client proposals, quotes, and 1-click conversion to Proforma Invoices.
             </p>
           </div>
 
@@ -537,8 +538,8 @@ export default function EstimatesPage() {
                     <th className="py-3.5 px-6">Estimate ID</th>
                     <th className="py-3.5 px-6">Client / Company</th>
                     <th className="py-3.5 px-6">Project Reference</th>
-                    <th className="py-3.5 px-6">Date / Expiry</th>
-                    <th className="py-3.5 px-6">Amount</th>
+                    <th className="py-3.5 px-6">Date / Validity</th>
+                    <th className="py-3.5 px-6 whitespace-nowrap min-w-[140px]">Amount</th>
                     <th className="py-3.5 px-6">Status</th>
                     <th className="py-3.5 px-6 text-right">Actions</th>
                   </tr>
@@ -547,7 +548,7 @@ export default function EstimatesPage() {
                   {estimates.map((est) => (
                     <tr key={est.id} className="hover:bg-slate-50/60 transition">
                       <td className="py-4 px-6">
-                        <span className="font-mono font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-100">
+                        <span className="font-mono font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100">
                           {est.estimate_number}
                         </span>
                       </td>
@@ -566,59 +567,74 @@ export default function EstimatesPage() {
                         )}
                       </td>
                       <td className="py-4 px-6 text-slate-600">
-                        <div className="flex flex-col">
-                          <span>{formatDate(est.estimate_date)}</span>
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium text-slate-800">{formatDate(est.estimate_date)}</span>
                           {est.expiry_date && (
-                            <span className="text-[10px] text-slate-400">Exp: {formatDate(est.expiry_date)}</span>
+                            (() => {
+                              const validity = getDueDateStatus(est.expiry_date);
+                              return (
+                                <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border max-w-fit ${
+                                  est.status === "accepted" || est.status === "invoiced"
+                                    ? "bg-slate-50 text-slate-400 border-slate-100"
+                                    : validity.badgeClass
+                                }`}>
+                                  <Clock className="w-2.5 h-2.5 shrink-0" />
+                                  <span>{est.status === "accepted" ? "Accepted" : validity.label}</span>
+                                </span>
+                              );
+                            })()
                           )}
                         </div>
                       </td>
-                      <td className="py-4 px-6 font-mono font-bold text-slate-900 text-sm">
-                        {est.currency === "INR" ? "₹" : est.currency}{" "}
+                      <td className="py-4 px-6 font-mono font-bold text-slate-900 text-sm whitespace-nowrap tabular-nums">
+                        {est.currency === "INR" ? "₹ " : `${est.currency} `}
                         {Number(est.total_amount).toLocaleString(est.currency === "INR" ? "en-IN" : undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                       <td className="py-4 px-6">
-                        <select
-                          value={est.status}
-                          onChange={(e) => handleStatusChange(est, e.target.value)}
-                          className={`text-[11px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider border cursor-pointer focus:outline-none ${getStatusBadge(
-                            est.status
-                          )}`}
-                        >
-                          <option value="draft">Draft</option>
-                          <option value="sent">Sent</option>
-                          <option value="accepted">Accepted</option>
-                          <option value="declined">Declined</option>
-                          <option value="invoiced">Invoiced</option>
-                        </select>
-                      </td>
-                      <td className="py-4 px-6 text-right">
-                        <div className="flex items-center justify-end gap-1">
+                        <div className="flex flex-col gap-1.5 items-start">
+                          <select
+                            value={est.status}
+                            onChange={(e) => handleStatusChange(est, e.target.value)}
+                            className={`text-[11px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider border cursor-pointer focus:outline-none ${getStatusBadge(
+                              est.status
+                            )}`}
+                          >
+                            <option value="draft">Draft</option>
+                            <option value="sent">Sent</option>
+                            <option value="accepted">Accepted</option>
+                            <option value="declined">Declined</option>
+                            <option value="invoiced">Invoiced</option>
+                          </select>
+
                           {est.status === "accepted" && (
                             <button
                               onClick={() => handleConvertToProforma(est)}
                               disabled={convertingId === est.id}
                               title="Generate Proforma Invoice"
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold transition cursor-pointer shadow-xs disabled:opacity-60"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-semibold transition cursor-pointer shadow-xs disabled:opacity-60 whitespace-nowrap"
                             >
                               {convertingId === est.id ? (
                                 <Loader2 className="w-3 h-3 animate-spin" />
                               ) : (
                                 <Receipt className="w-3 h-3" />
                               )}
-                              <span>Make Proforma</span>
+                              <span>Convert to PI</span>
                             </button>
                           )}
                           {est.status === "invoiced" && (
                             <button
                               onClick={() => router.push("/dashboard/proforma")}
                               title="View Proforma Invoice"
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 text-[11px] font-semibold hover:bg-purple-100 transition cursor-pointer"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-semibold hover:bg-purple-100 transition cursor-pointer whitespace-nowrap"
                             >
                               <Receipt className="w-3 h-3" />
                               <span>View PI</span>
                             </button>
                           )}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => setPreviewEstimate(est)}
                             title="Preview Print / PDF"
