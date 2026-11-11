@@ -132,14 +132,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         />
       )}
 
-      {/* Modern Sidebar (Desktop & Mobile Offcanvas) */}
+      {/* Modern Sidebar (Desktop Fixed & Mobile Offcanvas) */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 bg-white border-r border-slate-200/80 transform transition-all duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-auto lg:z-auto flex flex-col print:hidden ${
+        className={`fixed inset-y-0 left-0 z-40 bg-white border-r border-slate-200/80 transform transition-all duration-200 ease-in-out lg:translate-x-0 h-screen flex flex-col print:hidden ${
           mobileMenuOpen ? "translate-x-0 w-72" : "-translate-x-full lg:translate-x-0"
         } ${isCollapsed ? "lg:w-20" : "lg:w-64"}`}
       >
-        {/* Brand & Collapse Header */}
-        <div className="h-16 px-4 border-b border-slate-100 flex items-center justify-between">
+        {/* Fixed Brand & Collapse Header */}
+        <div className="h-16 px-4 border-b border-slate-100 flex items-center justify-between shrink-0">
           <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden">
             <Image
               src="/logo.png"
@@ -232,7 +232,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
         {/* Role Guard Indicator (When Expanded) */}
         {!isCollapsed && (
-          <div className="px-3 pb-2">
+          <div className="px-3 pb-2 shrink-0">
             <div className="p-2.5 rounded-lg border border-slate-100 bg-slate-50/70 text-[11px] text-slate-500 flex items-center justify-between">
               <span className="flex items-center gap-1.5 font-medium">
                 <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
@@ -246,7 +246,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         )}
 
         {/* Docked User Profile Footer */}
-        <div className="p-3 border-t border-slate-100 bg-white">
+        <div className="p-3 border-t border-slate-100 bg-white shrink-0">
           <div className={`flex items-center ${isCollapsed ? "justify-center" : "justify-between"} gap-2`}>
             <div className="flex items-center gap-2.5 overflow-hidden">
               <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-semibold flex items-center justify-center shrink-0 text-xs shadow-xs">
@@ -276,7 +276,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 print:w-full print:block print:p-0">
+      <div className={`flex-1 flex flex-col min-w-0 print:w-full print:block print:p-0 transition-all duration-200 ${
+        isCollapsed ? "lg:pl-20" : "lg:pl-64"
+      }`}>
         {/* Top Navbar */}
         <header className="h-16 bg-white border-b border-slate-200/80 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30 print:hidden">
           <div className="flex items-center gap-3">
