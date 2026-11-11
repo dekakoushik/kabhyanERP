@@ -16,9 +16,12 @@ class SettingController extends Controller
      */
     public function index(Request $request)
     {
-        $grouped = Cache::remember('all_system_settings_grouped', 3600, function () {
-            return SystemSetting::all()->groupBy('group');
-        });
+        $allSettings = SystemSetting::all();
+        $grouped = [];
+
+        foreach ($allSettings as $item) {
+            $grouped[$item->group][] = $item;
+        }
 
         // Check Redis status
         $redisStatus = 'connected';
