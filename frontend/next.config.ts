@@ -13,8 +13,11 @@ const nextConfig: NextConfig = {
     },
   },
   async rewrites() {
-    // In production Docker, proxy /api/v1 to the backend container over internal Docker network
-    const backendHost = process.env.INTERNAL_BACKEND_URL || "http://backend:80";
+    // In production Dokploy multi-app setup, proxy to the backend container or fallback to public backend URL
+    const backendHost =
+      process.env.INTERNAL_BACKEND_URL ||
+      process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/v1\/?$/, "") ||
+      "http://backend:80";
     return [
       {
         source: "/api/v1/:path*",
