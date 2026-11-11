@@ -2,6 +2,7 @@
 
 import { Suspense } from "react";
 import { AuthProvider } from "@/context/AuthContext";
+import { BrandProvider } from "@/context/BrandContext";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -24,7 +25,9 @@ export default function RootLayout({
       </head>
       <body className="bg-slate-50 text-slate-900 antialiased selection:bg-blue-600 selection:text-white font-sans">
         <Suspense fallback={null}>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <BrandProvider>{children}</BrandProvider>
+          </AuthProvider>
         </Suspense>
         <Toaster position="bottom-right" richColors closeButton />
       </body>

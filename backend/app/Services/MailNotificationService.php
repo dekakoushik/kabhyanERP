@@ -151,7 +151,14 @@ class MailNotificationService
         $companyEmail = $companyEmail ?: SystemSetting::get('company_email', 'contact@kabhyan.com');
         $companyPhone = $companyPhone ?: SystemSetting::get('company_phone', '+91 98200 12345');
         $companyWebsite = $companyWebsite ?: SystemSetting::get('company_website', 'https://www.kabhyan.com');
-        $logoUrl = "{$baseUrl}/kabhyan-logo.png";
+
+        // Dynamic brand logo resolution with fallback
+        $customLogo = SystemSetting::get('company_logo_primary') ?: SystemSetting::get('company_logo_document');
+        if (!empty($customLogo)) {
+            $logoUrl = str_starts_with($customLogo, 'http') ? $customLogo : rtrim($baseUrl, '/') . '/' . ltrim($customLogo, '/');
+        } else {
+            $logoUrl = "{$baseUrl}/kabhyan-logo.png";
+        }
 
         $btnHtml = '';
         if ($actionUrl && $actionText) {

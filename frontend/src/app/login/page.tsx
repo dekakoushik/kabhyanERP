@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { useBrand } from "@/context/BrandContext";
 import { api } from "@/lib/api";
 import {
   Lock,
@@ -17,6 +18,7 @@ import {
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { brand } = useBrand();
   const [email, setEmail] = useState("superadmin@kabhyan.com");
   const [password, setPassword] = useState("Kabhyan@2026");
   const [error, setError] = useState<string | null>(null);
@@ -56,19 +58,20 @@ export default function LoginPage() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         <div className="inline-flex items-center justify-center mb-3">
           <Image
-            src="/logo.png"
-            alt="Kabhyan Technologies"
+            src={brand.logoPrimary || "/logo.png"}
+            alt={brand.companyName || "Kabhyan Technologies"}
             width={240}
             height={70}
             className="h-14 w-auto object-contain"
             priority
+            unoptimized
           />
         </div>
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-semibold uppercase tracking-wider mb-2">
           Enterprise ERP Portal
         </div>
         <p className="text-xs sm:text-sm text-slate-500">
-          Internal Operations & Workspace Management Suite
+          {brand.companyTagline || "Internal Operations & Workspace Management Suite"}
         </p>
       </div>
 

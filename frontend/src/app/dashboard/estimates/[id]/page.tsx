@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { formatDate, getDueDateStatus, formatRelativeTime } from "@/lib/date";
+import { useBrand } from "@/context/BrandContext";
 import { toast } from "sonner";
 import {
   FileText,
@@ -34,6 +35,7 @@ function EstimateDetailContent({
   estimateParam: string;
 }) {
   const router = useRouter();
+  const { brand } = useBrand();
   const [estimate, setEstimate] = useState<Estimate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -178,17 +180,30 @@ function EstimateDetailContent({
           <div className="flex flex-col sm:flex-row items-start justify-between gap-6 pb-6 border-b border-slate-200">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-blue-600 text-white font-black text-base flex items-center justify-center shadow-xs">
-                  K
-                </div>
-                <span className="font-black text-lg tracking-tight text-slate-900">
-                  KABHYAN TECHNOLOGIES
-                </span>
+                {brand.logoDocument || brand.logoPrimary ? (
+                  <Image
+                    src={brand.logoDocument || brand.logoPrimary || "/logo.png"}
+                    alt={brand.companyName}
+                    width={180}
+                    height={46}
+                    unoptimized
+                    className="h-10 w-auto object-contain"
+                  />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-xl bg-blue-600 text-white font-black text-base flex items-center justify-center shadow-xs">
+                      {brand.companyName ? brand.companyName.charAt(0) : "K"}
+                    </div>
+                    <span className="font-black text-lg tracking-tight text-slate-900">
+                      {brand.companyName ? brand.companyName.toUpperCase() : "KABHYAN TECHNOLOGIES"}
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="text-xs text-slate-500 space-y-0.5 leading-relaxed">
-                <p className="font-semibold text-slate-700">Kabhyan Technologies Private Limited</p>
-                <p>Enterprise IT & Cloud Engineering Solutions</p>
-                <p>contact@kabhyan.com • www.kabhyan.com</p>
+                <p className="font-semibold text-slate-700">{brand.companyName}</p>
+                <p>{brand.companyTagline}</p>
+                <p>{brand.companyEmail} • {brand.companyWebsite.replace(/^https?:\/\//, '')}</p>
               </div>
             </div>
 

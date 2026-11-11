@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useBrand } from "@/context/BrandContext";
 import { api, PortalDashboardData, Ticket, Project } from "@/lib/api";
 import {
   Building2,
@@ -27,6 +28,7 @@ import {
 
 function PortalContent() {
   const router = useRouter();
+  const { brand } = useBrand();
   const [data, setData] = useState<PortalDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"overview" | "projects" | "tickets">("overview");
@@ -208,10 +210,11 @@ function PortalContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Image
-              src="/logo.png"
-              alt="Kabhyan Technologies"
+              src={brand.logoPrimary || "/logo.png"}
+              alt={brand.companyName || "Kabhyan Technologies"}
               width={160}
               height={44}
+              unoptimized
               className="h-9 w-auto object-contain"
             />
             <span className="hidden sm:inline-block h-5 w-px bg-slate-200 mx-1" />

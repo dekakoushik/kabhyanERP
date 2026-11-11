@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useBrand } from "@/context/BrandContext";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -51,6 +52,7 @@ interface NavGroup {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const { user, logout } = useAuth();
+  const { brand } = useBrand();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -143,17 +145,30 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         {/* Fixed Brand & Collapse Header */}
         <div className="h-16 px-4 border-b border-slate-100 flex items-center justify-between shrink-0">
           <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden">
-            <Image
-              src="/logo.png"
-              alt="Kabhyan Technologies"
-              width={130}
-              height={36}
-              className={`h-7 w-auto object-contain transition-all ${isCollapsed ? "hidden" : "block"}`}
-              priority
-            />
+            <div className={`relative h-7 w-32 ${isCollapsed ? "hidden" : "block"}`}>
+              <Image
+                src={brand.logoPrimary || "/logo.png"}
+                alt={brand.companyName || "Kabhyan Technologies"}
+                fill
+                className="object-contain object-left"
+                priority
+                unoptimized
+              />
+            </div>
             {isCollapsed && (
-              <div className="w-9 h-9 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center text-sm shadow-xs">
-                K
+              <div className="w-9 h-9 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center text-sm shadow-xs overflow-hidden">
+                {brand.logoIcon && brand.logoIcon !== "/logo.png" ? (
+                  <Image
+                    src={brand.logoIcon}
+                    alt="Logo"
+                    width={28}
+                    height={28}
+                    className="object-contain"
+                    unoptimized
+                  />
+                ) : (
+                  "K"
+                )}
               </div>
             )}
             {!isCollapsed && (

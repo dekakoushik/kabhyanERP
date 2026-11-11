@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { formatDate, getDueDateStatus, formatRelativeTime } from "@/lib/date";
+import { useBrand } from "@/context/BrandContext";
 import { toast } from "sonner";
 import {
   Receipt,
@@ -30,6 +31,7 @@ import {
 
 function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
   const router = useRouter();
+  const { brand } = useBrand();
   const [proforma, setProforma] = useState<ProformaInvoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -181,19 +183,21 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
           <div className="flex justify-between items-start pb-8 border-b border-slate-100">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <Image
-                  src="/kabhyan-logo.png"
-                  alt="Kabhyan Technologies"
-                  width={160}
-                  height={42}
-                  className="h-10 w-auto object-contain"
-                  priority
-                />
+                <div className="relative h-11 w-44">
+                  <Image
+                    src={brand.logoDocument || "/kabhyan-logo.png"}
+                    alt={brand.companyName || "Kabhyan Technologies"}
+                    fill
+                    className="object-contain object-left"
+                    priority
+                    unoptimized
+                  />
+                </div>
               </div>
               <p className="text-xs text-slate-500 leading-relaxed max-w-sm pt-2">
-                <strong>Kabhyan Technologies Private Limited</strong>
+                <strong>{brand.companyName || "Kabhyan Technologies Private Limited"}</strong>
                 <br />
-                Enterprise IT & Software Engineering Solutions
+                {brand.companyTagline || "Enterprise IT & Software Engineering Solutions"}
                 <br />
                 GSTIN: <strong>18AAGCK2934D1Z2</strong>
                 <br />
