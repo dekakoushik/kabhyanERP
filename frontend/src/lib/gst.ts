@@ -208,3 +208,4 @@ export function numberToIndianWords(num: number): string {
   output += " Only";
   return output.replace(/\s+/g, " ");
 }
+

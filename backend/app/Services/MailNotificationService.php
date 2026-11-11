@@ -100,10 +100,14 @@ class MailNotificationService
         try {
             $fromAddress = SystemSetting::get('mail_from_address', config('mail.from.address', 'alerts@kabhyan.com'));
             $fromName = SystemSetting::get('mail_from_name', config('mail.from.name', 'Kabhyan Technologies ERP'));
-            $companyName = SystemSetting::get('company_name', 'Kabhyan Technologies Pvt. Ltd.');
-            $companyAddress = SystemSetting::get('company_address', 'West Bengal, India');
+            $companyName = SystemSetting::get('company_name', 'Kabhyan Technologies Private Limited');
+            $companyAddress = SystemSetting::get('company_address', 'Bandra Kurla Complex, Mumbai, Maharashtra 400051');
+            $companyGstin = SystemSetting::get('company_gstin', '18AAGCK2934D1Z2');
+            $companyEmail = SystemSetting::get('company_email', 'contact@kabhyan.com');
+            $companyPhone = SystemSetting::get('company_phone', '+91 98200 12345');
+            $companyWebsite = SystemSetting::get('company_website', 'https://www.kabhyan.com');
 
-            $fullHtml = self::renderLayout($subject, $contentHtml, $actionUrl, $actionText, $companyName, $companyAddress);
+            $fullHtml = self::renderLayout($subject, $contentHtml, $actionUrl, $actionText, $companyName, $companyAddress, $companyGstin, $companyEmail, $companyPhone, $companyWebsite);
 
             $transport = self::createTransport();
             $mailer = new Mailer($transport);
@@ -126,73 +130,136 @@ class MailNotificationService
     }
 
     /**
-     * Modern HTML email template layout.
+     * Modern HTML email template layout with corporate Branding, Header and Footer.
      */
-    protected static function renderLayout(
+    public static function renderLayout(
         string $subject,
         string $contentHtml,
-        ?string $actionUrl,
-        ?string $actionText,
-        string $companyName,
-        string $companyAddress
+        ?string $actionUrl = null,
+        ?string $actionText = null,
+        ?string $companyName = null,
+        ?string $companyAddress = null,
+        ?string $companyGstin = null,
+        ?string $companyEmail = null,
+        ?string $companyPhone = null,
+        ?string $companyWebsite = null
     ): string {
+        $baseUrl = self::getBaseUrl();
+        $companyName = $companyName ?: SystemSetting::get('company_name', 'Kabhyan Technologies Private Limited');
+        $companyAddress = $companyAddress ?: SystemSetting::get('company_address', 'Bandra Kurla Complex, Mumbai, Maharashtra 400051');
+        $companyGstin = $companyGstin ?: SystemSetting::get('company_gstin', '18AAGCK2934D1Z2');
+        $companyEmail = $companyEmail ?: SystemSetting::get('company_email', 'contact@kabhyan.com');
+        $companyPhone = $companyPhone ?: SystemSetting::get('company_phone', '+91 98200 12345');
+        $companyWebsite = $companyWebsite ?: SystemSetting::get('company_website', 'https://www.kabhyan.com');
+        $logoUrl = "{$baseUrl}/kabhyan-logo.png";
+
         $btnHtml = '';
         if ($actionUrl && $actionText) {
             $btnHtml = '
                 <div style="margin: 32px 0 24px; text-align: center;">
-                    <a href="' . htmlspecialchars($actionUrl) . '" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 13px 28px; border-radius: 8px; font-weight: 600; font-size: 14px; text-decoration: none; display: inline-block; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
+                    <a href="' . htmlspecialchars($actionUrl) . '" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 10px; font-weight: 700; font-size: 14px; text-decoration: none; display: inline-block; box-shadow: 0 4px 6px -1px rgba(37,99,235,0.25); letter-spacing: 0.3px;">
                         ' . htmlspecialchars($actionText) . ' &rarr;
                     </a>
                 </div>
             ';
         }
 
+        $fallbackUrlHtml = '';
+        if ($actionUrl) {
+            $fallbackUrlHtml = '
+                <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 32px 0 20px;" />
+                <p style="margin: 0; font-size: 11px; color: #94a3b8; line-height: 1.6;">
+                    If the button above does not work, copy and paste this URL into your browser:<br />
+                    <a href="' . htmlspecialchars($actionUrl) . '" style="color: #2563eb; word-break: break-all; text-decoration: underline;">' . htmlspecialchars($actionUrl) . '</a>
+                </p>
+            ';
+        }
+
         return '<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>' . htmlspecialchars($subject) . '</title>
+    <style>
+        @media only screen and (max-width: 620px) {
+            .email-container { width: 100% !important; border-radius: 0 !important; }
+            .header-cell { padding: 22px 20px !important; }
+            .body-cell { padding: 28px 20px 24px !important; }
+            .footer-cell { padding: 24px 20px !important; }
+        }
+    </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif; color: #334155;">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f1f5f9; padding: 32px 16px;">
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; -webkit-font-smoothing: antialiased;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8fafc; padding: 40px 16px;">
         <tr>
             <td align="center">
-                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
-                    <!-- Brand Header -->
+                <table class="email-container" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 620px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.04), 0 4px 6px -4px rgba(0,0,0,0.02); border: 1px solid #e2e8f0;">
+                    
+                    <!-- Top Blue Accent Bar -->
                     <tr>
-                        <td style="background-color: #0f172a; padding: 26px 32px; text-align: left;">
+                        <td height="4" style="background: linear-gradient(90deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%); line-height: 4px; font-size: 4px;">&nbsp;</td>
+                    </tr>
+
+                    <!-- Corporate Header -->
+                    <tr>
+                        <td class="header-cell" style="background-color: #ffffff; padding: 28px 36px 20px; border-bottom: 1px solid #f1f5f9;">
                             <table width="100%" cellpadding="0" cellspacing="0" border="0">
                                 <tr>
-                                    <td>
-                                        <div style="color: #ffffff; font-size: 20px; font-weight: 800; letter-spacing: 0.5px;">KABHYAN TECHNOLOGIES</div>
-                                        <div style="color: #94a3b8; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 3px;">Enterprise Resource Planning & Client Workspace</div>
+                                    <td valign="middle" align="left">
+                                        <div style="font-size: 22px; font-weight: 900; letter-spacing: -0.5px; color: #0f172a; line-height: 1.2;">
+                                            KABHYAN<span style="color: #2563eb;">.</span>
+                                        </div>
+                                        <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: #64748b; margin-top: 2px;">
+                                            TECHNOLOGIES PRIVATE LIMITED
+                                        </div>
+                                    </td>
+                                    <td valign="middle" align="right">
+                                        <span style="display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; background-color: #eff6ff; color: #1d4ed8; border: 1px solid #dbeafe;">
+                                            ERP &amp; Client Workspace
+                                        </span>
                                     </td>
                                 </tr>
                             </table>
                         </td>
                     </tr>
-                    <!-- Main Body -->
+
+                    <!-- Email Body Container -->
                     <tr>
-                        <td style="padding: 36px 32px 28px;">
+                        <td class="body-cell" style="padding: 36px 36px 32px; background-color: #ffffff;">
                             ' . $contentHtml . '
                             ' . $btnHtml . '
-                            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0 20px;" />
-                            <p style="margin: 0; font-size: 12px; color: #94a3b8; line-height: 1.6;">
-                                If the button above does not work, copy and paste this URL into your browser:<br />
-                                <a href="' . htmlspecialchars($actionUrl ?? '') . '" style="color: #2563eb; word-break: break-all;">' . htmlspecialchars($actionUrl ?? '') . '</a>
-                            </p>
+                            ' . $fallbackUrlHtml . '
                         </td>
                     </tr>
-                    <!-- Footer -->
+
+                    <!-- Corporate Branded Footer -->
                     <tr>
-                        <td style="background-color: #f8fafc; padding: 20px 32px; border-top: 1px solid #e2e8f0; text-align: center;">
-                            <p style="margin: 0 0 6px; font-size: 12px; color: #64748b; font-weight: 500;">
-                                ' . htmlspecialchars($companyName) . '
-                            </p>
-                            <p style="margin: 0; font-size: 11px; color: #94a3b8;">
-                                ' . htmlspecialchars($companyAddress) . ' • Automated System Notification
-                            </p>
+                        <td class="footer-cell" style="background-color: #0f172a; padding: 28px 36px; text-align: left; color: #94a3b8;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td>
+                                        <div style="color: #ffffff; font-size: 13px; font-weight: 800; letter-spacing: 0.3px;">
+                                            ' . htmlspecialchars($companyName) . '
+                                        </div>
+                                        <div style="font-size: 11px; line-height: 1.6; color: #94a3b8; margin-top: 4px;">
+                                            ' . htmlspecialchars($companyAddress) . '
+                                        </div>
+                                        
+                                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #1e293b; font-size: 11px; line-height: 1.8; color: #cbd5e1;">
+                                            <strong style="color: #60a5fa;">GSTIN:</strong> ' . htmlspecialchars($companyGstin) . ' &bull; 
+                                            <strong style="color: #60a5fa;">Email:</strong> ' . htmlspecialchars($companyEmail) . ' &bull; 
+                                            <strong style="color: #60a5fa;">Phone:</strong> ' . htmlspecialchars($companyPhone) . '
+                                        </div>
+
+                                        <div style="margin-top: 12px; font-size: 10px; color: #64748b; line-height: 1.5;">
+                                            This is an automated operational transmission from the Kabhyan ERP Enterprise Gateway. If you received this transmission in error, please immediately notify <a href="mailto:' . htmlspecialchars($companyEmail) . '" style="color: #60a5fa; text-decoration: none;">' . htmlspecialchars($companyEmail) . '</a>.
+                                            <br />&copy; ' . date('Y') . ' ' . htmlspecialchars($companyName) . '. All rights reserved.
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
                 </table>

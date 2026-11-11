@@ -158,10 +158,64 @@ class SettingController extends Controller
 
             $symfonyMailer = new \Symfony\Component\Mailer\Mailer($transport);
 
+            $companyName = SystemSetting::get('company_name', 'Kabhyan Technologies Private Limited');
+            $companyAddress = SystemSetting::get('company_address', 'Bandra Kurla Complex, Mumbai, Maharashtra 400051');
+            $companyGstin = SystemSetting::get('company_gstin', '18AAGCK2934D1Z2');
+            $companyEmail = SystemSetting::get('company_email', 'contact@kabhyan.com');
+            $companyPhone = SystemSetting::get('company_phone', '+91 98200 12345');
+            $companyWebsite = SystemSetting::get('company_website', 'https://www.kabhyan.com');
+
+            $contentHtml = '
+                <h2 style="margin: 0 0 12px; font-size: 18px; color: #0f172a; font-weight: 700;">SMTP Mail Pipeline Verification</h2>
+                <p style="font-size: 14px; line-height: 1.6; color: #475569; margin: 0 0 20px;">
+                    This is an official verification transmission dispatched from your <strong>Kabhyan ERP</strong> system. If you are reading this email, your corporate SMTP host settings, authentication credentials, and transport encryption are operating seamlessly without issue.
+                </p>
+
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin: 20px 0;">
+                    <div style="font-size: 12px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">Active Transmission Parameters</div>
+                    <table width="100%" cellpadding="6" cellspacing="0" border="0" style="font-size: 13px; color: #334155;">
+                        <tr>
+                            <td width="140" style="font-weight: 600; color: #64748b;">SMTP Host:</td>
+                            <td><span style="font-family: monospace; font-weight: 700; color: #0f172a;">' . htmlspecialchars($host) . '</span></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 600; color: #64748b;">Port & Encryption:</td>
+                            <td><span style="font-family: monospace;">' . htmlspecialchars((string)$port) . ' (' . htmlspecialchars(strtoupper($encryption ?: 'None')) . ')</span></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 600; color: #64748b;">From Identity:</td>
+                            <td>' . htmlspecialchars($fromName) . ' &lt;' . htmlspecialchars($fromAddress) . '&gt;</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 600; color: #64748b;">Server Time:</td>
+                            <td>' . now()->toDateTimeString() . ' (' . config('app.timezone') . ')</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 14px 16px; margin: 20px 0; font-size: 13px; color: #065f46;">
+                    <strong>System Status: Operational</strong> &bull; All future client invoice alerts, quotation notifications, and support ticket dispatches will utilize this verified SMTP configuration.
+                </div>
+            ';
+
+            $fullHtml = \App\Services\MailNotificationService::renderLayout(
+                "Kabhyan ERP: SMTP Configuration Verification",
+                $contentHtml,
+                rtrim(config('app.url', 'https://erp.kabhyan.com'), '/') . '/dashboard/settings/email',
+                "Review SMTP Settings in ERP",
+                $companyName,
+                $companyAddress,
+                $companyGstin,
+                $companyEmail,
+                $companyPhone,
+                $companyWebsite
+            );
+
             $emailMessage = (new \Symfony\Component\Mime\Email())
                 ->from(new \Symfony\Component\Mime\Address($fromAddress, $fromName))
                 ->to($recipient)
                 ->subject("Kabhyan ERP: SMTP Configuration Verification")
+                ->html($fullHtml)
                 ->text(
                     "Hello,\n\nThis is a verification test email sent from Kabhyan ERP.\n\n" .
                     "SMTP Server: {$host}\n" .
