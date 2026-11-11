@@ -22,6 +22,20 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Enforce Indian Standard Time (IST - Asia/Kolkata) as universal default
+        try {
+            $configuredTimezone = config('app.timezone', 'Asia/Kolkata');
+            if (class_exists(SystemSetting::class) && Schema::hasTable('system_settings')) {
+                $dbTimezone = SystemSetting::get('time_zone', $configuredTimezone);
+                if (!empty($dbTimezone)) {
+                    $configuredTimezone = $dbTimezone;
+                }
+            }
+            date_default_timezone_set($configuredTimezone);
+            Config::set('app.timezone', $configuredTimezone);
+        } catch (\Throwable $e) {
+            date_default_timezone_set('Asia/Kolkata');
+            Config::set('app.timezone', 'Asia/Kolkata');
+        }
     }
 }
