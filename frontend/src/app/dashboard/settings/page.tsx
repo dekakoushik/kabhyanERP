@@ -41,6 +41,42 @@ function SettingsContent() {
   const [sendingTestEmail, setSendingTestEmail] = useState(false);
   const [testEmailResult, setTestEmailResult] = useState<{ success: boolean; message: string } | null>(null);
 
+  const defaultSettingKeys = [
+    { key: "company_name", group: "company" },
+    { key: "company_legal_tagline", group: "company" },
+    { key: "company_email", group: "company" },
+    { key: "company_phone", group: "company" },
+    { key: "company_address", group: "company" },
+    { key: "company_website", group: "company" },
+    { key: "company_gstin", group: "tax_compliance" },
+    { key: "company_pan", group: "tax_compliance" },
+    { key: "default_sac_code", group: "tax_compliance" },
+    { key: "default_gst_rate", group: "tax_compliance" },
+    { key: "reverse_charge_applicable", group: "tax_compliance" },
+    { key: "bank_beneficiary_name", group: "banking" },
+    { key: "bank_name", group: "banking" },
+    { key: "bank_branch", group: "banking" },
+    { key: "bank_account_number", group: "banking" },
+    { key: "bank_ifsc_code", group: "banking" },
+    { key: "bank_swift_code", group: "banking" },
+    { key: "bank_upi_id", group: "banking" },
+    { key: "currency_code", group: "localization" },
+    { key: "currency_symbol", group: "localization" },
+    { key: "date_format", group: "localization" },
+    { key: "time_zone", group: "localization" },
+    { key: "client_portal_enabled", group: "security_policy" },
+    { key: "auto_notify_client_on_reply", group: "security_policy" },
+    { key: "session_timeout_minutes", group: "security_policy" },
+    { key: "mail_mailer", group: "email_smtp" },
+    { key: "mail_host", group: "email_smtp" },
+    { key: "mail_port", group: "email_smtp" },
+    { key: "mail_username", group: "email_smtp" },
+    { key: "mail_password", group: "email_smtp" },
+    { key: "mail_encryption", group: "email_smtp" },
+    { key: "mail_from_address", group: "email_smtp" },
+    { key: "mail_from_name", group: "email_smtp" },
+  ];
+
   const fetchSettings = async () => {
     try {
       setLoading(true);
@@ -48,11 +84,15 @@ function SettingsContent() {
       setData(res);
 
       const flat: Record<string, string> = {};
-      Object.values(res.settings).forEach((items) => {
-        items.forEach((item) => {
-          flat[item.key] = item.value || "";
+      if (res.settings && typeof res.settings === "object") {
+        Object.values(res.settings).forEach((items) => {
+          if (Array.isArray(items)) {
+            items.forEach((item) => {
+              flat[item.key] = item.value || "";
+            });
+          }
         });
-      });
+      }
       setFormState(flat);
     } catch (err) {
       console.error("Failed to load settings:", err);
@@ -71,23 +111,53 @@ function SettingsContent() {
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!data) return;
 
     try {
       setSaving(true);
       setSavedSuccess(false);
 
       const itemsToUpdate: { key: string; value: string; group?: string }[] = [];
-      Object.entries(data.settings).forEach(([groupName, items]) => {
-        items.forEach((item) => {
-          if (formState[item.key] !== undefined) {
-            itemsToUpdate.push({
-              key: item.key,
-              value: formState[item.key],
-              group: groupName,
+      const handledKeys = new Set<string>();
+
+      // 1. Collect from data.settings if returned as grouped arrays
+      if (data?.settings && typeof data.settings === "object") {
+        Object.entries(data.settings).forEach(([groupName, items]) => {
+          if (Array.isArray(items)) {
+            items.forEach((item) => {
+              if (formState[item.key] !== undefined) {
+                itemsToUpdate.push({
+                  key: item.key,
+                  value: formState[item.key],
+                  group: groupName,
+                });
+                handledKeys.add(item.key);
+              }
             });
           }
         });
+      }
+
+      // 2. Also ensure any newly introduced inputs (like email_smtp) are saved even if not yet in data.settings
+      defaultSettingKeys.forEach(({ key, group }) => {
+        if (!handledKeys.has(key) && formState[key] !== undefined) {
+          itemsToUpdate.push({
+            key,
+            value: formState[key],
+            group,
+          });
+          handledKeys.add(key);
+        }
+      });
+
+      // 3. Fallback: catch any arbitrary keys remaining in formState
+      Object.entries(formState).forEach(([k, v]) => {
+        if (!handledKeys.has(k)) {
+          itemsToUpdate.push({
+            key: k,
+            value: v,
+            group: "general",
+          });
+        }
       });
 
       await api.request("/settings", {
