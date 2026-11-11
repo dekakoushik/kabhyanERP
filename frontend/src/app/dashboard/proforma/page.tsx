@@ -6,6 +6,7 @@ import { api, ProformaInvoice, ProformaInvoiceItem, ProformaInvoiceStats, Projec
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { formatDate, getDueDateStatus } from "@/lib/date";
 import {
   Receipt,
   Search,
@@ -530,20 +531,20 @@ function ProformaContent() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <th className="py-3.5 px-6">Proforma ID</th>
-                  <th className="py-3.5 px-6">Client / Company</th>
-                  <th className="py-3.5 px-6">Estimate Reference</th>
-                  <th className="py-3.5 px-6">Date / Due</th>
-                  <th className="py-3.5 px-6">Total Amount</th>
-                  <th className="py-3.5 px-6">Status</th>
-                  <th className="py-3.5 px-6 text-right">Actions</th>
+                  <th className="py-3.5 px-6 whitespace-nowrap min-w-[150px]">Proforma ID</th>
+                  <th className="py-3.5 px-6 min-w-[180px]">Client / Company</th>
+                  <th className="py-3.5 px-6 whitespace-nowrap min-w-[150px]">Estimate Ref</th>
+                  <th className="py-3.5 px-6 whitespace-nowrap min-w-[160px]">Date / Due</th>
+                  <th className="py-3.5 px-6 whitespace-nowrap min-w-[140px]">Total Amount</th>
+                  <th className="py-3.5 px-6 whitespace-nowrap min-w-[130px]">Status</th>
+                  <th className="py-3.5 px-6 text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
                 {invoices.map((pi) => (
                   <tr key={pi.id} className="hover:bg-slate-50/60 transition">
-                    <td className="py-4 px-6">
-                      <span className="font-mono font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded-md border border-blue-100">
+                    <td className="py-4 px-6 whitespace-nowrap">
+                      <span className="inline-block whitespace-nowrap font-mono font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100">
                         {pi.proforma_number}
                       </span>
                     </td>
@@ -551,25 +552,37 @@ function ProformaContent() {
                       <p className="font-bold text-slate-900 text-sm">{pi.client_name}</p>
                       <p className="text-slate-500 text-[11px]">{pi.client_company || "Direct"}</p>
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="py-4 px-6 whitespace-nowrap">
                       {pi.estimate ? (
-                        <span className="font-mono text-xs font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
+                        <span className="inline-block whitespace-nowrap font-mono text-xs font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
                           {pi.estimate.estimate_number}
                         </span>
                       ) : (
                         <span className="text-slate-400 italic">Direct PI</span>
                       )}
                     </td>
-                    <td className="py-4 px-6 text-slate-600">
-                      <div className="flex flex-col">
-                        <span>{formatDate(pi.invoice_date)}</span>
+                    <td className="py-4 px-6 text-slate-600 whitespace-nowrap">
+                      <div className="flex flex-col gap-1 items-start">
+                        <span className="font-medium text-slate-800">{formatDate(pi.invoice_date)}</span>
                         {pi.due_date && (
-                          <span className="text-[10px] text-slate-400">Due: {formatDate(pi.due_date)}</span>
+                          (() => {
+                            const due = getDueDateStatus(pi.due_date);
+                            return (
+                              <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border whitespace-nowrap ${
+                                pi.status === "paid"
+                                  ? "bg-slate-50 text-slate-400 border-slate-100"
+                                  : due.badgeClass
+                              }`}>
+                                <Clock className="w-2.5 h-2.5 shrink-0" />
+                                <span>{pi.status === "paid" ? `Due was ${formatDate(pi.due_date)}` : due.label}</span>
+                              </span>
+                            );
+                          })()
                         )}
                       </div>
                     </td>
-                    <td className="py-4 px-6 font-mono font-bold text-slate-900 text-sm">
-                      {pi.currency === "INR" ? "₹" : pi.currency}{" "}
+                    <td className="py-4 px-6 font-mono font-bold text-slate-900 text-sm whitespace-nowrap tabular-nums">
+                      {pi.currency === "INR" ? "₹ " : `${pi.currency} `}
                       {Number(pi.total_amount).toLocaleString(pi.currency === "INR" ? "en-IN" : undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="py-4 px-6">

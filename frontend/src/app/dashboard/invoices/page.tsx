@@ -603,21 +603,21 @@ function InvoicesContent() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <th className="py-3.5 px-6">Invoice ID</th>
-                  <th className="py-3.5 px-6">Client / Company</th>
-                  <th className="py-3.5 px-6">PI Reference</th>
-                  <th className="py-3.5 px-6">Date / Due</th>
-                  <th className="py-3.5 px-6">Total / Paid</th>
-                  <th className="py-3.5 px-6">Due Balance</th>
-                  <th className="py-3.5 px-6">Status</th>
-                  <th className="py-3.5 px-6 text-right">Actions</th>
+                  <th className="py-3.5 px-6 whitespace-nowrap min-w-[150px]">Invoice ID</th>
+                  <th className="py-3.5 px-6 min-w-[180px]">Client / Company</th>
+                  <th className="py-3.5 px-6 whitespace-nowrap min-w-[140px]">PI Reference</th>
+                  <th className="py-3.5 px-6 whitespace-nowrap min-w-[160px]">Date / Due</th>
+                  <th className="py-3.5 px-6 whitespace-nowrap min-w-[140px]">Total / Paid</th>
+                  <th className="py-3.5 px-6 whitespace-nowrap min-w-[130px]">Due Balance</th>
+                  <th className="py-3.5 px-6 whitespace-nowrap min-w-[130px]">Status</th>
+                  <th className="py-3.5 px-6 text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
                 {invoices.map((inv) => (
                   <tr key={inv.id} className="hover:bg-slate-50/60 transition">
-                    <td className="py-4 px-6">
-                      <span className="font-mono font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100">
+                    <td className="py-4 px-6 whitespace-nowrap">
+                      <span className="inline-block whitespace-nowrap font-mono font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100">
                         {inv.invoice_number}
                       </span>
                     </td>
@@ -625,26 +625,26 @@ function InvoicesContent() {
                       <p className="font-bold text-slate-900 text-sm">{inv.client_name}</p>
                       <p className="text-slate-500 text-[11px]">{inv.client_company || "Direct Client"}</p>
                       {inv.client_gstin && (
-                        <p className="text-slate-400 font-mono text-[10px]">GSTIN: {inv.client_gstin}</p>
+                        <p className="text-slate-400 font-mono text-[10px] whitespace-nowrap">GSTIN: {inv.client_gstin}</p>
                       )}
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="py-4 px-6 whitespace-nowrap">
                       {inv.proforma_invoice ? (
-                        <span className="font-mono text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                        <span className="inline-block whitespace-nowrap font-mono text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
                           {inv.proforma_invoice.proforma_number}
                         </span>
                       ) : (
                         <span className="text-slate-400 italic">Direct Invoice</span>
                       )}
                     </td>
-                    <td className="py-4 px-6 text-slate-600">
-                      <div className="flex flex-col gap-1">
+                    <td className="py-4 px-6 text-slate-600 whitespace-nowrap">
+                      <div className="flex flex-col gap-1 items-start">
                         <span className="font-medium text-slate-800">{formatDate(inv.invoice_date)}</span>
                         {inv.due_date && (
                           (() => {
                             const due = getDueDateStatus(inv.due_date);
                             return (
-                              <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border max-w-fit ${
+                              <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border whitespace-nowrap ${
                                 inv.status === "paid" 
                                   ? "bg-slate-50 text-slate-400 border-slate-100" 
                                   : due.badgeClass

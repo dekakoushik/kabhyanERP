@@ -155,9 +155,10 @@ export function getDueDateStatus(dueDateInput: string | number | Date | null | u
   }
 
   return {
-    label: `Due ${formatDate(d)}`,
+    label: `Exp: ${formatDate(d)}`,
     isOverdue: false,
     isDueSoon: false,
     badgeClass: "bg-slate-50 text-slate-600 border-slate-200",
   };
 }
+

@@ -535,20 +535,20 @@ export default function EstimatesPage() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    <th className="py-3.5 px-6">Estimate ID</th>
-                    <th className="py-3.5 px-6">Client / Company</th>
-                    <th className="py-3.5 px-6">Project Reference</th>
-                    <th className="py-3.5 px-6">Date / Validity</th>
+                    <th className="py-3.5 px-6 whitespace-nowrap min-w-[150px]">Estimate ID</th>
+                    <th className="py-3.5 px-6 min-w-[180px]">Client / Company</th>
+                    <th className="py-3.5 px-6 min-w-[180px]">Project Reference</th>
+                    <th className="py-3.5 px-6 whitespace-nowrap min-w-[160px]">Date / Validity</th>
                     <th className="py-3.5 px-6 whitespace-nowrap min-w-[140px]">Amount</th>
-                    <th className="py-3.5 px-6">Status</th>
-                    <th className="py-3.5 px-6 text-right">Actions</th>
+                    <th className="py-3.5 px-6 whitespace-nowrap min-w-[130px]">Status</th>
+                    <th className="py-3.5 px-6 text-right whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs">
                   {estimates.map((est) => (
                     <tr key={est.id} className="hover:bg-slate-50/60 transition">
-                      <td className="py-4 px-6">
-                        <span className="font-mono font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100">
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <span className="inline-block whitespace-nowrap font-mono font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100">
                           {est.estimate_number}
                         </span>
                       </td>
@@ -566,14 +566,14 @@ export default function EstimatesPage() {
                           <span className="text-slate-400 italic">Standalone</span>
                         )}
                       </td>
-                      <td className="py-4 px-6 text-slate-600">
-                        <div className="flex flex-col gap-1">
+                      <td className="py-4 px-6 text-slate-600 whitespace-nowrap">
+                        <div className="flex flex-col gap-1 items-start">
                           <span className="font-medium text-slate-800">{formatDate(est.estimate_date)}</span>
                           {est.expiry_date && (
                             (() => {
                               const validity = getDueDateStatus(est.expiry_date);
                               return (
-                                <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border max-w-fit ${
+                                <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border whitespace-nowrap ${
                                   est.status === "accepted" || est.status === "invoiced"
                                     ? "bg-slate-50 text-slate-400 border-slate-100"
                                     : validity.badgeClass
