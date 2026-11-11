@@ -1205,7 +1205,7 @@ export default function EstimatesPage() {
                     <p className="text-slate-600 font-medium">Custom Project Deliverables</p>
                   )}
                   <p className="text-slate-400 mt-2">
-                    Prepared By: <strong className="text-slate-700">{previewEstimate.creator?.name || "Corporate Sales"}</strong>
+                    Prepared By: <strong className="text-slate-700">Kabhyan Technologies</strong>
                   </p>
                 </div>
               </div>

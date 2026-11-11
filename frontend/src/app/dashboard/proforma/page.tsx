@@ -1180,7 +1180,7 @@ function ProformaContent() {
                     </p>
                   )}
                   <p className="text-slate-400 mt-2">
-                    Account Officer: <strong className="text-slate-700">{previewInvoice.creator?.name || "Finance Operations"}</strong>
+                    Prepared By: <strong className="text-slate-700">Kabhyan Technologies</strong>
                   </p>
                 </div>
               </div>
