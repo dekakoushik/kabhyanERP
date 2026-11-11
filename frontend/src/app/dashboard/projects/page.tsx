@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { api, Project, ProjectStats, User, Client } from "@/lib/api";
 import Link from "next/link";
+import { formatDate, getDueDateStatus } from "@/lib/date";
 import {
   Briefcase,
   Search,
@@ -422,13 +423,34 @@ export default function ProjectsPage() {
                         {project.manager?.name || "Unassigned"}
                       </span>
                     </div>
+                    {/* Timeline & Dates */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Timeline:</span>
+                      <span className="font-medium text-slate-700">
+                        {project.start_date ? formatDate(project.start_date) : "Immediate"}
+                      </span>
+                    </div>
+
                     {project.deadline && (
                       <div className="flex items-center justify-between">
                         <span className="text-slate-400 flex items-center gap-1">
                           <Calendar className="w-3 h-3 text-slate-400" />
                           Deadline:
                         </span>
-                        <span className="font-medium text-slate-700">{project.deadline}</span>
+                        {(() => {
+                          const deadlineStatus = getDueDateStatus(project.deadline);
+                          return (
+                            <span
+                              className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md border font-medium ${
+                                project.status === "completed"
+                                  ? "bg-slate-50 text-slate-500 border-slate-200"
+                                  : deadlineStatus.badgeClass
+                              }`}
+                            >
+                              <span>{project.status === "completed" ? `Finished (${formatDate(project.deadline)})` : deadlineStatus.label}</span>
+                            </span>
+                          );
+                        })()}
                       </div>
                     )}
                   </div>
