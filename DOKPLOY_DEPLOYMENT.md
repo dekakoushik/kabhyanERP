@@ -1,6 +1,10 @@
-# Deploying Kabhyan ERP on Dokploy
+# Deploying Kabhyan ERP on Dokploy (Separate Applications)
 
-This guide outlines how to deploy the containerized **Kabhyan ERP** application on **Dokploy** (or any Docker / Coolify / CapRover PaaS infrastructure).
+This step-by-step guide explains how to deploy **Kabhyan ERP** as separate, isolated services inside your Dokploy project:
+
+1. **Database Service**: PostgreSQL (Already created in your Dokploy project)
+2. **Backend API Service**: Laravel 13 (PHP 8.3-FPM + Nginx Alpine)
+3. **Frontend Web Service**: Next.js 16 Standalone (Node.js 20 Alpine)
 
 ---
 
@@ -8,7 +12,7 @@ This guide outlines how to deploy the containerized **Kabhyan ERP** application 
 
 ```
                       Internet / HTTPS
-                            │
+                             │
                       ┌─────▼─────┐
                       │  Dokploy  │
                       │  Traefik  │
@@ -24,111 +28,117 @@ This guide outlines how to deploy the containerized **Kabhyan ERP** application 
                │                                │
                └───────────► Network ◄──────────┘
                                  │
-                     ┌───────────┴───────────┐
-                     ▼                       ▼
-              ┌──────────────┐        ┌──────────────┐
-              │   MariaDB    │        │  Redis Node  │
-              │ (Port 3306)  │        │ (Port 6379)  │
-              └──────────────┘        └──────────────┘
+                                 ▼
+                    ┌─────────────────────────┐
+                    │ Dokploy Managed Postgres │
+                    │       (Port 5432)       │
+                    └─────────────────────────┘
 ```
 
 ---
 
-## Deployment Option A: Dokploy Compose (Recommended)
+## Service 1: PostgreSQL Database (Already Created)
 
-1. **Create a New Project** in Dokploy (e.g. `Kabhyan ERP`).
-2. Add a new **Compose Service**.
-3. Point your Dokploy repository configuration to your Git repository:
-   - **Repository**: Your GitHub / GitLab / Git repository URL
+Use the internal credentials from your Dokploy PostgreSQL service:
+- **Internal Host**: `kabhyanerp-kabhyanerpdb-ccxmb7`
+- **Internal Port**: `5432`
+- **Database Name**: `kabhyan_erp`
+- **User**: `kabhyan_erp_user`
+- **Password**: `8mUrgpG018UVlmnS8IX4`
+
+---
+
+## Service 2: Backend Application
+
+### 1. Create the Application in Dokploy
+1. In your Dokploy Project, click **Create Application** (or **Add Service** ➔ **Application**).
+2. Name it: `kabhyan-backend`.
+3. In the **Source** section:
+   - Select **GitHub** (or **Git**).
+   - **Repository**: `https://github.com/dekakoushik/kabhyanERP.git`
    - **Branch**: `main`
-   - **Compose Path**: `docker-compose.yml`
-4. In the Dokploy **Environment Variables** tab, copy the contents of `.env.example` and update with your production secrets:
-   ```env
-   APP_NAME=KabhyanERP
-   APP_ENV=production
-   APP_KEY=base64:YOUR_GENERATED_APP_KEY_HERE
-   APP_DEBUG=false
+   - **Build Type**: `Dockerfile`
+   - **Context Path**: `/backend`
+   - **Dockerfile Path**: `Dockerfile`
 
-   # Domain URLs
-   BACKEND_URL=https://api-erp.yourcompany.com
-   NEXT_PUBLIC_API_URL=https://api-erp.yourcompany.com/api/v1
-   FRONTEND_URL=https://erp.yourcompany.com
+### 2. Configure Environment Variables
+Navigate to the **Environment** tab and paste:
 
-   # Database Credentials
-   DB_DATABASE=kabhyan_erp
-   DB_USERNAME=kabhyan_user
-   DB_PASSWORD=YourStrongDatabasePassword123
-   DB_ROOT_PASSWORD=YourStrongRootPassword123
+```env
+APP_NAME=KabhyanERP
+APP_ENV=production
+APP_KEY=base64:XQ0XmYmGZlE8wB2c3d4E5f6G7h8I9j0K1l2M3n4O5p8=
+APP_DEBUG=false
+APP_URL=https://api-erp.yourcompany.com
 
-   # Startup routine
-   RUN_MIGRATIONS=true
-   RUN_SEEDERS=false
-   ```
-5. In Dokploy, assign your custom domains:
-   - Domain `erp.yourcompany.com` ➔ Container `frontend` (Port `3000`)
-   - Domain `api-erp.yourcompany.com` ➔ Container `backend` (Port `80`)
-6. Click **Deploy**. Dokploy will automatically build both Dockerfiles, spin up MariaDB and Redis, run migrations, and provision SSL certificates via Traefik.
+# Database Connection (Dokploy PostgreSQL)
+DB_CONNECTION=pgsql
+DB_HOST=kabhyanerp-kabhyanerpdb-ccxmb7
+DB_PORT=5432
+DB_DATABASE=kabhyan_erp
+DB_USERNAME=kabhyan_erp_user
+DB_PASSWORD=8mUrgpG018UVlmnS8IX4
 
----
+# Application Cache & Session Driver (Use file/database if Redis not added)
+CACHE_STORE=file
+SESSION_DRIVER=file
+QUEUE_CONNECTION=sync
 
-## Deployment Option B: Separate Dokploy Application Services
-
-If you prefer managing the Frontend and Backend as independent services in Dokploy:
-
-### 1. Database & Redis
-- In Dokploy, click **Create Database**:
-  - Select **MariaDB** (Database: `kabhyan_erp`).
-  - Select **Redis**.
-
-### 2. Backend Service
-- Click **Create Application** ➔ **Docker**.
-- Set context path to `/backend` and Dockerfile to `Dockerfile`.
-- Set Environment Variables:
-  ```env
-  APP_NAME=KabhyanERP
-  APP_ENV=production
-  APP_KEY=base64:...
-  DB_CONNECTION=mysql
-  DB_HOST=mariadb-internal-dokploy-host
-  DB_PORT=3306
-  DB_DATABASE=kabhyan_erp
-  DB_USERNAME=...
-  DB_PASSWORD=...
-  REDIS_HOST=redis-internal-dokploy-host
-  REDIS_PORT=6379
-  CACHE_STORE=redis
-  SESSION_DRIVER=redis
-  RUN_MIGRATIONS=true
-  ```
-- Expose Port: `80`.
-
-### 3. Frontend Service
-- Click **Create Application** ➔ **Docker**.
-- Set context path to `/frontend` and Dockerfile to `Dockerfile`.
-- Build Argument:
-  ```env
-  NEXT_PUBLIC_API_URL=https://api-erp.yourcompany.com/api/v1
-  ```
-- Expose Port: `3000`.
-
----
-
-## Local Testing with Docker
-
-To test the entire Dockerized stack on your machine:
-
-```powershell
-# Start all 4 containers in the background
-docker compose up -d --build
-
-# View container logs
-docker compose logs -f
-
-# Check container health status
-docker compose ps
+# Automatic Migrations & SuperAdmin Seeding
+RUN_MIGRATIONS=true
+RUN_SEEDERS=true
 ```
 
-- Frontend: `http://localhost:3000`
-- Backend API: `http://localhost:8000/api/v1`
-- Seed SuperAdmin: `superadmin@kabhyan.com` / `Kabhyan@2026`
+> **Note**: Replace `APP_URL` with your actual backend domain.
 
+### 3. Domains & Port
+- Go to the **Domains** tab in `kabhyan-backend`.
+- **Domain**: `api-erp.yourcompany.com` (pointing to your VPS IP via DNS A Record).
+- **Container Port**: `80`.
+- Enable **HTTPS / SSL**.
+
+### 4. Deploy
+Click **Deploy**. Dokploy will pull the repo, build the image from `/backend/Dockerfile`, run PostgreSQL migrations, seed the SuperAdmin, and launch the Nginx + PHP-FPM webserver.
+
+---
+
+## Service 3: Frontend Application
+
+### 1. Create the Application in Dokploy
+1. In your Dokploy Project, click **Create Application**.
+2. Name it: `kabhyan-frontend`.
+3. In the **Source** section:
+   - **Repository**: `https://github.com/dekakoushik/kabhyanERP.git`
+   - **Branch**: `main`
+   - **Build Type**: `Dockerfile`
+   - **Context Path**: `/frontend`
+   - **Dockerfile Path**: `Dockerfile`
+
+### 2. Configure Build Arguments & Environment
+1. In the **Build Args** tab (or **Environment** tab):
+   ```env
+   NEXT_PUBLIC_API_URL=https://api-erp.yourcompany.com/api/v1
+   ```
+2. In the **Environment** tab:
+   ```env
+   NODE_ENV=production
+   PORT=3000
+   NEXT_PUBLIC_API_URL=https://api-erp.yourcompany.com/api/v1
+   ```
+
+### 3. Domains & Port
+- Go to the **Domains** tab in `kabhyan-frontend`.
+- **Domain**: `erp.yourcompany.com` (pointing to your VPS IP via DNS A Record).
+- **Container Port**: `3000`.
+- Enable **HTTPS / SSL**.
+
+### 4. Deploy
+Click **Deploy**. Dokploy will run the Next.js production build and start the standalone Node runner.
+
+---
+
+## Default Access Credentials
+Once both services are running:
+- **Portal URL**: `https://erp.yourcompany.com`
+- **Default SuperAdmin Email**: `superadmin@kabhyan.com`
+- **Default SuperAdmin Password**: `Kabhyan@2026`

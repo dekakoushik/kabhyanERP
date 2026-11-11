@@ -1,20 +1,19 @@
 services:
-  # MariaDB Database Service
-  mariadb:
-    image: mariadb:11.4
-    container_name: kabhyan_mariadb
+  # PostgreSQL 16 Database Service
+  postgres:
+    image: postgres:16-alpine
+    container_name: kabhyan_postgres
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
-      MYSQL_DATABASE: ${DB_DATABASE:-kabhyan_erp}
-      MYSQL_USER: ${DB_USERNAME:-kabhyan_user}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-Kabhyan@2026}
+      POSTGRES_DB: ${DB_DATABASE:-kabhyan_erp}
+      POSTGRES_USER: ${DB_USERNAME:-kabhyan_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-Kabhyan@2026}
     volumes:
-      - mariadb_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - kabhyan_network
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-kabhyan_user} -d ${DB_DATABASE:-kabhyan_erp}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -43,7 +42,7 @@ services:
     container_name: kabhyan_backend
     restart: unless-stopped
     depends_on:
-      mariadb:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -53,12 +52,12 @@ services:
       APP_KEY: "${APP_KEY:-base64:XQ0XmYmGZlE8wB2c3d4E5f6G7h8I9j0K1l2M3n4O5p8=}"
       APP_DEBUG: "${APP_DEBUG:-false}"
       APP_URL: "${BACKEND_URL:-http://localhost:8000}"
-      DB_CONNECTION: mysql
-      DB_HOST: mariadb
-      DB_PORT: 3306
-      DB_DATABASE: ${DB_DATABASE:-kabhyan_erp}
-      DB_USERNAME: ${DB_USERNAME:-kabhyan_user}
-      DB_PASSWORD: ${DB_PASSWORD:-Kabhyan@2026}
+      DB_CONNECTION: "${DB_CONNECTION:-pgsql}"
+      DB_HOST: "${DB_HOST:-postgres}"
+      DB_PORT: "${DB_PORT:-5432}"
+      DB_DATABASE: "${DB_DATABASE:-kabhyan_erp}"
+      DB_USERNAME: "${DB_USERNAME:-kabhyan_erp_user}"
+      DB_PASSWORD: "${DB_PASSWORD:-Kabhyan@2026}"
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: "${REDIS_PASSWORD:-}"
@@ -99,7 +98,7 @@ services:
       - dokploy-network
 
 volumes:
-  mariadb_data:
+  postgres_data:
     driver: local
   redis_data:
     driver: local

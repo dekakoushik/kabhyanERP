@@ -21,6 +21,8 @@ RUN apk add --no-cache \
     libzip-dev \
     zip \
     unzip \
+    postgresql-dev \
+    postgresql-client \
     mariadb-client \
     oniguruma-dev \
     libxml2-dev \
@@ -28,7 +30,7 @@ RUN apk add --no-cache \
     $PHPIZE_DEPS \
     && pecl install redis \
     && docker-php-ext-enable redis \
-    && docker-php-ext-install pdo_mysql bcmath mbstring pcntl xml opcache gd \
+    && docker-php-ext-install pdo_pgsql pdo_mysql bcmath mbstring pcntl xml opcache gd \
     && apk del $PHPIZE_DEPS
 
 # Configure PHP for production
