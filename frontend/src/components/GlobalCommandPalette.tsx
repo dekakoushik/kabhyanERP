@@ -28,6 +28,9 @@ import {
   Plus,
   ExternalLink,
   Search,
+  Building2,
+  Mail,
+  Cpu,
 } from "lucide-react";
 
 interface GlobalCommandPaletteProps {
@@ -186,7 +189,32 @@ export default function GlobalCommandPalette({
 
           <CommandItem onSelect={() => runCommand(() => router.push("/dashboard/settings"))}>
             <Settings className="w-4 h-4 mr-2.5 text-slate-400" />
-            <span>System Infrastructure & Settings</span>
+            <span>Settings: Overview Control Centre</span>
+          </CommandItem>
+
+          <CommandItem onSelect={() => runCommand(() => router.push("/dashboard/settings/gst"))}>
+            <Receipt className="w-4 h-4 mr-2.5 text-purple-500" />
+            <span>Settings: Indian GST & Statutory Taxation</span>
+          </CommandItem>
+
+          <CommandItem onSelect={() => runCommand(() => router.push("/dashboard/settings/company"))}>
+            <Building className="w-4 h-4 mr-2.5 text-blue-500" />
+            <span>Settings: Corporate Entity Profile</span>
+          </CommandItem>
+
+          <CommandItem onSelect={() => runCommand(() => router.push("/dashboard/settings/banking"))}>
+            <Building2 className="w-4 h-4 mr-2.5 text-emerald-500" />
+            <span>Settings: Bank & Wire Settlement</span>
+          </CommandItem>
+
+          <CommandItem onSelect={() => runCommand(() => router.push("/dashboard/settings/email"))}>
+            <Mail className="w-4 h-4 mr-2.5 text-cyan-500" />
+            <span>Settings: SMTP Server & Live Test Mailer</span>
+          </CommandItem>
+
+          <CommandItem onSelect={() => runCommand(() => router.push("/dashboard/settings/system"))}>
+            <Cpu className="w-4 h-4 mr-2.5 text-emerald-500" />
+            <span>Settings: Redis & Server Infrastructure Health</span>
           </CommandItem>
         </CommandGroup>
 

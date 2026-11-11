@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { formatDate, getDueDateStatus, formatRelativeTime } from "@/lib/date";
+import { calculateGSTSplit, numberToIndianWords, getStateName, extractStateCode } from "@/lib/gst";
 import { toast } from "sonner";
 import {
   FileCheck,
@@ -133,6 +134,17 @@ function InvoiceDetailContent({ invoiceParam }: { invoiceParam: string }) {
 
   const dueDateInfo = getDueDateStatus(invoice.due_date);
 
+  const gstSplit = calculateGSTSplit({
+    subtotal: Number(invoice.subtotal) || 0,
+    taxRate: Number(invoice.tax_rate) || 18,
+    supplierGstin: "18AAGCK2934D1Z2",
+    recipientGstin: invoice.client_gstin,
+  });
+
+  const clientStateCode = extractStateCode(invoice.client_gstin);
+  const clientStateName = getStateName(invoice.client_gstin);
+  const amountInWords = numberToIndianWords(Number(invoice.total_amount) || 0);
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Top Breadcrumb & Action Bar */}
@@ -239,8 +251,15 @@ function InvoiceDetailContent({ invoiceParam }: { invoiceParam: string }) {
               {invoice.client_company && (
                 <p className="font-medium text-slate-700">{invoice.client_company}</p>
               )}
-              {invoice.client_gstin && (
-                <p className="text-blue-600 font-mono mt-0.5">GSTIN: {invoice.client_gstin}</p>
+              {invoice.client_gstin ? (
+                <div className="mt-1 space-y-0.5">
+                  <p className="text-blue-600 font-mono font-bold">GSTIN: {invoice.client_gstin}</p>
+                  <p className="text-slate-500 font-mono text-[10px]">
+                    Place of Supply (POS): {clientStateCode ? `${clientStateCode} - ${clientStateName}` : "Within State"}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-slate-400 font-mono text-[10px] mt-0.5">Unregistered Consumer (B2C)</p>
               )}
               <div className="text-slate-500 mt-2 space-y-0.5">
                 {invoice.client_address && <p>{invoice.client_address}</p>}
@@ -316,6 +335,12 @@ function InvoiceDetailContent({ invoiceParam }: { invoiceParam: string }) {
                 <p>IFSC: HDFC0001234</p>
                 <p>Branch: Guwahati Central</p>
               </div>
+
+              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-[10px] space-y-0.5">
+                <p className="font-bold text-slate-700">Statutory GST Declarations:</p>
+                <p>Tax Payable on Reverse Charge (RCM): <strong>NO</strong></p>
+                <p>Supply Nature: <strong>{gstSplit.isInterState ? "Inter-State Supply (IGST)" : "Intra-State Supply (CGST+SGST)"}</strong></p>
+              </div>
             </div>
 
             <div className="sm:w-72 space-y-2 text-xs">
@@ -325,12 +350,32 @@ function InvoiceDetailContent({ invoiceParam }: { invoiceParam: string }) {
                   ₹{Number(invoice.subtotal).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              <div className="flex justify-between text-slate-600">
-                <span>GST Tax:</span>
-                <span className="font-mono font-semibold">
-                  ₹{Number(invoice.tax_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                </span>
-              </div>
+
+              {/* Statutory GST Dissection */}
+              {gstSplit.isInterState ? (
+                <div className="flex justify-between text-slate-600">
+                  <span>IGST ({gstSplit.igstRate}%):</span>
+                  <span className="font-mono font-semibold">
+                    ₹{gstSplit.igstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between text-slate-600">
+                    <span>CGST ({gstSplit.cgstRate}%):</span>
+                    <span className="font-mono font-semibold">
+                      ₹{gstSplit.cgstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>SGST ({gstSplit.sgstRate}%):</span>
+                    <span className="font-mono font-semibold">
+                      ₹{gstSplit.sgstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </>
+              )}
+
               <div className="flex justify-between text-base font-bold text-slate-900 border-t border-slate-200 pt-2">
                 <span>Grand Total:</span>
                 <span className="font-mono text-blue-600">
@@ -348,6 +393,12 @@ function InvoiceDetailContent({ invoiceParam }: { invoiceParam: string }) {
                 <span className="font-mono text-amber-700">
                   ₹{Number(invoice.due_amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </span>
+              </div>
+
+              {/* Amount in Words */}
+              <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-500">
+                <span className="font-bold text-slate-700 block mb-0.5">Invoice Amount in Words:</span>
+                <span className="italic font-medium text-slate-800">{amountInWords}</span>
               </div>
             </div>
           </div>

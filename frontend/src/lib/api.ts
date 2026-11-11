@@ -456,6 +456,7 @@ export interface EnvironmentHealth {
   laravel_version: string;
   database_status: string;
   redis_status: string;
+  redis_ping?: string;
   cache_driver: string;
   server_time: string;
   timezone: string;
