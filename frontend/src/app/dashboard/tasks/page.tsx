@@ -11,6 +11,7 @@ import {
   DropResult,
 } from "@hello-pangea/dnd";
 import { toast } from "sonner";
+import { formatDate, getDueDateStatus } from "@/lib/date";
 import {
   CheckSquare,
   Search,
@@ -516,13 +517,23 @@ function TasksContent() {
 
                                   {/* Footer: Due Date & Assignee */}
                                   <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                                    <span className="flex items-center gap-1">
-                                      <Clock className="w-3 h-3 text-slate-400" />
-                                      {t.due_date ? t.due_date : "No date"}
-                                    </span>
+                                    {(() => {
+                                      const dueStatus = getDueDateStatus(t.due_date);
+                                      return (
+                                        <span
+                                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] ${dueStatus.badgeClass}`}
+                                        >
+                                          <Clock className="w-3 h-3 shrink-0" />
+                                          <span>{dueStatus.label}</span>
+                                        </span>
+                                      );
+                                    })()}
 
                                     <div className="flex items-center gap-1.5">
-                                      <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-bold flex items-center justify-center">
+                                      <div
+                                        title={t.assignee?.name || "Unassigned"}
+                                        className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-bold flex items-center justify-center"
+                                      >
                                         {t.assignee?.name?.slice(0, 2).toUpperCase() || "NA"}
                                       </div>
                                     </div>
@@ -623,7 +634,19 @@ function TasksContent() {
                       {t.priority}
                     </span>
                   </td>
-                  <td className="py-3.5 px-6 text-slate-600">{t.due_date || "—"}</td>
+                  <td className="py-3.5 px-6">
+                    {(() => {
+                      const dueStatus = getDueDateStatus(t.due_date);
+                      return (
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] ${dueStatus.badgeClass}`}
+                        >
+                          <Clock className="w-3 h-3 shrink-0" />
+                          <span>{dueStatus.label}</span>
+                        </span>
+                      );
+                    })()}
+                  </td>
                   <td className="py-3.5 px-6 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button

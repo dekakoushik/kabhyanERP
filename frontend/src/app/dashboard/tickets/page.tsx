@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition, Suspense } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { api, Ticket, TicketStats, Client, Project, User } from "@/lib/api";
 import Link from "next/link";
+import { formatDate, formatDateTime, formatRelativeTime } from "@/lib/date";
 import {
   LifeBuoy,
   Search,
@@ -438,8 +439,8 @@ function TicketsContent() {
                         >
                           {t.type.replace("_", " ")}
                         </span>
-                        <span className="text-[10px] text-slate-400 font-mono">
-                          {new Date(t.created_at).toLocaleDateString()}
+                        <span className="text-[10px] text-slate-400">
+                          {formatRelativeTime(t.created_at)}
                         </span>
                       </div>
                     </td>
@@ -542,7 +543,7 @@ function TicketsContent() {
                   {selectedTicket.description}
                 </p>
                 <p className="text-[10px] text-slate-400 pt-1 border-t border-slate-200">
-                  Raised by client on {new Date(selectedTicket.created_at).toLocaleString()}
+                  Raised by client • {formatDateTime(selectedTicket.created_at)} ({formatRelativeTime(selectedTicket.created_at)})
                 </p>
               </div>
 
@@ -581,8 +582,8 @@ function TicketsContent() {
                             </>
                           )}
                         </span>
-                        <span className="text-[10px] text-slate-400 font-mono">
-                          {new Date(reply.created_at).toLocaleString()}
+                        <span className="text-[10px] text-slate-400">
+                          {formatDateTime(reply.created_at)}
                         </span>
                       </div>
                       <p className="text-slate-700 whitespace-pre-wrap">{reply.message}</p>

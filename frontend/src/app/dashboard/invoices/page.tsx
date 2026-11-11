@@ -6,6 +6,7 @@ import { api, Invoice, InvoiceItem, InvoicePayment, InvoiceStats, Project } from
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { formatDate, getDueDateStatus } from "@/lib/date";
 import {
   FileCheck,
   Search,
@@ -637,10 +638,22 @@ function InvoicesContent() {
                       )}
                     </td>
                     <td className="py-4 px-6 text-slate-600">
-                      <div className="flex flex-col">
-                        <span>{formatDate(inv.invoice_date)}</span>
+                      <div className="flex flex-col gap-1">
+                        <span className="font-medium text-slate-800">{formatDate(inv.invoice_date)}</span>
                         {inv.due_date && (
-                          <span className="text-[10px] text-slate-400">Due: {formatDate(inv.due_date)}</span>
+                          (() => {
+                            const due = getDueDateStatus(inv.due_date);
+                            return (
+                              <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border max-w-fit ${
+                                inv.status === "paid" 
+                                  ? "bg-slate-50 text-slate-400 border-slate-100" 
+                                  : due.badgeClass
+                              }`}>
+                                <Clock className="w-2.5 h-2.5 shrink-0" />
+                                <span>{inv.status === "paid" ? `Due was ${formatDate(inv.due_date)}` : due.label}</span>
+                              </span>
+                            );
+                          })()
                         )}
                       </div>
                     </td>
