@@ -25,17 +25,21 @@ import {
   Loader2,
   Trash2,
   Check,
+  Send,
 } from "lucide-react";
 
 function SettingsContent() {
   const [data, setData] = useState<SettingsResponse | null>(null);
   const [formState, setFormState] = useState<Record<string, string>>({});
-  const [activeGroup, setActiveGroup] = useState<"company" | "tax_compliance" | "banking" | "localization" | "security_policy" | "system_health">("company");
+  const [activeGroup, setActiveGroup] = useState<"company" | "tax_compliance" | "banking" | "localization" | "security_policy" | "email_smtp" | "system_health">("company");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [flushingCache, setFlushingCache] = useState(false);
   const [cacheMessage, setCacheMessage] = useState<string | null>(null);
+  const [testEmailAddress, setTestEmailAddress] = useState("");
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
+  const [testEmailResult, setTestEmailResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const fetchSettings = async () => {
     try {
@@ -112,6 +116,31 @@ function SettingsContent() {
       if (err instanceof Error) alert(err.message);
     } finally {
       setFlushingCache(false);
+    }
+  };
+
+  const handleSendTestEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!testEmailAddress) return;
+
+    try {
+      setSendingTestEmail(true);
+      setTestEmailResult(null);
+      const res = await api.request("/settings/test-email", {
+        method: "POST",
+        body: JSON.stringify({ email: testEmailAddress }),
+      });
+      setTestEmailResult({
+        success: true,
+        message: res.message || "Test email dispatched successfully!",
+      });
+    } catch (err: unknown) {
+      setTestEmailResult({
+        success: false,
+        message: err instanceof Error ? err.message : "Failed to deliver test email.",
+      });
+    } finally {
+      setSendingTestEmail(false);
     }
   };
 
@@ -244,6 +273,18 @@ function SettingsContent() {
           >
             <KeyRound className="w-4 h-4" />
             <span>Security & Portal Policies</span>
+          </button>
+
+          <button
+            onClick={() => setActiveGroup("email_smtp")}
+            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition text-left cursor-pointer ${
+              activeGroup === "email_smtp"
+                ? "bg-blue-50 text-blue-700"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            <Mail className="w-4 h-4" />
+            <span>SMTP & Email Config</span>
           </button>
 
           <div className="pt-2 border-t border-slate-100">
@@ -602,6 +643,169 @@ function SettingsContent() {
                       className="w-48 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-900 focus:bg-white focus:outline-none"
                     />
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tab: SMTP & Email Configuration */}
+            {activeGroup === "email_smtp" && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">SMTP Server & Mail Pipeline Configuration</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Configure your corporate SMTP credentials for automated invoicing, client ticket alerts, and system notices.
+                  </p>
+                </div>
+
+                <div className="space-y-4 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1.5">Mail Protocol / Driver</label>
+                      <select
+                        value={formState["mail_mailer"] || "smtp"}
+                        onChange={(e) => handleInputChange("mail_mailer", e.target.value)}
+                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none cursor-pointer"
+                      >
+                        <option value="smtp">SMTP (Recommended)</option>
+                        <option value="sendmail">Sendmail</option>
+                        <option value="log">Log (Local development testing)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1.5">SMTP Host Server</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. smtp.gmail.com, mail.yourdomain.com"
+                        value={formState["mail_host"] || ""}
+                        onChange={(e) => handleInputChange("mail_host", e.target.value)}
+                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-900 focus:bg-white focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1.5">SMTP Port</label>
+                      <input
+                        type="number"
+                        placeholder="587, 465, or 25"
+                        value={formState["mail_port"] || "587"}
+                        onChange={(e) => handleInputChange("mail_port", e.target.value)}
+                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-900 focus:bg-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1.5">SMTP Username / Email</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. contact@kabhyan.com"
+                        value={formState["mail_username"] || ""}
+                        onChange={(e) => handleInputChange("mail_username", e.target.value)}
+                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1.5">SMTP Password / App Key</label>
+                      <input
+                        type="password"
+                        placeholder="••••••••••••••••"
+                        value={formState["mail_password"] || ""}
+                        onChange={(e) => handleInputChange("mail_password", e.target.value)}
+                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-900 focus:bg-white focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1.5">Encryption Protocol</label>
+                      <select
+                        value={formState["mail_encryption"] || "tls"}
+                        onChange={(e) => handleInputChange("mail_encryption", e.target.value)}
+                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none cursor-pointer"
+                      >
+                        <option value="tls">TLS (Port 587 - Standard)</option>
+                        <option value="ssl">SSL (Port 465)</option>
+                        <option value="null">None (Plain / Port 25)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1.5">Default "From" Email Address</label>
+                      <input
+                        type="email"
+                        placeholder="e.g. no-reply@kabhyan.com"
+                        value={formState["mail_from_address"] || ""}
+                        onChange={(e) => handleInputChange("mail_from_address", e.target.value)}
+                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1.5">Default "From" Display Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Kabhyan Technologies ERP"
+                        value={formState["mail_from_name"] || ""}
+                        onChange={(e) => handleInputChange("mail_from_name", e.target.value)}
+                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Test Email Verification Box */}
+                <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/50 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Send className="w-4 h-4 text-blue-600" />
+                    <h4 className="text-xs font-bold text-blue-900">Send Test Email Verification</h4>
+                  </div>
+                  <p className="text-[11px] text-blue-700">
+                    Verify that your SMTP host credentials, authentication, and port reachability are operating without error.
+                  </p>
+
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+                    <input
+                      type="email"
+                      placeholder="Enter recipient email (e.g. yourname@domain.com)"
+                      value={testEmailAddress}
+                      onChange={(e) => setTestEmailAddress(e.target.value)}
+                      className="flex-1 px-3.5 py-2 text-xs bg-white border border-blue-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSendTestEmail}
+                      disabled={sendingTestEmail || !testEmailAddress}
+                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-2xs transition disabled:opacity-50 cursor-pointer"
+                    >
+                      {sendingTestEmail ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Send className="w-3.5 h-3.5" />
+                      )}
+                      <span>Send Test Email</span>
+                    </button>
+                  </div>
+
+                  {testEmailResult && (
+                    <div
+                      className={`p-3 rounded-xl text-xs font-medium border flex items-start gap-2 ${
+                        testEmailResult.success
+                          ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                          : "bg-red-50 border-red-200 text-red-800"
+                      }`}
+                    >
+                      {testEmailResult.success ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                      )}
+                      <span>{testEmailResult.message}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

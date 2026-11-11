@@ -95,5 +95,6 @@ Route::prefix('v1')->group(function () {
         Route::get('settings', [SettingController::class, 'index']);
         Route::post('settings', [SettingController::class, 'update']);
         Route::post('settings/flush-cache', [SettingController::class, 'flushCache']);
+        Route::post('settings/test-email', [SettingController::class, 'testEmail']);
     });
 });

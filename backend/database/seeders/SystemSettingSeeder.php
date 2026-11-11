@@ -180,6 +180,64 @@ class SystemSettingSeeder extends Seeder
                 'type' => 'number',
                 'description' => 'Redis Sanctum session lifetime before re-authentication',
             ],
+
+            // SMTP & Email Configuration
+            [
+                'key' => 'mail_mailer',
+                'value' => 'smtp',
+                'group' => 'email_smtp',
+                'type' => 'string',
+                'description' => 'Mail protocol / transport driver (e.g. smtp, sendmail, log)',
+            ],
+            [
+                'key' => 'mail_host',
+                'value' => 'smtp.gmail.com',
+                'group' => 'email_smtp',
+                'type' => 'string',
+                'description' => 'SMTP server hostname (e.g. smtp.gmail.com, smtp.office365.com, email-smtp.us-east-1.amazonaws.com)',
+            ],
+            [
+                'key' => 'mail_port',
+                'value' => '587',
+                'group' => 'email_smtp',
+                'type' => 'number',
+                'description' => 'SMTP port (587 for TLS, 465 for SSL, or 25)',
+            ],
+            [
+                'key' => 'mail_username',
+                'value' => 'contact@kabhyan.com',
+                'group' => 'email_smtp',
+                'type' => 'string',
+                'description' => 'SMTP account username or sender email',
+            ],
+            [
+                'key' => 'mail_password',
+                'value' => '',
+                'group' => 'email_smtp',
+                'type' => 'password',
+                'description' => 'SMTP account password or app-specific password',
+            ],
+            [
+                'key' => 'mail_encryption',
+                'value' => 'tls',
+                'group' => 'email_smtp',
+                'type' => 'string',
+                'description' => 'Transport layer security protocol: tls, ssl, or null',
+            ],
+            [
+                'key' => 'mail_from_address',
+                'value' => 'no-reply@kabhyan.com',
+                'group' => 'email_smtp',
+                'type' => 'string',
+                'description' => 'Default sender email address shown to recipients',
+            ],
+            [
+                'key' => 'mail_from_name',
+                'value' => 'Kabhyan Technologies ERP',
+                'group' => 'email_smtp',
+                'type' => 'string',
+                'description' => 'Default sender display name',
+            ],
         ];
 
         foreach ($settings as $setting) {
