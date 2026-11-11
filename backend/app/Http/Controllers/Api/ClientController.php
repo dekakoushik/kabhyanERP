@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Client;
+use App\Models\SystemNotification;
 use App\Models\User;
+use App\Services\MailNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -108,6 +110,22 @@ class ClientController extends Controller
 
         $client->load(['user', 'projects']);
 
+        if (!empty($validated['create_portal_account']) && isset($password)) {
+            try {
+                MailNotificationService::sendClientWelcome($client, $password);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to send client welcome email: " . $e->getMessage());
+            }
+        } else {
+            SystemNotification::createNotification(
+                null,
+                'client',
+                'New Client Added',
+                "Client {$client->name} ({$client->company_name}) has been registered.",
+                '/dashboard/clients'
+            );
+        }
+
         return response()->json([
             'message' => 'Client created successfully.',
             'client' => $client,
@@ -180,6 +198,28 @@ class ClientController extends Controller
         }
 
         $client->load(['user', 'projects']);
+
+        if (!empty($validated['reset_portal_password'])) {
+            try {
+                $baseUrl = MailNotificationService::getBaseUrl();
+                $portalUrl = "{$baseUrl}/login";
+                $html = '
+                    <h2 style="margin: 0 0 12px; font-size: 18px; color: #0f172a; font-weight: 700;">Hello ' . htmlspecialchars($client->name) . ',</h2>
+                    <p style="font-size: 14px; line-height: 1.6; color: #475569; margin: 0 0 20px;">
+                        The password for your Kabhyan Client Portal account (<strong>' . htmlspecialchars($client->company_name) . '</strong>) has been reset by the system administration team.
+                    </p>
+                    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin: 20px 0;">
+                        <table width="100%" cellpadding="6" cellspacing="0" border="0" style="font-size: 13px; color: #334155;">
+                            <tr><td width="130" style="font-weight: 600; color: #64748b;">Login Email:</td><td><strong>' . htmlspecialchars($client->email) . '</strong></td></tr>
+                            <tr><td style="font-weight: 600; color: #64748b;">New Password:</td><td><span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-family: monospace; font-weight: 700;">' . htmlspecialchars($validated['reset_portal_password']) . '</span></td></tr>
+                        </table>
+                    </div>
+                ';
+                MailNotificationService::send($client->email, "Kabhyan Client Portal - Password Updated", $html, $client->name, $portalUrl, "Access Client Portal");
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to send client password update email: " . $e->getMessage());
+            }
+        }
 
         return response()->json([
             'message' => 'Client updated successfully.',

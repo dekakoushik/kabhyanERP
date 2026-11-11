@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\Project;
+use App\Models\SystemNotification;
 use App\Models\Ticket;
 use App\Models\TicketReply;
+use App\Services\MailNotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class TicketController extends Controller
 {
@@ -98,6 +101,12 @@ class TicketController extends Controller
 
         $ticket->load(['client', 'project', 'assignee']);
 
+        try {
+            MailNotificationService::sendTicketCreated($ticket, 'staff');
+        } catch (\Throwable $e) {
+            Log::error("Failed to send ticket creation email: " . $e->getMessage());
+        }
+
         return response()->json([
             'message' => 'Ticket created successfully.',
             'ticket' => $ticket,
@@ -136,8 +145,32 @@ class TicketController extends Controller
         if (array_key_exists('assigned_to', $validated)) $updates['assigned_to'] = $validated['assigned_to'];
         if (array_key_exists('project_id', $validated)) $updates['project_id'] = $validated['project_id'];
 
+        $oldStatus = $ticket->status;
         $ticket->update($updates);
         $ticket->load(['client', 'project', 'assignee', 'replies.staff', 'replies.client']);
+
+        if (isset($validated['status']) && $oldStatus !== $validated['status']) {
+            try {
+                $baseUrl = MailNotificationService::getBaseUrl();
+                $client = $ticket->client;
+                if ($client && $client->email) {
+                    $statusLabel = ucfirst(str_replace('_', ' ', $validated['status']));
+                    $subject = "[Ticket #{$ticket->ticket_number}] Status Updated to {$statusLabel}";
+                    $html = '
+                        <h2 style="margin: 0 0 12px; font-size: 18px; color: #0f172a; font-weight: 700;">Hello ' . htmlspecialchars($client->name) . ',</h2>
+                        <p style="font-size: 14px; line-height: 1.6; color: #475569; margin: 0 0 20px;">
+                            The status of your support ticket <strong>#' . htmlspecialchars($ticket->ticket_number) . '</strong> ("' . htmlspecialchars($ticket->subject) . '") has been updated to <strong>' . htmlspecialchars($statusLabel) . '</strong>.
+                        </p>
+                        <p style="font-size: 13px; line-height: 1.6; color: #64748b;">
+                            You can log in to your portal anytime to inspect technical progress or submit further queries.
+                        </p>
+                    ';
+                    MailNotificationService::send($client->email, $subject, $html, $client->name, "{$baseUrl}/portal", "View Ticket in Portal");
+                }
+            } catch (\Throwable $e) {
+                Log::error("Failed to send ticket status email: " . $e->getMessage());
+            }
+        }
 
         return response()->json([
             'message' => 'Ticket updated successfully.',
@@ -176,6 +209,12 @@ class TicketController extends Controller
 
         $reply->load(['staff', 'client']);
         $ticket->load(['client', 'project', 'assignee', 'replies.staff', 'replies.client']);
+
+        try {
+            MailNotificationService::sendTicketReply($ticket, $reply, $isStaff);
+        } catch (\Throwable $e) {
+            Log::error("Failed to send ticket reply email: " . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Reply posted successfully.',

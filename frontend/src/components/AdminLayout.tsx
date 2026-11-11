@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import NotificationBell from "@/components/NotificationBell";
 import {
   Users,
   LayoutDashboard,
@@ -207,6 +208,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span className="font-medium">Live Session</span>
             </div>
+
+            {/* In-App Notification Center */}
+            <NotificationBell />
 
             {/* Profile Menu Dropdown */}
             <div className="relative">

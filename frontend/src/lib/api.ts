@@ -460,6 +460,29 @@ export interface SettingsResponse {
   environment: EnvironmentHealth;
 }
 
+export interface SystemNotificationItem {
+  id: number;
+  user_id?: number | null;
+  type: string;
+  title: string;
+  message: string;
+  action_url?: string | null;
+  data?: any;
+  is_read: boolean;
+  read_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationResponse {
+  unread_count: number;
+  notifications: {
+    data: SystemNotificationItem[];
+    current_page: number;
+    total: number;
+  };
+}
+
 export const api = {
   getToken: () => {
     if (typeof window !== "undefined") {

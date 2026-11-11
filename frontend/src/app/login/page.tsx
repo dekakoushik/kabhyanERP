@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import {
@@ -113,9 +114,12 @@ export default function LoginPage() {
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
                   Password
                 </label>
-                <span className="text-xs text-blue-600 hover:text-blue-700 cursor-pointer">
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                >
                   Forgot?
-                </span>
+                </Link>
               </div>
               <div className="relative rounded-lg shadow-xs">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">

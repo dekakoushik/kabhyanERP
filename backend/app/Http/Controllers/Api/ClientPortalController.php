@@ -8,7 +8,9 @@ use App\Models\Invoice;
 use App\Models\Project;
 use App\Models\Ticket;
 use App\Models\TicketReply;
+use App\Services\MailNotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ClientPortalController extends Controller
 {
@@ -181,6 +183,12 @@ class ClientPortalController extends Controller
 
         $ticket->load(['client', 'project']);
 
+        try {
+            MailNotificationService::sendTicketCreated($ticket, 'client');
+        } catch (\Throwable $e) {
+            Log::error("Failed to send client portal ticket creation email: " . $e->getMessage());
+        }
+
         return response()->json([
             'message' => 'Ticket raised successfully. Our engineering team has been notified.',
             'ticket' => $ticket,
@@ -231,6 +239,12 @@ class ClientPortalController extends Controller
 
         $reply->load('client');
         $ticket->load(['client', 'project', 'assignee', 'replies.staff', 'replies.client']);
+
+        try {
+            MailNotificationService::sendTicketReply($ticket, $reply, false);
+        } catch (\Throwable $e) {
+            Log::error("Failed to send client portal reply email: " . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Reply posted successfully.',

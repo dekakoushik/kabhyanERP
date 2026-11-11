@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\SystemNotification;
 use App\Models\User;
+use App\Services\MailNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Validation\ValidationException;
@@ -104,6 +108,98 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Successfully logged out',
+        ]);
+    }
+
+    /**
+     * Send password reset email token.
+     */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $email = strtolower(trim($request->email));
+        $user = User::where('email', $email)->first();
+
+        if ($user && $user->status === 'active') {
+            $token = bin2hex(random_bytes(32));
+
+            DB::table('password_reset_tokens')->updateOrInsert(
+                ['email' => $email],
+                [
+                    'token' => $token,
+                    'created_at' => now(),
+                ]
+            );
+
+            MailNotificationService::sendPasswordReset($user, $token);
+        }
+
+        return response()->json([
+            'message' => 'If this email is registered in Kabhyan ERP, a password reset link has been dispatched to your inbox.',
+        ]);
+    }
+
+    /**
+     * Reset password using token.
+     */
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+            'token' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $email = strtolower(trim($request->email));
+        $token = trim($request->token);
+
+        $record = DB::table('password_reset_tokens')->where('email', $email)->first();
+
+        if (!$record || $record->token !== $token) {
+            return response()->json([
+                'message' => 'Invalid or expired password reset link.',
+            ], 422);
+        }
+
+        $createdAt = Carbon::parse($record->created_at);
+        if ($createdAt->addMinutes(60)->isPast()) {
+            DB::table('password_reset_tokens')->where('email', $email)->delete();
+            return response()->json([
+                'message' => 'This password reset link has expired (valid for 60 minutes). Please request a new one.',
+            ], 422);
+        }
+
+        $user = User::where('email', $email)->first();
+        if (!$user) {
+            return response()->json([
+                'message' => 'User account not found.',
+            ], 404);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        // Revoke token record
+        DB::table('password_reset_tokens')->where('email', $email)->delete();
+
+        // Revoke tokens
+        $user->tokens()->delete();
+
+        // Notification
+        SystemNotification::createNotification(
+            $user->id,
+            'auth',
+            'Password Successfully Reset',
+            'Your account password has been updated. You can now log in.',
+            '/login'
+        );
+
+        return response()->json([
+            'message' => 'Your password has been reset successfully. You can now log in.',
         ]);
     }
 }

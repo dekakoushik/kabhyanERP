@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\MailNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -92,6 +93,12 @@ class UserController extends Controller
             'password' => Hash::make($validated['password']),
             'email_verified_at' => now(),
         ]);
+
+        try {
+            MailNotificationService::sendUserWelcome($user, $validated['password']);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to send staff onboarding email: " . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'User created successfully',

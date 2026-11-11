@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\EstimateController;
 use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\FinancialReportController;
 use App\Http\Controllers\Api\InvoiceController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ProformaInvoiceController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\SettingController;
@@ -26,6 +27,8 @@ Route::prefix('v1')->group(function () {
 
     // Public Authentication
     Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
 
     // Protected Routes
     Route::middleware('auth:sanctum')->group(function () {
@@ -96,5 +99,11 @@ Route::prefix('v1')->group(function () {
         Route::post('settings', [SettingController::class, 'update']);
         Route::post('settings/flush-cache', [SettingController::class, 'flushCache']);
         Route::post('settings/test-email', [SettingController::class, 'testEmail']);
+
+        // In-App Notification Centre
+        Route::get('notifications', [NotificationController::class, 'index']);
+        Route::patch('notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+        Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+        Route::delete('notifications/{id}', [NotificationController::class, 'destroy']);
     });
 });
