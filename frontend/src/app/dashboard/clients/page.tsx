@@ -199,13 +199,13 @@ function ClientsContent() {
             <span>Open Client Portal</span>
           </Link>
 
-          <button
-            onClick={openCreateModal}
+          <Link
+            href="/dashboard/clients/create"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-sm hover:shadow transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Add Client Account</span>
-          </button>
+          </Link>
         </div>
       </div>
 

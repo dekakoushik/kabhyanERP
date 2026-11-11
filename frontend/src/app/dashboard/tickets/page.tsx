@@ -266,24 +266,13 @@ function TicketsContent() {
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            setFormData({
-              client_id: clients[0]?.id ? clients[0].id.toString() : "",
-              project_id: "",
-              assigned_to: "",
-              subject: "",
-              type: "issue",
-              priority: "medium",
-              description: "",
-            });
-            setModalOpen(true);
-          }}
+        <Link
+          href="/dashboard/tickets/create"
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-sm hover:shadow transition-all cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>New Support Ticket</span>
-        </button>
+        </Link>
       </div>
 
       {/* KPI Cards */}

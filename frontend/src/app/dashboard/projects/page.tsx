@@ -244,13 +244,13 @@ export default function ProjectsPage() {
             >
               <span>View All Tasks</span>
             </Link>
-            <button
-              onClick={openCreateModal}
+            <Link
+              href="/dashboard/projects/create"
               className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold shadow-xs hover:shadow-sm transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>New Project</span>
-            </button>
+            </Link>
           </div>
         </div>
 
