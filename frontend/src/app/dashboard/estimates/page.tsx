@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition, useRef } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { api, Estimate, EstimateItem, EstimateStats, Project } from "@/lib/api";
 import Image from "next/image";
+import Link from "next/link";
 import {
   FileText,
   Search,
@@ -416,13 +417,13 @@ export default function EstimatesPage() {
             </p>
           </div>
 
-          <button
-            onClick={openCreateModal}
+          <Link
+            href="/dashboard/estimates/create"
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold shadow-xs hover:shadow-sm transition cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Generate Estimate</span>
-          </button>
+          </Link>
         </div>
 
         {/* Stats Strip */}
