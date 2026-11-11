@@ -1,6 +1,9 @@
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ||
-  (typeof window !== "undefined" ? "/api/v1" : "http://backend:80/api/v1");
+  (typeof window !== "undefined" && window.location.hostname !== "localhost")
+    ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes("localhost")
+        ? process.env.NEXT_PUBLIC_API_URL
+        : "/api/v1")
+    : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1");
 
 export interface User {
   id: number;
