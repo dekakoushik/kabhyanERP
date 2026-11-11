@@ -5,6 +5,13 @@ import AdminLayout from "@/components/AdminLayout";
 import { api, Project, Task, User } from "@/lib/api";
 import { useSearchParams } from "next/navigation";
 import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "@hello-pangea/dnd";
+import { toast } from "sonner";
+import {
   CheckSquare,
   Search,
   Filter,
@@ -23,6 +30,7 @@ import {
   CheckCircle2,
   ChevronRight,
   ArrowRight,
+  GripVertical,
 } from "lucide-react";
 
 function TasksContent() {
@@ -182,6 +190,56 @@ function TasksContent() {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) return;
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
+    }
+
+    const taskId = Number(draggableId);
+    const newStatus = destination.droppableId;
+    const targetTask = tasks.find((t) => t.id === taskId);
+    if (!targetTask || targetTask.status === newStatus) return;
+
+    // Snapshot previous tasks for rollback if network fails
+    const previousTasks = [...tasks];
+
+    // Optimistically update local task status
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, status: newStatus as any } : t))
+    );
+
+    // Optimistically update summary counts
+    setSummary((prev) => {
+      const oldStatus = targetTask.status;
+      return {
+        ...prev,
+        [oldStatus]: Math.max(0, (prev[oldStatus] || 1) - 1),
+        [newStatus]: (prev[newStatus] || 0) + 1,
+      };
+    });
+
+    try {
+      await api.request(`/tasks/${taskId}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: newStatus }),
+      });
+      toast.success(
+        `Task "${targetTask.title.slice(0, 25)}..." moved to ${newStatus.replace("_", " ")}`
+      );
+    } catch (err: unknown) {
+      // Rollback on network failure
+      setTasks(previousTasks);
+      fetchTasks();
+      toast.error("Failed to move task. Reverted to original status.");
     }
   };
 
@@ -361,121 +419,158 @@ function TasksContent() {
           <p className="text-xs font-semibold text-slate-500">Updating tasks board...</p>
         </div>
       ) : viewMode === "kanban" ? (
-        /* KANBAN BOARD */
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-start">
-          {kanbanColumns.map((col) => {
-            const colTasks = tasks.filter((t) => t.status === col.id);
-            return (
-              <div
-                key={col.id}
-                className={`rounded-2xl border ${col.border} ${col.bg} p-4 flex flex-col min-h-[500px]`}
-              >
-                {/* Column Header */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-xs uppercase tracking-wider text-slate-800">
-                      {col.title}
-                    </span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${col.badge}`}>
-                      {colTasks.length}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => openCreateModal(col.id)}
-                    className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-white cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                {/* Column Cards */}
-                <div className="space-y-3 flex-1 overflow-y-auto max-h-[75vh] pr-1">
-                  {colTasks.length === 0 ? (
-                    <div className="h-32 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center text-xs text-slate-400 font-medium">
-                      No tasks
+        /* KANBAN BOARD WITH DRAG & DROP */
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-start">
+            {kanbanColumns.map((col) => {
+              const colTasks = tasks.filter((t) => t.status === col.id);
+              return (
+                <div
+                  key={col.id}
+                  className={`rounded-2xl border ${col.border} ${col.bg} p-4 flex flex-col min-h-[520px] transition-colors`}
+                >
+                  {/* Column Header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-xs uppercase tracking-wider text-slate-800">
+                        {col.title}
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${col.badge}`}>
+                        {colTasks.length}
+                      </span>
                     </div>
-                  ) : (
-                    colTasks.map((t) => (
+                    <button
+                      onClick={() => openCreateModal(col.id)}
+                      className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-white cursor-pointer transition"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Droppable Column Area */}
+                  <Droppable droppableId={col.id}>
+                    {(provided, snapshot) => (
                       <div
-                        key={t.id}
-                        className="bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-2xs hover:shadow-sm hover:border-slate-300 transition space-y-2.5"
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`space-y-3 flex-1 overflow-y-auto max-h-[75vh] pr-1 rounded-xl transition-colors ${
+                          snapshot.isDraggingOver
+                            ? "bg-blue-100/40 ring-2 ring-blue-400/40 border border-blue-300 border-dashed p-1.5"
+                            : ""
+                        }`}
                       >
-                        {/* Project Code & Priority */}
-                        <div className="flex items-center justify-between text-[10px]">
-                          <span className="font-mono font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
-                            {t.project?.code || "KAB"}
-                          </span>
-                          <span
-                            className={`font-semibold px-2 py-0.5 rounded-full uppercase border ${getPriorityBadge(
-                              t.priority
-                            )}`}
-                          >
-                            {t.priority}
-                          </span>
-                        </div>
+                        {colTasks.length === 0 ? (
+                          <div className="h-32 border-2 border-dashed border-slate-200/80 rounded-xl flex items-center justify-center text-xs text-slate-400 font-medium">
+                            Drag tasks here
+                          </div>
+                        ) : (
+                          colTasks.map((t, index) => (
+                            <Draggable
+                              key={t.id}
+                              draggableId={t.id.toString()}
+                              index={index}
+                            >
+                              {(dragProvided, dragSnapshot) => (
+                                <div
+                                  ref={dragProvided.innerRef}
+                                  {...dragProvided.draggableProps}
+                                  className={`bg-white rounded-xl border p-3.5 space-y-2.5 transition select-none ${
+                                    dragSnapshot.isDragging
+                                      ? "shadow-2xl border-blue-500 ring-2 ring-blue-500/20 rotate-1 scale-[1.02] z-50 opacity-95"
+                                      : "border-slate-200/80 shadow-2xs hover:shadow-xs hover:border-slate-300"
+                                  }`}
+                                >
+                                  {/* Project Code, Priority & Drag Handle */}
+                                  <div className="flex items-center justify-between text-[10px]">
+                                    <div className="flex items-center gap-1.5">
+                                      <div
+                                        {...dragProvided.dragHandleProps}
+                                        title="Drag to reorder or move status"
+                                        className="text-slate-300 hover:text-slate-600 cursor-grab active:cursor-grabbing p-0.5 rounded"
+                                      >
+                                        <GripVertical className="w-3.5 h-3.5" />
+                                      </div>
+                                      <span className="font-mono font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                                        {t.project?.code || "KAB"}
+                                      </span>
+                                    </div>
+                                    <span
+                                      className={`font-semibold px-2 py-0.5 rounded-full uppercase border ${getPriorityBadge(
+                                        t.priority
+                                      )}`}
+                                    >
+                                      {t.priority}
+                                    </span>
+                                  </div>
 
-                        {/* Title */}
-                        <h4 className="text-xs font-bold text-slate-900 leading-snug">
-                          {t.title}
-                        </h4>
+                                  {/* Title */}
+                                  <h4 className="text-xs font-bold text-slate-900 leading-snug">
+                                    {t.title}
+                                  </h4>
 
-                        {t.description && (
-                          <p className="text-[11px] text-slate-500 line-clamp-2">
-                            {t.description}
-                          </p>
+                                  {t.description && (
+                                    <p className="text-[11px] text-slate-500 line-clamp-2">
+                                      {t.description}
+                                    </p>
+                                  )}
+
+                                  {/* Footer: Due Date & Assignee */}
+                                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3 text-slate-400" />
+                                      {t.due_date ? t.due_date : "No date"}
+                                    </span>
+
+                                    <div className="flex items-center gap-1.5">
+                                      <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-bold flex items-center justify-center">
+                                        {t.assignee?.name?.slice(0, 2).toUpperCase() || "NA"}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Quick Status Stepper & Action Buttons */}
+                                  <div className="pt-1 flex items-center justify-between gap-1 border-t border-slate-50 text-[10px]">
+                                    <select
+                                      value={t.status}
+                                      onChange={(e) => handleStatusChange(t, e.target.value)}
+                                      className="text-[10px] bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-slate-600 focus:outline-none"
+                                    >
+                                      <option value="todo">To Do</option>
+                                      <option value="in_progress">In Progress</option>
+                                      <option value="in_review">In Review</option>
+                                      <option value="completed">Done</option>
+                                      <option value="blocked">Blocked</option>
+                                    </select>
+
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        onClick={() => openEditModal(t)}
+                                        className="p-1 text-slate-400 hover:text-slate-700"
+                                      >
+                                        <Edit2 className="w-3 h-3" />
+                                      </button>
+                                      <button
+                                        onClick={() => setDeleteConfirmTask(t)}
+                                        className="p-1 text-slate-400 hover:text-red-600"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))
                         )}
-
-                        {/* Footer: Due Date & Assignee */}
-                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-slate-400" />
-                            {t.due_date ? t.due_date : "No date"}
-                          </span>
-
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-bold flex items-center justify-center">
-                              {t.assignee?.name?.slice(0, 2).toUpperCase() || "NA"}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Quick Status Stepper */}
-                        <div className="pt-1 flex items-center justify-between gap-1 border-t border-slate-50 text-[10px]">
-                          <select
-                            value={t.status}
-                            onChange={(e) => handleStatusChange(t, e.target.value)}
-                            className="text-[10px] bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-slate-600 focus:outline-none"
-                          >
-                            <option value="todo">To Do</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="in_review">In Review</option>
-                            <option value="completed">Done</option>
-                            <option value="blocked">Blocked</option>
-                          </select>
-
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => openEditModal(t)}
-                              className="p-1 text-slate-400 hover:text-slate-700"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => setDeleteConfirmTask(t)}
-                              className="p-1 text-slate-400 hover:text-red-600"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </div>
+                        {provided.placeholder}
                       </div>
-                    ))
-                  )}
+                    )}
+                  </Droppable>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </DragDropContext>
       ) : (
         /* LIST VIEW */
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
