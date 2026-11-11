@@ -34,7 +34,7 @@ body {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 10mm 12mm;
+    margin: 12mm 15mm;
   }
 
   *,
@@ -123,8 +123,10 @@ body {
     max-height: none !important;
     height: auto !important;
     overflow: visible !important;
-    padding: 0 !important;
-    margin: 0 !important;
+    padding: 0 4mm !important;
+    margin: 0 auto !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
     width: 100% !important;
     display: block !important;
   }

@@ -29,6 +29,7 @@ class ProformaInvoice extends Model
         'subtotal',
         'tax_rate',
         'tax_amount',
+        'round_off',
         'discount_rate',
         'discount_amount',
         'total_amount',
@@ -44,6 +45,7 @@ class ProformaInvoice extends Model
         'subtotal' => 'decimal:2',
         'tax_rate' => 'decimal:2',
         'tax_amount' => 'decimal:2',
+        'round_off' => 'decimal:2',
         'discount_rate' => 'decimal:2',
         'discount_amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
@@ -75,16 +77,18 @@ class ProformaInvoice extends Model
      */
     public function recalculateTotals(): void
     {
-        $subtotal = $this->items()->sum('amount');
-        $discountAmount = ($subtotal * ($this->discount_rate ?? 0)) / 100;
+        $subtotal = (float) $this->items()->sum('amount');
+        $discountAmount = ($subtotal * ((float) ($this->discount_rate ?? 0))) / 100;
         $taxableAmount = max(0, $subtotal - $discountAmount);
-        $taxAmount = ($taxableAmount * ($this->tax_rate ?? 0)) / 100;
-        $total = $taxableAmount + $taxAmount;
+        $taxAmount = ($taxableAmount * ((float) ($this->tax_rate ?? 0))) / 100;
+        $roundOff = (float) ($this->round_off ?? 0);
+        $total = $taxableAmount + $taxAmount + $roundOff;
 
         $this->update([
             'subtotal' => $subtotal,
             'discount_amount' => $discountAmount,
             'tax_amount' => $taxAmount,
+            'round_off' => $roundOff,
             'total_amount' => $total,
         ]);
     }

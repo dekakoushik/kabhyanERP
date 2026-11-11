@@ -67,6 +67,9 @@ export default function EstimatesPage() {
     currency: "INR",
     tax_rate: "18",
     discount_rate: "0",
+    round_off: 0,
+    is_round_off: true,
+    target_total: "",
     notes: "Payment due within 30 days of invoice date.",
     terms_and_conditions: "50% upfront payment required before commencement of development milestones. All intellectual property transfers upon receipt of final settlement.",
     items: [
@@ -136,6 +139,9 @@ export default function EstimatesPage() {
       currency: "INR",
       tax_rate: "18",
       discount_rate: "0",
+      round_off: 0,
+      is_round_off: true,
+      target_total: "",
       notes: "Quotation valid for 30 calendar days. Ongoing technical support available at standard SLA hourly rates.",
       terms_and_conditions: "Milestone payments: 50% mobilization advance, 50% upon successful staging acceptance testing.",
       items: [
@@ -164,6 +170,9 @@ export default function EstimatesPage() {
       currency: est.currency,
       tax_rate: est.tax_rate ? est.tax_rate.toString() : "0",
       discount_rate: est.discount_rate ? est.discount_rate.toString() : "0",
+      round_off: Number(est.round_off) || 0,
+      is_round_off: (Number(est.round_off) || 0) !== 0 || true,
+      target_total: est.total_amount ? Number(est.total_amount).toFixed(2) : "",
       notes: est.notes || "",
       terms_and_conditions: est.terms_and_conditions || "",
       items: est.items && est.items.length > 0 ? est.items.map((i) => ({
@@ -215,8 +224,64 @@ export default function EstimatesPage() {
   // Calculations for display in modal
   const calcSubtotal = formData.items.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
   const calcDiscount = (calcSubtotal * (Number(formData.discount_rate) || 0)) / 100;
-  const calcTax = ((calcSubtotal - calcDiscount) * (Number(formData.tax_rate) || 0)) / 100;
-  const calcTotal = calcSubtotal - calcDiscount + calcTax;
+  const taxableAmount = Math.max(0, calcSubtotal - calcDiscount);
+  const calcTax = (taxableAmount * (Number(formData.tax_rate) || 0)) / 100;
+  const rawTotal = taxableAmount + calcTax;
+  const calcRoundOff = formData.is_round_off ? Number((Math.round(rawTotal) - rawTotal).toFixed(2)) : 0;
+  const calcTotal = rawTotal + calcRoundOff;
+
+  // Reverse / Two-way calculation handler: Given a Target Final Amount, back-calculate unit price and line items
+  const handleTargetTotalChange = (targetValStr: string) => {
+    const targetVal = parseFloat(targetValStr);
+    setFormData((prev) => {
+      if (isNaN(targetVal) || targetVal <= 0 || prev.items.length === 0) {
+        return { ...prev, target_total: targetValStr };
+      }
+
+      const taxRate = Number(prev.tax_rate) || 0;
+      const discountRate = Number(prev.discount_rate) || 0;
+
+      // targetVal = (subtotal * (1 - discountRate/100)) * (1 + taxRate/100) + roundOff
+      // If round-off enabled, targetVal is already whole or user target; taxable amount = targetVal / (1 + taxRate/100)
+      const targetTaxable = targetVal / (1 + taxRate / 100);
+      const targetSubtotal = discountRate < 100 ? targetTaxable / (1 - discountRate / 100) : targetTaxable;
+
+      // Distribute targetSubtotal across items (if 1 item, sets it completely; if multiple, scales proportionally)
+      const currentSubtotal = prev.items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+      const ratio = currentSubtotal > 0 ? targetSubtotal / currentSubtotal : 1 / prev.items.length;
+
+      const updatedItems = prev.items.map((item, idx) => {
+        const qty = Number(item.quantity) || 1;
+        let itemAmount: number;
+        if (currentSubtotal > 0) {
+          itemAmount = Number(((Number(item.amount) || 0) * ratio).toFixed(2));
+        } else {
+          itemAmount = Number((targetSubtotal / prev.items.length).toFixed(2));
+        }
+        const unitPrice = Number((itemAmount / qty).toFixed(2));
+        return {
+          ...item,
+          unit_price: unitPrice,
+          amount: Number((qty * unitPrice).toFixed(2)),
+        };
+      });
+
+      // Recalculate raw total to check round-off
+      const newSubtotal = updatedItems.reduce((sum, item) => sum + item.amount, 0);
+      const newDiscount = (newSubtotal * discountRate) / 100;
+      const newTaxable = Math.max(0, newSubtotal - newDiscount);
+      const newTax = (newTaxable * taxRate) / 100;
+      const newRawTotal = newTaxable + newTax;
+      const newRoundOff = prev.is_round_off ? Number((targetVal - newRawTotal).toFixed(2)) : 0;
+
+      return {
+        ...prev,
+        target_total: targetValStr,
+        items: updatedItems,
+        round_off: newRoundOff,
+      };
+    });
+  };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -232,6 +297,7 @@ export default function EstimatesPage() {
         project_id: formData.project_id ? Number(formData.project_id) : null,
         tax_rate: Number(formData.tax_rate) || 0,
         discount_rate: Number(formData.discount_rate) || 0,
+        round_off: formData.is_round_off ? calcRoundOff : 0,
       };
 
       await api.request(endpoint, {
@@ -868,7 +934,7 @@ export default function EstimatesPage() {
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row justify-between gap-4">
                 <div className="space-y-2 flex-1">
                   <div className="flex items-center gap-2">
-                    <label className="text-xs text-slate-600 w-24">Tax Rate (%):</label>
+                    <label className="text-xs text-slate-600 w-28">Tax Rate (%):</label>
                     <input
                       type="number"
                       min="0"
@@ -879,7 +945,7 @@ export default function EstimatesPage() {
                     />
                   </div>
                   <div className="flex items-center gap-2">
-                    <label className="text-xs text-slate-600 w-24">Discount (%):</label>
+                    <label className="text-xs text-slate-600 w-28">Discount (%):</label>
                     <input
                       type="number"
                       min="0"
@@ -888,6 +954,45 @@ export default function EstimatesPage() {
                       onChange={(e) => setFormData({ ...formData, discount_rate: e.target.value })}
                       className="w-20 px-2 py-1 bg-white border border-slate-300 rounded text-xs text-slate-800 font-semibold"
                     />
+                  </div>
+
+                  {/* Reverse Target Total Calculation */}
+                  <div className="pt-2 border-t border-slate-200">
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs font-semibold text-blue-700 w-28" title="Enter final budget to auto-calculate item rates backwards">
+                        Target Total:
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                          {formData.currency === "INR" ? "₹" : formData.currency}
+                        </span>
+                        <input
+                          type="number"
+                          step="any"
+                          placeholder="e.g. 280000"
+                          value={formData.target_total}
+                          onChange={(e) => handleTargetTotalChange(e.target.value)}
+                          className="w-36 pl-6 pr-2 py-1 bg-blue-50/50 border border-blue-300 rounded text-xs text-blue-900 font-mono font-bold focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      Type final total to auto-derive taxable rate &amp; GST backwards.
+                    </p>
+                  </div>
+
+                  {/* Round Off Toggle */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      type="checkbox"
+                      id="est-round-off"
+                      checked={formData.is_round_off}
+                      onChange={(e) => setFormData({ ...formData, is_round_off: e.target.checked })}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer h-3.5 w-3.5"
+                    />
+                    <label htmlFor="est-round-off" className="text-xs text-slate-600 font-medium cursor-pointer">
+                      Round Off to Nearest Rupee
+                    </label>
                   </div>
                 </div>
 
@@ -911,6 +1016,14 @@ export default function EstimatesPage() {
                       <span>Tax ({formData.tax_rate}%):</span>
                       <span className="font-mono font-semibold">
                         +{formData.currency === "INR" ? "₹" : formData.currency} {calcTax.toLocaleString(formData.currency === "INR" ? "en-IN" : undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  )}
+                  {formData.is_round_off && calcRoundOff !== 0 && (
+                    <div className="flex justify-between sm:justify-end gap-6 text-amber-700">
+                      <span>Round Off:</span>
+                      <span className="font-mono font-semibold">
+                        {calcRoundOff > 0 ? "+" : ""}{formData.currency === "INR" ? "₹" : formData.currency} {calcRoundOff.toFixed(2)}
                       </span>
                     </div>
                   )}
@@ -1135,8 +1248,8 @@ export default function EstimatesPage() {
               </div>
 
               {/* Total Calculation Strip */}
-              <div className="flex justify-end pt-4 border-t border-slate-200 print-avoid-break">
-                <div className="w-full sm:w-72 space-y-1.5 text-xs">
+              <div className="flex justify-end pt-4 pr-3 border-t border-slate-200 print-avoid-break">
+                <div className="w-full sm:w-80 space-y-1.5 text-xs">
                   <div className="flex justify-between text-slate-600">
                     <span>Subtotal:</span>
                     <span className="font-mono font-semibold">
@@ -1159,6 +1272,15 @@ export default function EstimatesPage() {
                       <span className="font-mono font-semibold">
                         +{previewEstimate.currency === "INR" ? "₹" : previewEstimate.currency}{" "}
                         {Number(previewEstimate.tax_amount).toLocaleString(previewEstimate.currency === "INR" ? "en-IN" : undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  )}
+                  {Number(previewEstimate.round_off ?? 0) !== 0 && (
+                    <div className="flex justify-between text-amber-700">
+                      <span>Round Off:</span>
+                      <span className="font-mono font-semibold">
+                        {Number(previewEstimate.round_off) > 0 ? "+" : ""}{previewEstimate.currency === "INR" ? "₹" : previewEstimate.currency}{" "}
+                        {Number(previewEstimate.round_off).toFixed(2)}
                       </span>
                     </div>
                   )}
@@ -1189,7 +1311,7 @@ export default function EstimatesPage() {
               </div>
 
               {/* Footer Signature Block */}
-              <div className="mt-12 pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-400 print-avoid-break">
+              <div className="mt-12 pt-8 pr-3 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-400 print-avoid-break">
                 <div>
                   <p>Kabhyan Technologies • Digital Workspace</p>
                 </div>

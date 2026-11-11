@@ -74,6 +74,7 @@ class EstimateController extends Controller
             'currency' => ['required', 'string', 'max:10'],
             'tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'discount_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'round_off' => ['nullable', 'numeric'],
             'notes' => ['nullable', 'string'],
             'terms_and_conditions' => ['nullable', 'string'],
             'items' => ['required', 'array', 'min:1'],
@@ -101,6 +102,7 @@ class EstimateController extends Controller
             'currency' => $validated['currency'] ?? 'INR',
             'tax_rate' => $validated['tax_rate'] ?? 0,
             'discount_rate' => $validated['discount_rate'] ?? 0,
+            'round_off' => $validated['round_off'] ?? 0,
             'notes' => $validated['notes'] ?? null,
             'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
         ]);
@@ -154,6 +156,7 @@ class EstimateController extends Controller
             'currency' => ['required', 'string', 'max:10'],
             'tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'discount_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'round_off' => ['nullable', 'numeric'],
             'notes' => ['nullable', 'string'],
             'terms_and_conditions' => ['nullable', 'string'],
             'items' => ['required', 'array', 'min:1'],
@@ -178,6 +181,7 @@ class EstimateController extends Controller
             'currency' => $validated['currency'],
             'tax_rate' => $validated['tax_rate'] ?? 0,
             'discount_rate' => $validated['discount_rate'] ?? 0,
+            'round_off' => $validated['round_off'] ?? 0,
             'notes' => $validated['notes'] ?? null,
             'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
         ]);

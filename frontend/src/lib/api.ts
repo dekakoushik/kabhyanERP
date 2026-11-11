@@ -109,6 +109,7 @@ export interface Estimate {
   subtotal: number;
   tax_rate: number;
   tax_amount: number;
+  round_off?: number;
   discount_rate: number;
   discount_amount: number;
   total_amount: number;
@@ -161,6 +162,7 @@ export interface ProformaInvoice {
   subtotal: number;
   tax_rate: number;
   tax_amount: number;
+  round_off?: number;
   discount_rate: number;
   discount_amount: number;
   total_amount: number;
@@ -233,6 +235,7 @@ export interface Invoice {
   subtotal: number;
   tax_rate: number;
   tax_amount: number;
+  round_off?: number;
   cgst_rate: number;
   cgst_amount: number;
   sgst_rate: number;

@@ -70,6 +70,9 @@ function InvoicesContent() {
     currency: "INR",
     tax_rate: "18",
     discount_rate: "0",
+    round_off: 0,
+    is_round_off: true,
+    target_total: "",
     notes: "Thank you for your business. Please make the payment before the due date.",
     terms_and_conditions: "1. Goods/Services once invoiced are subject to contractual terms.\n2. Payment is due strictly as per agreed payment milestone terms.\n3. Delayed payments shall attract interest @ 18% per annum from due date.\n4. Subject to Kolkata, West Bengal jurisdiction.",
     bank_details: "Bank Name: HDFC Bank Limited\nAccount Name: Kabhyan Technologies Private Limited\nAccount Number: 50200084729184\nIFSC Code: HDFC0001234\nBranch: Salt Lake Sector V, Kolkata, West Bengal\nUPI ID: kabhyan@hdfcbank",
@@ -167,6 +170,9 @@ function InvoicesContent() {
       currency: "INR",
       tax_rate: "18",
       discount_rate: "0",
+      round_off: 0,
+      is_round_off: true,
+      target_total: "",
       notes: "Thank you for your business. Please make the payment before the due date.",
       terms_and_conditions: "1. Goods/Services once invoiced are subject to contractual terms.\n2. Payment is due strictly as per agreed payment milestone terms.\n3. Delayed payments shall attract interest @ 18% per annum from due date.\n4. Subject to Kolkata, West Bengal jurisdiction.",
       bank_details: "Bank Name: HDFC Bank Limited\nAccount Name: Kabhyan Technologies Private Limited\nAccount Number: 50200084729184\nIFSC Code: HDFC0001234\nBranch: Salt Lake Sector V, Kolkata, West Bengal\nUPI ID: kabhyan@hdfcbank",
@@ -202,6 +208,9 @@ function InvoicesContent() {
       currency: inv.currency,
       tax_rate: inv.tax_rate ? inv.tax_rate.toString() : "0",
       discount_rate: inv.discount_rate ? inv.discount_rate.toString() : "0",
+      round_off: Number(inv.round_off) || 0,
+      is_round_off: (Number(inv.round_off) || 0) !== 0 || true,
+      target_total: inv.total_amount ? Number(inv.total_amount).toFixed(2) : "",
       notes: inv.notes || "",
       terms_and_conditions: inv.terms_and_conditions || "",
       bank_details: inv.bank_details || "",
@@ -269,9 +278,60 @@ function InvoicesContent() {
   // Calculations
   const calcSubtotal = formData.items.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
   const calcDiscount = (calcSubtotal * (Number(formData.discount_rate) || 0)) / 100;
-  const taxableAmount = calcSubtotal - calcDiscount;
+  const taxableAmount = Math.max(0, calcSubtotal - calcDiscount);
   const calcTax = (taxableAmount * (Number(formData.tax_rate) || 0)) / 100;
-  const calcTotal = taxableAmount + calcTax;
+  const rawTotal = taxableAmount + calcTax;
+  const calcRoundOff = formData.is_round_off ? Number((Math.round(rawTotal) - rawTotal).toFixed(2)) : 0;
+  const calcTotal = rawTotal + calcRoundOff;
+
+  // Reverse / Two-way calculation handler: Given a Target Final Amount, back-calculate unit price and line items
+  const handleTargetTotalChange = (targetValStr: string) => {
+    const targetVal = parseFloat(targetValStr);
+    setFormData((prev) => {
+      if (isNaN(targetVal) || targetVal <= 0 || prev.items.length === 0) {
+        return { ...prev, target_total: targetValStr };
+      }
+
+      const taxRate = Number(prev.tax_rate) || 0;
+      const discountRate = Number(prev.discount_rate) || 0;
+
+      const targetTaxable = targetVal / (1 + taxRate / 100);
+      const targetSubtotal = discountRate < 100 ? targetTaxable / (1 - discountRate / 100) : targetTaxable;
+
+      const currentSubtotal = prev.items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+      const ratio = currentSubtotal > 0 ? targetSubtotal / currentSubtotal : 1 / prev.items.length;
+
+      const updatedItems = prev.items.map((item) => {
+        const qty = Number(item.quantity) || 1;
+        let itemAmount: number;
+        if (currentSubtotal > 0) {
+          itemAmount = Number(((Number(item.amount) || 0) * ratio).toFixed(2));
+        } else {
+          itemAmount = Number((targetSubtotal / prev.items.length).toFixed(2));
+        }
+        const unitPrice = Number((itemAmount / qty).toFixed(2));
+        return {
+          ...item,
+          unit_price: unitPrice,
+          amount: Number((qty * unitPrice).toFixed(2)),
+        };
+      });
+
+      const newSubtotal = updatedItems.reduce((sum, item) => sum + item.amount, 0);
+      const newDiscount = (newSubtotal * discountRate) / 100;
+      const newTaxable = Math.max(0, newSubtotal - newDiscount);
+      const newTax = (newTaxable * taxRate) / 100;
+      const newRawTotal = newTaxable + newTax;
+      const newRoundOff = prev.is_round_off ? Number((targetVal - newRawTotal).toFixed(2)) : 0;
+
+      return {
+        ...prev,
+        target_total: targetValStr,
+        items: updatedItems,
+        round_off: newRoundOff,
+      };
+    });
+  };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -287,6 +347,7 @@ function InvoicesContent() {
         project_id: formData.project_id ? Number(formData.project_id) : null,
         tax_rate: Number(formData.tax_rate) || 0,
         discount_rate: Number(formData.discount_rate) || 0,
+        round_off: formData.is_round_off ? calcRoundOff : 0,
       };
 
       await api.request(endpoint, {
@@ -935,13 +996,48 @@ function InvoicesContent() {
                     <select
                       value={formData.tax_rate}
                       onChange={(e) => setFormData({ ...formData, tax_rate: e.target.value })}
-                      className="w-32 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none cursor-pointer"
+                      className="w-48 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none cursor-pointer"
                     >
                       <option value="18">18% (Standard IT Services)</option>
                       <option value="12">12%</option>
                       <option value="5">5%</option>
                       <option value="0">0% (Exempt)</option>
                     </select>
+                  </div>
+
+                  {/* Reverse Target Total Calculation */}
+                  <div className="pt-2 border-t border-slate-200">
+                    <label className="block text-[11px] font-semibold text-blue-700 mb-1" title="Enter final budget to auto-calculate item rates backwards">
+                      Target Final Amount (Inclusive):
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">₹</span>
+                      <input
+                        type="number"
+                        step="any"
+                        placeholder="e.g. 280000"
+                        value={formData.target_total}
+                        onChange={(e) => handleTargetTotalChange(e.target.value)}
+                        className="w-48 pl-6 pr-2 py-1.5 bg-blue-50/50 border border-blue-300 rounded-lg text-xs text-blue-900 font-mono font-bold focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      Type desired final total to auto-derive taxable rate &amp; GST backwards.
+                    </p>
+                  </div>
+
+                  {/* Round Off Toggle */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      type="checkbox"
+                      id="invoice-round-off"
+                      checked={formData.is_round_off}
+                      onChange={(e) => setFormData({ ...formData, is_round_off: e.target.checked })}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer h-3.5 w-3.5"
+                    />
+                    <label htmlFor="invoice-round-off" className="text-xs text-slate-600 font-medium cursor-pointer">
+                      Round Off to Nearest Rupee
+                    </label>
                   </div>
                 </div>
 
@@ -960,6 +1056,14 @@ function InvoicesContent() {
                     <span>GST ({formData.tax_rate}%):</span>
                     <span className="font-mono">₹{calcTax.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
+                  {formData.is_round_off && calcRoundOff !== 0 && (
+                    <div className="flex justify-between text-amber-700">
+                      <span>Round Off:</span>
+                      <span className="font-mono font-semibold">
+                        {calcRoundOff > 0 ? "+" : ""}₹{calcRoundOff.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between font-bold text-slate-900 border-t border-slate-200 pt-2 text-sm">
                     <span>Total Tax Invoice Value:</span>
                     <span className="font-mono text-blue-700">₹{calcTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -1321,7 +1425,7 @@ function InvoicesContent() {
               </div>
 
               {/* Calculation Breakdown & Bank Details */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 py-6 border-t border-slate-200 print-avoid-break">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 py-6 pr-3 border-t border-slate-200 print-avoid-break">
                 <div className="space-y-4 text-xs">
                   {previewInvoice.bank_details && (
                     <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
@@ -1406,6 +1510,15 @@ function InvoicesContent() {
                     </div>
                   )}
 
+                  {Number(previewInvoice.round_off ?? 0) !== 0 && (
+                    <div className="flex justify-between text-amber-700">
+                      <span>Round Off:</span>
+                      <span className="font-mono font-semibold">
+                        {Number(previewInvoice.round_off) > 0 ? "+" : ""}₹{Number(previewInvoice.round_off).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between font-bold text-slate-900 border-t-2 border-slate-900 pt-2 text-base">
                     <span>Total Tax Invoice:</span>
                     <span className="font-mono text-blue-900">
@@ -1430,7 +1543,7 @@ function InvoicesContent() {
               </div>
 
               {/* Terms and Signatures */}
-              <div className="pt-6 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-8 text-xs text-slate-500 print-avoid-break">
+              <div className="pt-6 pr-3 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-8 text-xs text-slate-500 print-avoid-break">
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                     Terms & Conditions

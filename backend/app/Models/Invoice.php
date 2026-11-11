@@ -31,6 +31,7 @@ class Invoice extends Model
         'subtotal',
         'tax_rate',
         'tax_amount',
+        'round_off',
         'discount_rate',
         'discount_amount',
         'total_amount',
@@ -47,6 +48,7 @@ class Invoice extends Model
         'subtotal' => 'decimal:2',
         'tax_rate' => 'decimal:2',
         'tax_amount' => 'decimal:2',
+        'round_off' => 'decimal:2',
         'discount_rate' => 'decimal:2',
         'discount_amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
@@ -93,7 +95,8 @@ class Invoice extends Model
         $discountAmount = ($subtotal * ((float) $this->discount_rate ?? 0)) / 100;
         $taxableAmount = max(0, $subtotal - $discountAmount);
         $taxAmount = ($taxableAmount * ((float) $this->tax_rate ?? 0)) / 100;
-        $total = $taxableAmount + $taxAmount;
+        $roundOff = (float) ($this->round_off ?? 0);
+        $total = max(0, $taxableAmount + $taxAmount + $roundOff);
 
         $paid = (float) $this->payments()->sum('amount');
         $due = max(0, $total - $paid);
