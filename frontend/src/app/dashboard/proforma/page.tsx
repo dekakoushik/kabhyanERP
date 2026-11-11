@@ -614,13 +614,13 @@ function ProformaContent() {
                           )}
                           <span className="hidden sm:inline">Make Tax Invoice</span>
                         </button>
-                        <button
-                          onClick={() => setPreviewInvoice(pi)}
-                          title="Preview & Print Document"
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 cursor-pointer"
+                        <Link
+                          href={`/dashboard/proforma/${pi.proforma_number}`}
+                          title="View Full Document Page"
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-purple-600 hover:bg-purple-50 cursor-pointer"
                         >
                           <Eye className="w-4 h-4" />
-                        </button>
+                        </Link>
                         <button
                           onClick={() => openEditModal(pi)}
                           title="Edit Proforma"

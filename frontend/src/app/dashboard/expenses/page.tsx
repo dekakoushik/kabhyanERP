@@ -21,7 +21,10 @@ import {
   Clock,
   ArrowDownRight,
   ShieldAlert,
+  FolderPlus,
+  Settings,
 } from "lucide-react";
+import { toast } from "sonner";
 
 function ExpensesContent() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -45,6 +48,15 @@ function ExpensesContent() {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Expense | null>(null);
+
+  // Category Quick-Add and Manager Modals
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatColor, setNewCatColor] = useState("#3B82F6");
+  const [newCatDescription, setNewCatDescription] = useState("");
+  const [catSaving, setCatSaving] = useState(false);
+  const [catError, setCatError] = useState<string | null>(null);
 
   // Form
   const [formData, setFormData] = useState({
@@ -204,8 +216,60 @@ function ExpensesContent() {
       });
       setDeleteConfirm(null);
       fetchExpenses();
+      toast.success("Expense voucher deleted");
     } catch (err: unknown) {
-      if (err instanceof Error) alert(err.message);
+      if (err instanceof Error) toast.error(err.message);
+    }
+  };
+
+  const handleCreateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim()) {
+      setCatError("Category name is required");
+      return;
+    }
+
+    try {
+      setCatSaving(true);
+      setCatError(null);
+      const res = await api.request("/expenses/categories", {
+        method: "POST",
+        body: JSON.stringify({
+          name: newCatName.trim(),
+          color: newCatColor,
+          description: newCatDescription.trim() || undefined,
+        }),
+      });
+
+      if (res && res.category) {
+        setCategories((prev) => [...prev, res.category]);
+        setFormData((prev) => ({ ...prev, expense_category_id: res.category.id.toString() }));
+        toast.success(`Category "${res.category.name}" created successfully`);
+        setNewCatName("");
+        setNewCatDescription("");
+        setCategoryModalOpen(false);
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setCatError(err.message);
+      } else {
+        setCatError("Failed to create category");
+      }
+    } finally {
+      setCatSaving(false);
+    }
+  };
+
+  const handleDeleteCategory = async (catId: number, catName: string) => {
+    if (!confirm(`Are you sure you want to delete category "${catName}"?`)) return;
+    try {
+      await api.request(`/expenses/categories/${catId}`, {
+        method: "DELETE",
+      });
+      setCategories((prev) => prev.filter((c) => c.id !== catId));
+      toast.success(`Category "${catName}" deleted`);
+    } catch (err: unknown) {
+      if (err instanceof Error) toast.error(err.message);
     }
   };
 
@@ -225,13 +289,23 @@ function ExpensesContent() {
           </p>
         </div>
 
-        <button
-          onClick={openCreateModal}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-sm hover:shadow transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Record Expense</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCategoryManagerOpen(true)}
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs tracking-wide shadow-xs transition cursor-pointer"
+          >
+            <Settings className="w-4 h-4 text-slate-500" />
+            <span>Manage Categories</span>
+          </button>
+
+          <button
+            onClick={openCreateModal}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-sm hover:shadow transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Record Expense</span>
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -494,9 +568,19 @@ function ExpensesContent() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Category <span className="text-red-500">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Category <span className="text-red-500">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setCategoryModalOpen(true)}
+                      className="text-[11px] font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <FolderPlus className="w-3.5 h-3.5" />
+                      <span>+ New Category</span>
+                    </button>
+                  </div>
                   <select
                     required
                     value={formData.expense_category_id}
@@ -707,6 +791,186 @@ function ExpensesContent() {
               >
                 Delete
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Add New Category */}
+      {categoryModalOpen && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-blue-100 text-blue-700">
+                  <FolderPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Add Expense Category</h3>
+                  <p className="text-[11px] text-slate-500">Create a department or cost center tag</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setCategoryModalOpen(false);
+                  setCatError(null);
+                }}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateCategory} className="p-6 space-y-4 text-xs">
+              {catError && (
+                <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs">
+                  {catError}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Category Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Server & Cloud Hosting, Marketing Ads, Office Rent"
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Color Tag</label>
+                <div className="flex items-center gap-2">
+                  {["#3B82F6", "#10B981", "#8B5CF6", "#F59E0B", "#EF4444", "#06B6D4", "#EC4899", "#64748B"].map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setNewCatColor(c)}
+                      className={`w-7 h-7 rounded-full border-2 transition-transform cursor-pointer ${
+                        newCatColor === c ? "scale-110 border-slate-900 shadow-sm" : "border-white hover:scale-105"
+                      }`}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Description (Optional)</label>
+                <textarea
+                  rows={2}
+                  value={newCatDescription}
+                  onChange={(e) => setNewCatDescription(e.target.value)}
+                  placeholder="Accounting description, policy rules or internal instructions"
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCategoryModalOpen(false);
+                    setCatError(null);
+                  }}
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={catSaving}
+                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {catSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                  <span>Save Category</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Category Manager */}
+      {categoryManagerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-slate-100 text-slate-700">
+                  <Settings className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Manage Expense Categories</h3>
+                  <p className="text-[11px] text-slate-500">Corporate cost categories & accounting codes</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCategoryManagerOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <span className="text-xs font-bold text-slate-600">{categories.length} Categories Active</span>
+                <button
+                  onClick={() => {
+                    setCategoryManagerOpen(false);
+                    setCategoryModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add New Category</span>
+                </button>
+              </div>
+
+              <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
+                {categories.length === 0 ? (
+                  <p className="text-xs text-slate-400 py-6 text-center">No categories found.</p>
+                ) : (
+                  categories.map((c) => (
+                    <div key={c.id} className="py-2.5 flex items-center justify-between gap-3 group">
+                      <div className="flex items-center gap-2.5">
+                        <span
+                          className="w-3 h-3 rounded-full shrink-0"
+                          style={{ backgroundColor: c.color || "#3B82F6" }}
+                        />
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">{c.name}</p>
+                          {c.description && <p className="text-[10px] text-slate-400">{c.description}</p>}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteCategory(c.id, c.name)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer opacity-80 group-hover:opacity-100 transition"
+                        title="Delete category"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setCategoryManagerOpen(false)}
+                  className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
             </div>
           </div>
         </div>

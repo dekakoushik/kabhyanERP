@@ -71,6 +71,9 @@ Route::prefix('v1')->group(function () {
 
         // Expense Management Module
         Route::get('expenses/categories', [ExpenseController::class, 'categories']);
+        Route::post('expenses/categories', [ExpenseController::class, 'storeCategory']);
+        Route::put('expenses/categories/{category}', [ExpenseController::class, 'updateCategory']);
+        Route::delete('expenses/categories/{category}', [ExpenseController::class, 'destroyCategory']);
         Route::apiResource('expenses', ExpenseController::class);
 
         // Financial Reports & Income vs Expense Analytics

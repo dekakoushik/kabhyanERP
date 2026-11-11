@@ -693,13 +693,13 @@ function InvoicesContent() {
                           <CreditCard className="w-3.5 h-3.5" />
                           <span className="hidden sm:inline">Pay</span>
                         </button>
-                        <button
-                          onClick={() => setPreviewInvoice(inv)}
-                          title="Preview & Print Document"
+                        <Link
+                          href={`/dashboard/invoices/${inv.invoice_number}`}
+                          title="View Full Document Page"
                           className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 cursor-pointer"
                         >
                           <Eye className="w-4 h-4" />
-                        </button>
+                        </Link>
                         <button
                           onClick={() => openEditModal(inv)}
                           title="Edit Tax Invoice"

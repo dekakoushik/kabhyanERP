@@ -197,7 +197,93 @@ class ExpenseController extends Controller
     public function categories()
     {
         $categories = ExpenseCategory::where('is_active', true)->withCount('expenses')->get();
+
+        // Auto-seed default categories if database table is completely empty
+        if ($categories->isEmpty()) {
+            $defaults = [
+                ['name' => 'Cloud Infrastructure & Servers', 'slug' => 'cloud-infrastructure', 'color' => '#3B82F6', 'description' => 'AWS, GCP, Redis, Dokploy hosting'],
+                ['name' => 'Software & Tool Subscriptions', 'slug' => 'software-tools', 'color' => '#8B5CF6', 'description' => 'GitHub, Figma, IDE licenses, SaaS tools'],
+                ['name' => 'Salaries & Contractor Stipends', 'slug' => 'salaries-contractors', 'color' => '#10B981', 'description' => 'Engineering compensation and freelance disbursements'],
+                ['name' => 'Office Utilities & Rent', 'slug' => 'office-utilities', 'color' => '#F59E0B', 'description' => 'Electricity, high-speed broadband, workspace lease'],
+                ['name' => 'Legal, Tax & Compliance', 'slug' => 'legal-compliance', 'color' => '#EF4444', 'description' => 'GST filing, CA retainer, corporate compliance'],
+            ];
+
+            foreach ($defaults as $item) {
+                ExpenseCategory::firstOrCreate(['slug' => $item['slug']], $item);
+            }
+
+            $categories = ExpenseCategory::where('is_active', true)->withCount('expenses')->get();
+        }
+
         return response()->json(['categories' => $categories]);
+    }
+
+    /**
+     * Store new custom category.
+     */
+    public function storeCategory(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'color' => 'nullable|string|max:30',
+            'description' => 'nullable|string',
+        ]);
+
+        $slug = \Illuminate\Support\Str::slug($validated['name']);
+        
+        // Handle slug duplicates gracefully
+        $existing = ExpenseCategory::where('slug', $slug)->first();
+        if ($existing) {
+            $slug = $slug . '-' . time();
+        }
+
+        $category = ExpenseCategory::create([
+            'name' => $validated['name'],
+            'slug' => $slug,
+            'color' => $validated['color'] ?? '#3B82F6',
+            'description' => $validated['description'] ?? null,
+            'is_active' => true,
+        ]);
+
+        return response()->json([
+            'message' => 'Expense category created successfully.',
+            'category' => $category,
+        ], 201);
+    }
+
+    /**
+     * Update an expense category.
+     */
+    public function updateCategory(Request $request, ExpenseCategory $category)
+    {
+        $validated = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'color' => 'nullable|string|max:30',
+            'description' => 'nullable|string',
+            'is_active' => 'nullable|boolean',
+        ]);
+
+        $category->update($validated);
+
+        return response()->json([
+            'message' => 'Expense category updated successfully.',
+            'category' => $category,
+        ]);
+    }
+
+    /**
+     * Delete an expense category.
+     */
+    public function destroyCategory(ExpenseCategory $category)
+    {
+        if ($category->expenses()->exists()) {
+            return response()->json([
+                'message' => 'Cannot delete category with associated expense records. Deactivate it instead.',
+            ], 422);
+        }
+
+        $category->delete();
+        return response()->json(['message' => 'Category deleted successfully.']);
     }
 }
 
