@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import NotificationBell from "@/components/NotificationBell";
+import GlobalCommandPalette from "@/components/GlobalCommandPalette";
 import {
   Users,
   LayoutDashboard,
@@ -53,6 +54,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const pathname = usePathname();
 
   // Load saved collapse state on mount
@@ -324,6 +326,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
           {/* User Profile & Actions */}
           <div className="flex items-center gap-3">
+            {/* Command Palette Trigger Button */}
+            <button
+              onClick={() => setCommandPaletteOpen(true)}
+              className="hidden md:flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/80 text-slate-500 hover:text-slate-700 text-xs transition cursor-pointer"
+            >
+              <span className="font-medium">Quick search...</span>
+              <kbd className="inline-flex items-center gap-0.5 rounded border border-slate-200 bg-white px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-500 shadow-2xs">
+                ⌘K
+              </kbd>
+            </button>
+
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 text-xs text-slate-600 border border-slate-200/60">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span className="font-medium">Live Session</span>
@@ -418,6 +431,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           {children}
         </main>
       </div>
+
+      {/* Global Command Palette (Ctrl+K / Cmd+K) */}
+      <GlobalCommandPalette
+        open={commandPaletteOpen}
+        onOpenChange={setCommandPaletteOpen}
+      />
     </div>
   );
 }
