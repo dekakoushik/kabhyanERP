@@ -413,9 +413,13 @@ function ClientsContent() {
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => handleResendInvite(cli)}
-                          disabled={sendingInviteId === cli.id}
-                          title="Send / Resend Mobile App Activation Link"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer disabled:opacity-50 transition"
+                          disabled={sendingInviteId === cli.id || !cli.email}
+                          title={cli.email ? "Send / Resend Mobile App Activation Link" : "Cannot invite client without an email address"}
+                          className={`p-1.5 rounded-lg transition ${
+                            !cli.email
+                              ? "text-slate-300 cursor-not-allowed"
+                              : "text-slate-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer disabled:opacity-50"
+                          }`}
                         >
                           {sendingInviteId === cli.id ? (
                             <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
