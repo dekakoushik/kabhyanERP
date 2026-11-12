@@ -6,6 +6,7 @@ import { api, Client, EstimateItem, Project } from "@/lib/api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ClientCombobox from "@/components/ClientCombobox";
+import ClientSnapshotCard from "@/components/ClientSnapshotCard";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -129,12 +130,19 @@ export default function CreateEstimatePage() {
   const handleSelectClient = (client: Client | null) => {
     if (!client) {
       setSelectedClientId(null);
+      setFormData((prev) => ({
+        ...prev,
+        client_name: "",
+        client_company: "",
+        client_email: "",
+        client_phone: "",
+        client_address: "",
+      }));
       return;
     }
 
     setSelectedClientId(client.id);
 
-    // Format full address
     const addressParts = [
       client.address,
       client.city,
@@ -145,11 +153,11 @@ export default function CreateEstimatePage() {
 
     setFormData((prev) => ({
       ...prev,
-      client_name: client.name || prev.client_name,
-      client_company: client.company_name || prev.client_company,
-      client_email: client.email || prev.client_email,
-      client_phone: client.phone || prev.client_phone,
-      client_address: addressParts.join(", ") || prev.client_address,
+      client_name: client.name || client.company_name,
+      client_company: client.company_name || "",
+      client_email: client.email || "",
+      client_phone: client.phone || "",
+      client_address: addressParts.join(", "),
       currency: client.currency || prev.currency,
     }));
 
@@ -251,8 +259,11 @@ export default function CreateEstimatePage() {
     setLoading(true);
 
     try {
-      if (!formData.client_name || !formData.estimate_number) {
-        throw new Error("Client name and estimate number are required");
+      if (!selectedClientId || !formData.client_name) {
+        throw new Error("Please select a client from the dropdown or click Add New Client");
+      }
+      if (!formData.estimate_number) {
+        throw new Error("Estimate number is required");
       }
 
       await api.request("/estimates", {
@@ -428,102 +439,15 @@ export default function CreateEstimatePage() {
             </Card>
 
             {/* 2. Client Profile Card */}
-            <Card>
-              <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <Building className="w-4 h-4 text-blue-600" />
-                  Client & Entity Information
-                </CardTitle>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setQuickAddOpen(true)}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100/80 px-2.5 py-1 rounded-lg border border-blue-200/60 transition cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add New Client</span>
-                  </button>
-                  <Link
-                    href="/dashboard/clients/create"
-                    target="_blank"
-                    className="text-slate-400 hover:text-slate-600 p-1"
-                    title="Open Full Client Onboarding in New Tab"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-4 space-y-4">
-                {/* Searchable Client Picker */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700">
-                      Choose Existing Corporate Client
-                    </label>
-                    <span className="text-3xs text-slate-400 font-medium">
-                      Select to auto-populate company details
-                    </span>
-                  </div>
-                  <ClientCombobox
-                    clients={clients}
-                    selectedClientId={selectedClientId}
-                    onSelectClient={handleSelectClient}
-                    onOpenQuickAdd={() => setQuickAddOpen(true)}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1 border-t border-slate-100">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">
-                      Client Contact Name <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      placeholder="e.g. David Vance"
-                      value={formData.client_name}
-                      onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">Company / Organization</label>
-                    <Input
-                      placeholder="e.g. Vanguard Logistics Corp"
-                      value={formData.client_company}
-                      onChange={(e) => setFormData({ ...formData, client_company: e.target.value })}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">Email Address</label>
-                    <Input
-                      type="email"
-                      placeholder="client@company.com"
-                      value={formData.client_email}
-                      onChange={(e) => setFormData({ ...formData, client_email: e.target.value })}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">Phone Number</label>
-                    <Input
-                      placeholder="+91 9876543210"
-                      value={formData.client_phone}
-                      onChange={(e) => setFormData({ ...formData, client_phone: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">Office Address</label>
-                    <Input
-                      placeholder="Suite 400, Innovation Tower, City, Country"
-                      value={formData.client_address}
-                      onChange={(e) => setFormData({ ...formData, client_address: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <ClientSnapshotCard
+              clients={clients}
+              selectedClient={clients.find((c) => c.id === selectedClientId) || null}
+              onSelectClient={handleSelectClient}
+              onOpenQuickAdd={() => setQuickAddOpen(true)}
+              title="Client & Entity Information"
+              subtitle="Select an existing client to auto-populate company, billing, and GST details"
+              required={true}
+            />
 
             {/* 3. Itemized Deliverables Table */}
             <Card>
