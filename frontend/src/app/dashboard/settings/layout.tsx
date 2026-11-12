@@ -17,6 +17,7 @@ import {
   Cpu,
   RefreshCw,
   LayoutGrid,
+  Hash,
 } from "lucide-react";
 
 export default function SettingsLayout({
@@ -30,6 +31,7 @@ export default function SettingsLayout({
   const navItems = [
     { label: "Overview", href: "/dashboard/settings", icon: LayoutGrid, exact: true },
     { label: "Company Profile", href: "/dashboard/settings/company", icon: Building },
+    { label: "Document Numbering", href: "/dashboard/settings/numbering", icon: Hash },
     { label: "GST & Taxation", href: "/dashboard/settings/gst", icon: Receipt },
     { label: "Banking & Wire", href: "/dashboard/settings/banking", icon: Building2 },
     { label: "Localization", href: "/dashboard/settings/localization", icon: Globe },

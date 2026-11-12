@@ -8,6 +8,7 @@ use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
 use App\Models\ProformaInvoice;
 use App\Models\Estimate;
+use App\Services\DocumentNumberService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -71,14 +72,8 @@ class InvoiceController extends Controller
      */
     public function convertFromProforma(Request $request, ProformaInvoice $proformaInvoice): JsonResponse
     {
-        // Generate next tax invoice number
-        $count = Invoice::count() + 1;
-        $invoiceNumber = 'INV-' . date('Y') . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);
-
-        while (Invoice::where('invoice_number', $invoiceNumber)->exists()) {
-            $count++;
-            $invoiceNumber = 'INV-' . date('Y') . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);
-        }
+        // Generate next tax invoice number using central DocumentNumberService
+        $invoiceNumber = DocumentNumberService::getNextInvoiceNumber(true);
 
         $invoice = Invoice::create([
             'invoice_number' => $invoiceNumber,
@@ -149,7 +144,7 @@ class InvoiceController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'invoice_number' => ['required', 'string', 'max:50', 'unique:invoices,invoice_number'],
+            'invoice_number' => ['nullable', 'string', 'max:50', 'unique:invoices,invoice_number'],
             'proforma_invoice_id' => ['nullable', 'exists:proforma_invoices,id'],
             'estimate_id' => ['nullable', 'exists:estimates,id'],
             'project_id' => ['nullable', 'exists:projects,id'],
@@ -180,8 +175,15 @@ class InvoiceController extends Controller
 
         $validated['created_by'] = $request->user()->id;
 
+        $invoiceNumber = $validated['invoice_number'] ?? null;
+        if (empty($invoiceNumber)) {
+            $invoiceNumber = DocumentNumberService::getNextInvoiceNumber(true);
+        } else {
+            DocumentNumberService::getNextInvoiceNumber(true);
+        }
+
         $invoice = Invoice::create([
-            'invoice_number' => $validated['invoice_number'],
+            'invoice_number' => $invoiceNumber,
             'proforma_invoice_id' => $validated['proforma_invoice_id'] ?? null,
             'estimate_id' => $validated['estimate_id'] ?? null,
             'project_id' => $validated['project_id'] ?? null,

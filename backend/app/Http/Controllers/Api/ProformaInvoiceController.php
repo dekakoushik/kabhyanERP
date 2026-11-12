@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Estimate;
 use App\Models\ProformaInvoice;
 use App\Models\ProformaInvoiceItem;
+use App\Services\DocumentNumberService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -76,15 +77,8 @@ class ProformaInvoiceController extends Controller
             ], 422);
         }
 
-        // Generate next proforma number
-        $count = ProformaInvoice::count() + 1;
-        $proformaNumber = 'PI-' . date('Y') . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);
-
-        // Ensure unique
-        while (ProformaInvoice::where('proforma_number', $proformaNumber)->exists()) {
-            $count++;
-            $proformaNumber = 'PI-' . date('Y') . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);
-        }
+        // Generate next proforma number using central DocumentNumberService
+        $proformaNumber = DocumentNumberService::getNextProformaNumber(true);
 
         $defaultBankDetails = "Bank Name: HDFC Bank Limited\nAccount Name: Kabhyan Technologies Private Limited\nAccount Number: 50200084729184\nIFSC Code: HDFC0001234\nBranch: Salt Lake Sector V, Kolkata, West Bengal\nUPI ID: kabhyan@hdfcbank";
 
@@ -142,7 +136,7 @@ class ProformaInvoiceController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'proforma_number' => ['required', 'string', 'max:50', 'unique:proforma_invoices,proforma_number'],
+            'proforma_number' => ['nullable', 'string', 'max:50', 'unique:proforma_invoices,proforma_number'],
             'estimate_id' => ['nullable', 'exists:estimates,id'],
             'project_id' => ['nullable', 'exists:projects,id'],
             'client_name' => ['required', 'string', 'max:255'],
@@ -171,8 +165,15 @@ class ProformaInvoiceController extends Controller
 
         $validated['created_by'] = $request->user()->id;
 
+        $proformaNumber = $validated['proforma_number'] ?? null;
+        if (empty($proformaNumber)) {
+            $proformaNumber = DocumentNumberService::getNextProformaNumber(true);
+        } else {
+            DocumentNumberService::getNextProformaNumber(true);
+        }
+
         $proforma = ProformaInvoice::create([
-            'proforma_number' => $validated['proforma_number'],
+            'proforma_number' => $proformaNumber,
             'estimate_id' => $validated['estimate_id'] ?? null,
             'project_id' => $validated['project_id'] ?? null,
             'created_by' => $validated['created_by'],

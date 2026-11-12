@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Estimate;
 use App\Models\EstimateItem;
+use App\Services\DocumentNumberService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -61,7 +62,7 @@ class EstimateController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'estimate_number' => ['required', 'string', 'max:50', 'unique:estimates,estimate_number'],
+            'estimate_number' => ['nullable', 'string', 'max:50', 'unique:estimates,estimate_number'],
             'project_id' => ['nullable', 'exists:projects,id'],
             'client_name' => ['required', 'string', 'max:255'],
             'client_email' => ['nullable', 'email', 'max:255'],
@@ -87,8 +88,17 @@ class EstimateController extends Controller
 
         $validated['created_by'] = $request->user()->id;
 
+        // Auto-assign or advance document numbering sequence
+        $estimateNumber = $validated['estimate_number'] ?? null;
+        if (empty($estimateNumber)) {
+            $estimateNumber = DocumentNumberService::getNextEstimateNumber(true);
+        } else {
+            // Increment the next counter in settings if the user used the current generated sequence
+            DocumentNumberService::getNextEstimateNumber(true);
+        }
+
         $estimate = Estimate::create([
-            'estimate_number' => $validated['estimate_number'],
+            'estimate_number' => $estimateNumber,
             'project_id' => $validated['project_id'] ?? null,
             'created_by' => $validated['created_by'],
             'client_name' => $validated['client_name'],

@@ -61,20 +61,34 @@ export default function CreateProformaPage() {
     const due = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
     setFormData((prev) => ({
       ...prev,
-      proforma_number: `PI-${now.getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
       invoice_date: now.toISOString().split("T")[0],
       due_date: due.toISOString().split("T")[0],
     }));
 
-    const fetchProjects = async () => {
+    const initData = async () => {
       try {
         const res = await api.request("/projects?per_page=100");
         setProjects(res.projects.data || []);
       } catch (err) {
         console.error("Failed to fetch projects:", err);
       }
+
+      try {
+        const numRes = await api.request("/settings/next-document-numbers");
+        if (numRes?.numbers?.proforma) {
+          setFormData((prev) => ({
+            ...prev,
+            proforma_number: numRes.numbers.proforma,
+          }));
+        }
+      } catch (err) {
+        setFormData((prev) => ({
+          ...prev,
+          proforma_number: `PI-${now.getFullYear()}-001`,
+        }));
+      }
     };
-    fetchProjects();
+    initData();
   }, []);
 
   // Calculations

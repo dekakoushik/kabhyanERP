@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\SystemSetting;
+use App\Services\DocumentNumberService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -298,6 +299,22 @@ class SettingController extends Controller
         return response()->json([
             'message' => 'Brand asset reset to default',
             'key' => $settingKey,
+        ]);
+    }
+
+    /**
+     * Get preview of next document numbers.
+     */
+    public function nextDocumentNumbers(Request $request)
+    {
+        $overrides = $request->only([
+            'estimate_prefix', 'estimate_suffix', 'estimate_padding', 'estimate_include_year', 'estimate_next_number',
+            'proforma_prefix', 'proforma_suffix', 'proforma_padding', 'proforma_include_year', 'proforma_next_number',
+            'invoice_prefix', 'invoice_suffix', 'invoice_padding', 'invoice_include_year', 'invoice_next_number',
+        ]);
+
+        return response()->json([
+            'numbers' => DocumentNumberService::previewAll(!empty($overrides) ? $overrides : null),
         ]);
     }
 }

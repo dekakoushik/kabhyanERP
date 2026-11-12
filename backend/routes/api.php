@@ -103,6 +103,7 @@ Route::prefix('v1')->group(function () {
         // System Settings & Infrastructure (SuperAdmin / Admin)
         Route::get('settings', [SettingController::class, 'index']);
         Route::post('settings', [SettingController::class, 'update']);
+        Route::get('settings/next-document-numbers', [SettingController::class, 'nextDocumentNumbers']);
         Route::post('settings/brand-assets', [SettingController::class, 'uploadBrandAsset']);
         Route::delete('settings/brand-assets/{type}', [SettingController::class, 'deleteBrandAsset']);
         Route::post('settings/flush-cache', [SettingController::class, 'flushCache']);

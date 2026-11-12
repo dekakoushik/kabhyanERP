@@ -33,7 +33,7 @@ export default function CreateEstimatePage() {
   const [formError, setFormError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    estimate_number: "EST-2026-101",
+    estimate_number: "",
     project_id: "",
     client_name: "",
     client_company: "",
@@ -49,49 +49,57 @@ export default function CreateEstimatePage() {
     round_off: 0,
     is_round_off: true,
     target_total: "",
-    notes: "Payment due within 30 days of invoice issuance.",
-    terms_and_conditions:
-      "50% upfront payment required before commencement of development milestones. All intellectual property transfers upon receipt of final settlement.",
+    notes: "",
+    terms_and_conditions: "",
     items: [
       {
-        item_name: "Cloud Architecture & Security Setup",
-        description: "AWS / Dokploy cloud setup, Redis cache & PostgreSQL deployment",
-        quantity: 40,
+        item_name: "",
+        description: "",
+        quantity: 1,
         unit: "hours",
-        unit_price: 2500,
-        amount: 100000,
-      },
-      {
-        item_name: "Executive Portal Frontend Development",
-        description: "Next.js 16 standalone application with ShadCN UI & Google Sans",
-        quantity: 80,
-        unit: "hours",
-        unit_price: 2000,
-        amount: 160000,
+        unit_price: 0,
+        amount: 0,
       },
     ] as EstimateItem[],
   });
 
   useEffect(() => {
-    // Generate dynamic date and number on client mount safely
     const now = new Date();
     const expiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     setFormData((prev) => ({
       ...prev,
-      estimate_number: `EST-${now.getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
       estimate_date: now.toISOString().split("T")[0],
       expiry_date: expiry.toISOString().split("T")[0],
     }));
 
-    const fetchProjects = async () => {
+    const initData = async () => {
       try {
+        // Fetch projects
         const res = await api.request("/projects?per_page=100");
         setProjects(res.projects.data || []);
       } catch (err) {
         console.error("Failed to fetch projects:", err);
       }
+
+      try {
+        // Fetch next sequential estimate number from Settings Engine
+        const numRes = await api.request("/settings/next-document-numbers");
+        if (numRes?.numbers?.estimate) {
+          setFormData((prev) => ({
+            ...prev,
+            estimate_number: numRes.numbers.estimate,
+          }));
+        }
+      } catch (err) {
+        console.error("Failed to fetch next estimate number:", err);
+        // Fallback default
+        setFormData((prev) => ({
+          ...prev,
+          estimate_number: `EST-${now.getFullYear()}-001`,
+        }));
+      }
     };
-    fetchProjects();
+    initData();
   }, []);
 
   // Recalculate totals
