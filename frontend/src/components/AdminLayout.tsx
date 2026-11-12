@@ -8,6 +8,25 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import NotificationBell from "@/components/NotificationBell";
 import GlobalCommandPalette from "@/components/GlobalCommandPalette";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Users,
   LayoutDashboard,
@@ -125,6 +144,59 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       }),
     }))
     .filter((group) => group.items.length > 0);
+
+  // Dynamic Hierarchical Breadcrumb Generator
+  const getBreadcrumbs = () => {
+    if (pathname === "/dashboard") {
+      return [{ label: "Corporate Overview", href: "/dashboard", isCurrent: true }];
+    }
+
+    const segments = pathname.split("/").filter(Boolean); // ['dashboard', 'projects', ...]
+    const crumbs: { label: string; href: string; isCurrent: boolean }[] = [];
+
+    // Base Dashboard Link
+    crumbs.push({ label: "Workspace", href: "/dashboard", isCurrent: false });
+
+    if (segments.length >= 2) {
+      const section = segments[1];
+      let sectionLabel = section.charAt(0).toUpperCase() + section.slice(1);
+      if (section === "estimates") sectionLabel = "Estimates";
+      if (section === "proforma") sectionLabel = "Proforma Invoices";
+      if (section === "invoices") sectionLabel = "Tax Invoices";
+      if (section === "accounts") sectionLabel = "Ledger & Income";
+      if (section === "expenses") sectionLabel = "Expenses";
+      if (section === "clients") sectionLabel = "Clients";
+      if (section === "projects") sectionLabel = "Projects";
+      if (section === "tasks") sectionLabel = "Tasks";
+      if (section === "tickets") sectionLabel = "Support Tickets";
+      if (section === "users") sectionLabel = "Team & Staff";
+      if (section === "settings") sectionLabel = "Settings";
+
+      const sectionHref = `/dashboard/${section}`;
+      const isCurrent = segments.length === 2;
+      crumbs.push({ label: sectionLabel, href: sectionHref, isCurrent });
+
+      // Sub-segment (e.g. /clients/create or /settings/company or /invoices/[id])
+      if (segments.length >= 3) {
+        const sub = segments[2];
+        let subLabel = sub.charAt(0).toUpperCase() + sub.slice(1);
+        if (sub === "create") subLabel = "New Record";
+        if (sub === "company") subLabel = "Company & Brand";
+        if (sub === "gst") subLabel = "GST Compliance";
+        if (sub === "banking") subLabel = "Banking Details";
+        if (sub === "localization") subLabel = "Localization";
+        if (sub === "security") subLabel = "Security & Access";
+        if (sub === "email") subLabel = "Email Infrastructure";
+        if (sub === "system") subLabel = "System Health";
+
+        crumbs.push({ label: subLabel, href: pathname, isCurrent: true });
+      }
+    }
+
+    return crumbs;
+  };
+
+  const breadcrumbs = getBreadcrumbs();
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row font-sans">
@@ -298,146 +370,151 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       }`}>
         {/* Top Navbar */}
         <header className="h-16 bg-white border-b border-slate-200/80 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30 print:hidden">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+              className="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition cursor-pointer shrink-0"
+              aria-label="Toggle navigation drawer"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <div>
-              <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-                {pathname === "/dashboard"
-                  ? "Corporate Overview"
-                  : pathname.startsWith("/dashboard/estimates")
-                  ? "Client Estimates & Quotes"
-                  : pathname.startsWith("/dashboard/proforma")
-                  ? "Proforma Invoices"
-                  : pathname.startsWith("/dashboard/invoices")
-                  ? "Tax Invoices & GST"
-                  : pathname.startsWith("/dashboard/accounts")
-                  ? "Financial Ledger & Cashflow"
-                  : pathname.startsWith("/dashboard/expenses")
-                  ? "Expense Tracking"
-                  : pathname.startsWith("/dashboard/clients")
-                  ? "Client Directory"
-                  : pathname.startsWith("/dashboard/tickets")
-                  ? "Helpdesk & Support Tickets"
-                  : pathname.startsWith("/dashboard/projects")
-                  ? "Project Portfolio"
-                  : pathname.startsWith("/dashboard/tasks")
-                  ? "Task Management & Kanban"
-                  : pathname.startsWith("/dashboard/users")
-                  ? "Team & User Management"
-                  : pathname.startsWith("/dashboard/settings")
-                  ? "System Settings"
-                  : "Workspace"}
-              </h1>
-              <p className="hidden sm:block text-xs text-slate-500">
+            <div className="min-w-0">
+              <Breadcrumb>
+                <BreadcrumbList>
+                  {breadcrumbs.map((crumb, idx) => (
+                    <React.Fragment key={crumb.href + idx}>
+                      <BreadcrumbItem>
+                        {crumb.isCurrent ? (
+                          <BreadcrumbPage className="text-sm font-black text-slate-900 tracking-tight truncate max-w-[200px] sm:max-w-none">
+                            {crumb.label}
+                          </BreadcrumbPage>
+                        ) : (
+                          <BreadcrumbLink asChild>
+                            <Link href={crumb.href} className="text-slate-500 hover:text-slate-800 font-semibold text-xs transition">
+                              {crumb.label}
+                            </Link>
+                          </BreadcrumbLink>
+                        )}
+                      </BreadcrumbItem>
+                      {idx < breadcrumbs.length - 1 && <BreadcrumbSeparator />}
+                    </React.Fragment>
+                  ))}
+                </BreadcrumbList>
+              </Breadcrumb>
+              <p className="hidden sm:block text-[11px] text-slate-400 mt-0.5">
                 Kabhyan IT Operations & Management Suite
               </p>
             </div>
           </div>
 
           {/* User Profile & Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
             {/* Command Palette Trigger Button */}
             <button
               onClick={() => setCommandPaletteOpen(true)}
-              className="hidden md:flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/80 text-slate-500 hover:text-slate-700 text-xs transition cursor-pointer"
+              className="hidden md:flex items-center gap-2.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/90 text-slate-500 hover:text-slate-700 text-xs transition cursor-pointer shadow-2xs"
             >
-              <span className="font-medium">Quick search...</span>
-              <kbd className="inline-flex items-center gap-0.5 rounded border border-slate-200 bg-white px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-500 shadow-2xs">
+              <span className="font-medium text-[11px]">Quick search...</span>
+              <kbd className="inline-flex items-center gap-0.5 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-500 shadow-2xs">
                 ⌘K
               </kbd>
             </button>
 
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 text-xs text-slate-600 border border-slate-200/60">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="font-medium">Live Session</span>
-            </div>
+            {/* Live Session Status */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[11px] font-semibold cursor-default">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Live Gateway</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Connected to Kabhyan Cloud Cluster (Session Active)</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
-            {/* In-App Notification Center */}
+            {/* In-App Notification Center via Shadcn Popover */}
             <NotificationBell />
 
-            {/* Profile Menu Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-              >
-                <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-semibold flex items-center justify-center text-xs shadow-xs">
-                  {user?.name?.slice(0, 1).toUpperCase() || "K"}
-                </div>
-                <div className="hidden md:block text-left text-xs">
-                  <p className="font-semibold text-slate-900 leading-tight">{user?.name}</p>
-                  <p className="text-slate-500 text-[11px]">{user?.email}</p>
-                </div>
-                <ChevronDown className="w-4 h-4 text-slate-400" />
-              </button>
-
-              {profileDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-xl bg-white shadow-lg border border-slate-200/80 py-1.5 z-50">
-                  <div className="px-4 py-2 border-b border-slate-100">
-                    <p className="text-xs font-semibold text-slate-900">{user?.name}</p>
-                    <p className="text-[11px] text-slate-500 truncate">{user?.email}</p>
-                    <span className="mt-1.5 inline-block text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700">
-                      {user?.role}
-                    </span>
+            {/* Profile Menu via Shadcn DropdownMenu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  aria-label="User Profile Menu"
+                >
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-blue-600 text-white font-bold text-xs">
+                      {user?.name ? user.name.slice(0, 1).toUpperCase() : "K"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="hidden md:block text-left text-xs leading-tight">
+                    <p className="font-bold text-slate-900 truncate max-w-[130px]">{user?.name}</p>
+                    <p className="text-slate-400 text-[10px] truncate max-w-[130px]">{user?.email}</p>
                   </div>
-                  <Link
-                    href="/dashboard/estimates"
-                    onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2 text-xs text-slate-700 hover:bg-slate-50"
-                  >
-                    <FileText className="w-4 h-4 text-slate-400" />
-                    <span>Estimates</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/proforma"
-                    onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2 text-xs text-slate-700 hover:bg-slate-50"
-                  >
-                    <Receipt className="w-4 h-4 text-slate-400" />
-                    <span>Proforma Invoices</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/projects"
-                    onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2 text-xs text-slate-700 hover:bg-slate-50"
-                  >
-                    <Briefcase className="w-4 h-4 text-slate-400" />
-                    <span>Projects</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/tasks"
-                    onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2 text-xs text-slate-700 hover:bg-slate-50"
-                  >
-                    <CheckSquare className="w-4 h-4 text-slate-400" />
-                    <span>Tasks</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/users"
-                    onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2 text-xs text-slate-700 hover:bg-slate-50"
-                  >
-                    <UserCheck className="w-4 h-4 text-slate-400" />
-                    <span>Manage Staff</span>
-                  </Link>
-                  <button
-                    onClick={() => {
-                      setProfileDropdownOpen(false);
-                      logout();
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-xs text-red-600 hover:bg-red-50 text-left cursor-pointer"
-                  >
-                    <LogOut className="w-4 h-4 text-red-500" />
-                    <span>Log Out</span>
-                  </button>
-                </div>
-              )}
-            </div>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden md:block" />
+                </button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent align="end" sideOffset={8} className="w-56 p-1.5 shadow-xl">
+                <DropdownMenuLabel className="p-2">
+                  <p className="text-xs font-bold text-slate-900">{user?.name}</p>
+                  <p className="text-[11px] text-slate-500 truncate font-normal">{user?.email}</p>
+                  <span className="mt-1.5 inline-block text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/80">
+                    {user?.role}
+                  </span>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+
+                <DropdownMenuGroup>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/projects" className="flex items-center gap-2 cursor-pointer">
+                      <Briefcase className="w-4 h-4 text-slate-500" />
+                      <span>Projects Portfolio</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/tasks" className="flex items-center gap-2 cursor-pointer">
+                      <CheckSquare className="w-4 h-4 text-slate-500" />
+                      <span>Tasks & Kanban</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/invoices" className="flex items-center gap-2 cursor-pointer">
+                      <Receipt className="w-4 h-4 text-slate-500" />
+                      <span>Invoices & Billing</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/clients" className="flex items-center gap-2 cursor-pointer">
+                      <Building className="w-4 h-4 text-slate-500" />
+                      <span>Client Accounts</span>
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+
+                <DropdownMenuGroup>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/settings" className="flex items-center gap-2 cursor-pointer">
+                      <Settings className="w-4 h-4 text-slate-500" />
+                      <span>System Settings</span>
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem
+                  onClick={logout}
+                  className="flex items-center gap-2 text-red-600 focus:bg-red-50 focus:text-red-700 cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4 text-red-500" />
+                  <span>Log Out of Workspace</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
