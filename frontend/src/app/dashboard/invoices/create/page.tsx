@@ -464,72 +464,143 @@ export default function CreateInvoicePage() {
                   variant="outline"
                   size="sm"
                   onClick={addItem}
-                  className="text-xs text-blue-600 border-blue-200 hover:bg-blue-50"
+                  className="text-xs text-blue-600 border-blue-200 hover:bg-blue-50 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5 mr-1" />
                   Add Line Item
                 </Button>
               </CardHeader>
               <CardContent className="pt-4 space-y-3">
-                {formData.items.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3.5 rounded-xl border border-slate-200/90 bg-slate-50/50 space-y-3"
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-                      <div className="md:col-span-6">
-                        <Input
-                          placeholder="Description / Service Name"
-                          value={item.item_name}
-                          onChange={(e) => handleItemChange(idx, "item_name", e.target.value)}
-                          required
-                        />
+                {/* Column Headings for Large Screens */}
+                <div className="hidden lg:grid grid-cols-12 gap-3 px-3.5 py-2 bg-slate-100/80 border border-slate-200 rounded-lg text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                  <div className="col-span-5">Service / Line Item Description</div>
+                  <div className="col-span-2 text-center">Qty & Units</div>
+                  <div className="col-span-2 text-right">Unit Rate ({formData.currency})</div>
+                  <div className="col-span-3 text-right">Taxable & GST ({formData.tax_rate}%)</div>
+                </div>
+
+                {formData.items.map((item, idx) => {
+                  const itemTaxable = Number(item.amount) || 0;
+                  const itemGst = itemTaxable * (Number(formData.tax_rate) / 100);
+                  const itemGross = itemTaxable + itemGst;
+
+                  return (
+                    <div
+                      key={idx}
+                      className="p-3.5 rounded-xl border border-slate-200/90 bg-slate-50/50 hover:bg-white hover:border-slate-300 transition-all space-y-3 shadow-2xs"
+                    >
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-center">
+                        {/* Title */}
+                        <div className="lg:col-span-5">
+                          <label className="block lg:hidden text-[10px] font-bold uppercase text-slate-500 mb-1">
+                            Service / Item Name <span className="text-red-500">*</span>
+                          </label>
+                          <Input
+                            placeholder="Description / Service Name"
+                            value={item.item_name}
+                            onChange={(e) => handleItemChange(idx, "item_name", e.target.value)}
+                            required
+                            className="bg-white"
+                          />
+                        </div>
+
+                        {/* Qty & Unit */}
+                        <div className="lg:col-span-2">
+                          <label className="block lg:hidden text-[10px] font-bold uppercase text-slate-500 mb-1">
+                            Quantity & Unit
+                          </label>
+                          <div className="flex gap-1.5">
+                            <Input
+                              type="number"
+                              placeholder="Qty"
+                              min="0.1"
+                              step="any"
+                              value={item.quantity}
+                              onChange={(e) => handleItemChange(idx, "quantity", e.target.value)}
+                              required
+                              className="bg-white text-center font-mono"
+                            />
+                            <select
+                              value={item.unit}
+                              onChange={(e) => handleItemChange(idx, "unit", e.target.value)}
+                              className="w-20 h-9 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs shadow-2xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium text-slate-600"
+                            >
+                              <option value="hours">hrs</option>
+                              <option value="days">days</option>
+                              <option value="units">units</option>
+                              <option value="milestone">mile</option>
+                              <option value="months">mos</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Rate */}
+                        <div className="lg:col-span-2">
+                          <label className="block lg:hidden text-[10px] font-bold uppercase text-slate-500 mb-1">
+                            Unit Rate
+                          </label>
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              placeholder="Rate"
+                              min="0"
+                              step="any"
+                              value={item.unit_price}
+                              onChange={(e) => handleItemChange(idx, "unit_price", e.target.value)}
+                              required
+                              className="bg-white font-mono text-right pr-2"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Taxable & Per-Item GST Breakdown */}
+                        <div className="lg:col-span-3 flex items-center justify-between gap-3 bg-white/80 p-2 rounded-lg border border-slate-200/70">
+                          <div className="text-right flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1 text-[11px]">
+                              <span className="text-slate-500 font-medium">Taxable:</span>
+                              <span className="font-mono font-semibold text-slate-800">
+                                ₹{itemTaxable.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between gap-1 text-[10px] text-blue-600">
+                              <span className="font-medium">+ GST ({formData.tax_rate}%):</span>
+                              <span className="font-mono font-bold">
+                                ₹{itemGst.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between gap-1 text-[11px] pt-1 mt-0.5 border-t border-slate-100 font-bold text-slate-900">
+                              <span className="text-[10px] text-slate-600 uppercase">Total:</span>
+                              <span className="font-mono text-emerald-700">
+                                ₹{itemGross.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                          </div>
+
+                          {formData.items.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeItem(idx)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer shrink-0"
+                              title="Delete Item"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <div className="md:col-span-2">
+
+                      {/* Scope Description */}
+                      <div>
                         <Input
-                          type="number"
-                          placeholder="Qty"
-                          min="0.1"
-                          step="any"
-                          value={item.quantity}
-                          onChange={(e) => handleItemChange(idx, "quantity", e.target.value)}
-                          required
+                          placeholder="Detailed deliverables scope..."
+                          value={item.description || ""}
+                          onChange={(e) => handleItemChange(idx, "description", e.target.value)}
+                          className="text-xs text-slate-600 bg-white"
                         />
-                      </div>
-                      <div className="md:col-span-2">
-                        <Input
-                          type="number"
-                          placeholder="Rate"
-                          min="0"
-                          step="any"
-                          value={item.unit_price}
-                          onChange={(e) => handleItemChange(idx, "unit_price", e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="md:col-span-2 flex items-center justify-between gap-2">
-                        <span className="font-mono text-xs font-bold text-slate-800">
-                          ₹{Number(item.amount || 0).toLocaleString()}
-                        </span>
-                        {formData.items.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeItem(idx)}
-                            className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 transition"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
                       </div>
                     </div>
-                    <Input
-                      placeholder="Detailed deliverables scope..."
-                      value={item.description || ""}
-                      onChange={(e) => handleItemChange(idx, "description", e.target.value)}
-                      className="text-xs text-slate-600"
-                    />
-                  </div>
-                ))}
+                  );
+                })}
               </CardContent>
             </Card>
 
