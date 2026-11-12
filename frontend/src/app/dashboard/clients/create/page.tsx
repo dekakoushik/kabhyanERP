@@ -14,22 +14,17 @@ import {
   Phone,
   MapPin,
   ShieldCheck,
-  KeyRound,
+  Smartphone,
   FileText,
   ArrowLeft,
   Save,
   CheckCircle2,
   AlertCircle,
   Loader2,
-  Sparkles,
-  Eye,
-  EyeOff,
-  Copy,
   Receipt,
   CreditCard,
   Globe,
   Send,
-  HelpCircle,
   Hash,
   Check,
 } from "lucide-react";
@@ -58,8 +53,6 @@ export default function CreateClientPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [copiedPwd, setCopiedPwd] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -76,9 +69,8 @@ export default function CreateClientPage() {
     currency: "INR",
     payment_terms: "Net 30",
     notes: "",
-    create_portal_account: true,
-    send_welcome_email: true,
-    portal_password: "Client@2026",
+    grant_mobile_access: true,
+    send_invitation_email: true,
     portal_access_status: "active" as "active" | "inactive",
   });
 
@@ -104,28 +96,6 @@ export default function CreateClientPage() {
     });
   };
 
-  // Generate strong secure random password
-  const generatePassword = () => {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
-    const specialChars = "!@#$%&*";
-    let pwd = "Kbh";
-    for (let i = 0; i < 6; i++) {
-      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    pwd += specialChars.charAt(Math.floor(Math.random() * specialChars.length));
-    pwd += Math.floor(Math.random() * 90 + 10);
-    setFormData((prev) => ({ ...prev, portal_password: pwd }));
-    setShowPassword(true);
-    toast.success("Secure password generated!");
-  };
-
-  const copyPasswordToClipboard = () => {
-    navigator.clipboard.writeText(formData.portal_password);
-    setCopiedPwd(true);
-    toast.success("Password copied to clipboard");
-    setTimeout(() => setCopiedPwd(false), 2000);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -135,7 +105,7 @@ export default function CreateClientPage() {
       return;
     }
     if (!formData.email.trim()) {
-      setFormError("Client email is required for invoicing, communications, and portal access.");
+      setFormError("Client email is required for invoicing, communications, and mobile app invitation.");
       return;
     }
 
@@ -150,7 +120,11 @@ export default function CreateClientPage() {
         method: "POST",
         body: JSON.stringify(formData),
       });
-      toast.success(`Client ${formData.company_name} registered successfully!`);
+      toast.success(
+        formData.grant_mobile_access && formData.send_invitation_email
+          ? `Client registered! Activation email sent to ${formData.email}`
+          : `Client ${formData.company_name} registered successfully!`
+      );
       router.push("/dashboard/clients");
     } catch (err: any) {
       setFormError(err.message || "Failed to create client account.");
@@ -534,107 +508,61 @@ export default function CreateClientPage() {
               </div>
             </div>
 
-            {/* Portal & Security Card */}
+            {/* Mobile App & Passwordless Invitation Card */}
             <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <KeyRound className="w-4 h-4 text-emerald-600" />
+                  <Smartphone className="w-4 h-4 text-emerald-600" />
                   <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-                    Self-Service Client Portal Access
+                    Client Mobile App Access
                   </h2>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={formData.create_portal_account}
-                    onChange={(e) => setFormData({ ...formData, create_portal_account: e.target.checked })}
+                    checked={formData.grant_mobile_access}
+                    onChange={(e) => setFormData({ ...formData, grant_mobile_access: e.target.checked })}
                     className="sr-only peer"
                   />
                   <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
                 </label>
               </div>
               <div className="p-6 space-y-4">
-                {formData.create_portal_account ? (
+                {formData.grant_mobile_access ? (
                   <>
-                    <p className="text-xs text-slate-500">
-                      When enabled, this client can securely log into <span className="font-semibold text-slate-800">erp.kabhyan.com/portal</span> to track deliverables, review invoices, and raise support tickets.
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      Clients will authenticate only on their dedicated <span className="font-semibold text-slate-800">Kabhyan Client Mobile Application</span> to track milestones, view tax invoices, and collaborate on support tickets.
                     </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <label className="block text-xs font-bold text-slate-700">
-                            Portal Password
-                          </label>
-                          <button
-                            type="button"
-                            onClick={generatePassword}
-                            className="text-[11px] font-bold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1 cursor-pointer"
-                          >
-                            <Sparkles className="w-3 h-3" />
-                            Generate Strong
-                          </button>
-                        </div>
-                        <div className="relative">
-                          <input
-                            type={showPassword ? "text" : "password"}
-                            value={formData.portal_password}
-                            onChange={(e) => setFormData({ ...formData, portal_password: e.target.value })}
-                            className="w-full pl-3.5 pr-20 py-2.5 text-sm font-mono rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition"
-                          />
-                          <div className="absolute right-2 top-2 flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => setShowPassword(!showPassword)}
-                              className="p-1 rounded text-slate-400 hover:text-slate-600 transition"
-                              title={showPassword ? "Hide password" : "Show password"}
-                            >
-                              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={copyPasswordToClipboard}
-                              className="p-1 rounded text-slate-400 hover:text-slate-600 transition"
-                              title="Copy password"
-                            >
-                              {copiedPwd ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                            </button>
-                          </div>
-                        </div>
-                        <p className="text-[11px] text-slate-400 mt-1">Credentials will be delivered to the billing email.</p>
-                      </div>
 
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                          Account Access Status
-                        </label>
-                        <select
-                          value={formData.portal_access_status}
-                          onChange={(e) => setFormData({ ...formData, portal_access_status: e.target.value as any })}
-                          className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition"
-                        >
-                          <option value="active">Active & Enabled</option>
-                          <option value="inactive">Disabled / Suspended</option>
-                        </select>
+                    <div className="p-4 rounded-xl bg-blue-50/60 border border-blue-200/80 text-xs text-blue-900 space-y-2">
+                      <div className="flex items-start gap-2.5">
+                        <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-bold text-blue-950">Zero-Knowledge Secure Onboarding</p>
+                          <p className="text-blue-800/90 text-[11px] mt-0.5 leading-relaxed">
+                            For security and privacy compliance, client passwords are <strong>never created or viewed by administrators</strong>. Instead, a time-limited (48h) encrypted activation link will be dispatched to their registered email address where they will set their own private password.
+                          </p>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t border-slate-100">
-                      <label className="flex items-center gap-2 cursor-pointer">
+                    <div className="pt-2">
+                      <label className="flex items-center gap-2.5 cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={formData.send_welcome_email}
-                          onChange={(e) => setFormData({ ...formData, send_welcome_email: e.target.checked })}
+                          checked={formData.send_invitation_email}
+                          onChange={(e) => setFormData({ ...formData, send_invitation_email: e.target.checked })}
                           className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
                         />
                         <span className="text-xs font-semibold text-slate-700">
-                          Send branded HTML welcome email with login credentials and portal walkthrough immediately
+                          Send branded activation link to <code className="font-mono text-blue-600 font-bold">{formData.email || "client email"}</code> immediately upon registration
                         </span>
                       </label>
                     </div>
                   </>
                 ) : (
                   <p className="text-xs text-slate-400 italic">
-                    Portal account disabled. Client will not receive login credentials for the external portal.
+                    Mobile app access disabled. Client will not receive activation links or mobile app login privileges.
                   </p>
                 )}
               </div>
@@ -756,15 +684,16 @@ export default function CreateClientPage() {
                   </div>
                 </div>
 
+                {/* Mobile Access Status */}
                 <div className="pt-1">
                   <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    Self-Service Portal
+                    Mobile App Access
                   </span>
                   <div className="mt-1 flex items-center justify-between">
-                    {formData.create_portal_account ? (
+                    {formData.grant_mobile_access ? (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Enabled ({formData.portal_access_status})
+                        <Smartphone className="w-3.5 h-3.5" />
+                        Enabled (Invite via Email)
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">
@@ -772,9 +701,9 @@ export default function CreateClientPage() {
                       </span>
                     )}
 
-                    {formData.create_portal_account && formData.send_welcome_email && (
+                    {formData.grant_mobile_access && formData.send_invitation_email && (
                       <span className="text-[11px] font-semibold text-blue-600 flex items-center gap-1">
-                        <Send className="w-3 h-3" /> Auto-Email
+                        <Send className="w-3 h-3" /> Auto-Invite
                       </span>
                     )}
                   </div>

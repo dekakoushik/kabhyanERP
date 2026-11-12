@@ -278,7 +278,63 @@ class MailNotificationService
     }
 
     /**
-     * 1. Send Welcome Email to Client with Portal Credentials.
+     * 1. Send Secure Invitation Link to Client to Set Their Own Password.
+     */
+    public static function sendClientInvitation(Client $client, string $token): bool
+    {
+        $baseUrl = self::getBaseUrl();
+        $activationUrl = "{$baseUrl}/auth/set-password?token=" . urlencode($token) . "&email=" . urlencode($client->email);
+
+        $subject = "Set Up Your Kabhyan Client Account & Mobile App Access";
+
+        $html = '
+            <h2 style="margin: 0 0 12px; font-size: 18px; color: #0f172a; font-weight: 700;">Hello ' . htmlspecialchars($client->name) . ',</h2>
+            <p style="font-size: 14px; line-height: 1.6; color: #475569; margin: 0 0 16px;">
+                Your client account for <strong>' . htmlspecialchars($client->company_name) . '</strong> has been registered on the <strong>Kabhyan Technologies</strong> platform.
+            </p>
+            <p style="font-size: 14px; line-height: 1.6; color: #475569; margin: 0 0 20px;">
+                You will access your project deliverables, milestones, tax invoices, and service requests directly through the <strong>Kabhyan Client Mobile Application</strong>. To complete your registration and establish your private password, please activate your account using the secure link below:
+            </p>
+
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">Account Details</div>
+                <table width="100%" cellpadding="6" cellspacing="0" border="0" style="font-size: 13px; color: #334155;">
+                    <tr>
+                        <td width="140" style="font-weight: 600; color: #64748b;">Client Reference:</td>
+                        <td><span style="background: #e2e8f0; padding: 2px 8px; border-radius: 4px; font-family: monospace; font-weight: 600;">' . htmlspecialchars($client->client_code) . '</span></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600; color: #64748b;">Registered Email:</td>
+                        <td><strong>' . htmlspecialchars($client->email) . '</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600; color: #64748b;">Link Validity:</td>
+                        <td><span style="color: #0369a1; font-weight: 600;">48 Hours</span></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 14px 16px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #1e40af;">
+                    <strong>Security Notice:</strong> Kabhyan staff will never ask for your password. Once you establish your password, you will use it to log in whenever the mobile app is launched.
+                </p>
+            </div>
+        ';
+
+        // Also record an in-app notification for ERP admins
+        SystemNotification::createNotification(
+            null,
+            'client',
+            'Client Invitation Sent',
+            "An account activation link was dispatched to {$client->name} ({$client->email}).",
+            '/dashboard/clients'
+        );
+
+        return self::send($client->email, $subject, $html, $client->name, $activationUrl, "Activate Account & Set Password");
+    }
+
+    /**
+     * 1b. Legacy/Fallback: Send Welcome Email to Client with Credentials (if ever requested).
      */
     public static function sendClientWelcome(Client $client, string $plainPassword): bool
     {

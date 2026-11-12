@@ -29,6 +29,8 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login']);
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
+    Route::get('/auth/verify-invitation', [AuthController::class, 'verifyInvitation']);
+    Route::post('/auth/activate-account', [AuthController::class, 'activateAccount']);
 
     // Protected Routes
     Route::middleware('auth:sanctum')->group(function () {
@@ -80,6 +82,7 @@ Route::prefix('v1')->group(function () {
         Route::get('financial-reports/income-vs-expense', [FinancialReportController::class, 'incomeVsExpense']);
 
         // Client Management Module (ERP Admin / Staff)
+        Route::post('clients/{client}/send-invite', [ClientController::class, 'sendInvite']);
         Route::apiResource('clients', ClientController::class);
 
         // Support & Change Request Tickets (ERP Admin / Staff)

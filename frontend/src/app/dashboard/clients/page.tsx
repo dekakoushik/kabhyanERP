@@ -25,6 +25,8 @@ import {
   ShieldCheck,
   Building2,
   User,
+  Send,
+  Smartphone,
 } from "lucide-react";
 
 function ClientsContent() {
@@ -66,7 +68,22 @@ function ClientsContent() {
 
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [sendingInviteId, setSendingInviteId] = useState<number | null>(null);
   const [, startTransition] = useTransition();
+
+  const handleResendInvite = async (client: Client) => {
+    try {
+      setSendingInviteId(client.id);
+      await api.request(`/clients/${client.id}/send-invite`, {
+        method: "POST",
+      });
+      alert(`Invitation link successfully sent to ${client.email}`);
+    } catch (err: any) {
+      alert(err.message || "Failed to send invitation link.");
+    } finally {
+      setSendingInviteId(null);
+    }
+  };
 
   const fetchClients = async () => {
     try {
@@ -395,6 +412,18 @@ function ClientsContent() {
                     <td className="py-4 px-6 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button
+                          onClick={() => handleResendInvite(cli)}
+                          disabled={sendingInviteId === cli.id}
+                          title="Send / Resend Mobile App Activation Link"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer disabled:opacity-50 transition"
+                        >
+                          {sendingInviteId === cli.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                          ) : (
+                            <Send className="w-4 h-4" />
+                          )}
+                        </button>
+                        <button
                           onClick={() => openEditModal(cli)}
                           title="Edit Client"
                           className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
@@ -562,55 +591,33 @@ function ClientsContent() {
                 />
               </div>
 
-              {/* Portal Login Setup Block */}
-              <div className="p-4 bg-blue-50/60 rounded-xl border border-blue-100 space-y-3">
+              {/* Mobile App Access Block */}
+              <div className="p-4 bg-blue-50/60 rounded-xl border border-blue-100 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <KeyRound className="w-4 h-4 text-blue-700" />
-                    <span className="font-bold text-blue-900 text-xs">Client Portal Access Credentials</span>
+                    <Smartphone className="w-4 h-4 text-blue-700" />
+                    <span className="font-bold text-blue-900 text-xs">Client Mobile App Access</span>
                   </div>
-                  {!isEditing && (
-                    <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.create_portal_account}
-                        onChange={(e) => setFormData({ ...formData, create_portal_account: e.target.checked })}
-                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span>Create Portal Login</span>
-                    </label>
-                  )}
+                  <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">
+                    Passwordless Admin
+                  </span>
                 </div>
-
-                {!isEditing && formData.create_portal_account && (
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                      Initial Password (Default: Client@2026)
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.portal_password}
-                      onChange={(e) => setFormData({ ...formData, portal_password: e.target.value })}
-                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-none"
-                    />
-                    <p className="text-[10px] text-slate-500 mt-1">
-                      Client will use this email and password to log in at <span className="font-semibold text-blue-700">/portal</span>.
-                    </p>
-                  </div>
-                )}
-
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  For confidentiality and compliance, passwords are never stored or managed by administrators. Clients set their own private password via the email invitation link for the Mobile App.
+                </p>
                 {isEditing && (
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                      Reset Password (Leave blank to keep existing)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Enter new portal password"
-                      value={formData.reset_portal_password}
-                      onChange={(e) => setFormData({ ...formData, reset_portal_password: e.target.value })}
-                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-none"
-                    />
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const target = clients.find((c) => c.id === editingId);
+                        if (target) handleResendInvite(target);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs cursor-pointer shadow-2xs"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Send New Activation Link via Email</span>
+                    </button>
                   </div>
                 )}
               </div>

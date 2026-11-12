@@ -202,5 +202,125 @@ class AuthController extends Controller
             'message' => 'Your password has been reset successfully. You can now log in.',
         ]);
     }
+
+    /**
+     * Verify invitation token for client account activation.
+     */
+    public function verifyInvitation(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+            'token' => ['required', 'string'],
+        ]);
+
+        $email = strtolower(trim($request->email));
+        $token = trim($request->token);
+
+        $record = DB::table('password_reset_tokens')->where('email', $email)->first();
+
+        if (!$record || $record->token !== $token) {
+            return response()->json([
+                'valid' => false,
+                'message' => 'The activation link is invalid or has already been used.',
+            ], 422);
+        }
+
+        // Invitations are valid for 48 hours
+        $createdAt = Carbon::parse($record->created_at);
+        if ($createdAt->addHours(48)->isPast()) {
+            DB::table('password_reset_tokens')->where('email', $email)->delete();
+            return response()->json([
+                'valid' => false,
+                'message' => 'This invitation link has expired (valid for 48 hours). Please ask your account manager to resend an invite.',
+            ], 422);
+        }
+
+        $user = User::where('email', $email)->first();
+        if (!$user) {
+            return response()->json([
+                'valid' => false,
+                'message' => 'Client account not found.',
+            ], 404);
+        }
+
+        return response()->json([
+            'valid' => true,
+            'email' => $user->email,
+            'name' => $user->name,
+            'role' => $user->role,
+            'expires_at' => $createdAt->addHours(48)->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * Activate client account and establish private password for mobile application.
+     */
+    public function activateAccount(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+            'token' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $email = strtolower(trim($request->email));
+        $token = trim($request->token);
+
+        $record = DB::table('password_reset_tokens')->where('email', $email)->first();
+
+        if (!$record || $record->token !== $token) {
+            return response()->json([
+                'message' => 'Invalid or expired activation link.',
+            ], 422);
+        }
+
+        $createdAt = Carbon::parse($record->created_at);
+        if ($createdAt->addHours(48)->isPast()) {
+            DB::table('password_reset_tokens')->where('email', $email)->delete();
+            return response()->json([
+                'message' => 'This invitation link has expired. Please ask your administrator to send a new invitation.',
+            ], 422);
+        }
+
+        $user = User::where('email', $email)->first();
+        if (!$user) {
+            return response()->json([
+                'message' => 'User account not found.',
+            ], 404);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->password),
+            'status' => 'active',
+        ]);
+
+        // Consume activation token
+        DB::table('password_reset_tokens')->where('email', $email)->delete();
+
+        // Ensure associated Client record is marked active
+        $client = \App\Models\Client::where('email', $email)->orWhere('user_id', $user->id)->first();
+        if ($client) {
+            $client->update(['portal_access_status' => 'active']);
+        }
+
+        // Notification
+        SystemNotification::createNotification(
+            $user->id,
+            'auth',
+            'Account Activated',
+            'Your client account has been activated. You can now log into the Kabhyan Client Mobile App.',
+            '/login'
+        );
+
+        return response()->json([
+            'message' => 'Account successfully activated! Your password has been configured.',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+            ],
+        ]);
+    }
 }
 
