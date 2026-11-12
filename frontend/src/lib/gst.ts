@@ -209,3 +209,63 @@ export function numberToIndianWords(num: number): string {
   return output.replace(/\s+/g, " ");
 }
 
+/**
+ * Standard Indian GSTIN Validation & PAN extractor
+ */
+export function validateGSTIN(gstin?: string | null): {
+  isValid: boolean;
+  stateCode: string | null;
+  stateName: string | null;
+  pan: string | null;
+  errorMessage?: string;
+} {
+  if (!gstin || !gstin.trim()) {
+    return { isValid: false, stateCode: null, stateName: null, pan: null };
+  }
+
+  const clean = gstin.trim().toUpperCase();
+  const gstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+
+  const stateCode = clean.substring(0, 2);
+  const stateName = GST_STATE_CODES[stateCode] || null;
+  const pan = clean.length >= 10 ? clean.substring(2, 10) : null;
+
+  if (clean.length !== 15) {
+    return {
+      isValid: false,
+      stateCode: stateName ? stateCode : null,
+      stateName,
+      pan,
+      errorMessage: `GSTIN must be 15 characters (currently ${clean.length})`,
+    };
+  }
+
+  if (!stateName) {
+    return {
+      isValid: false,
+      stateCode: null,
+      stateName: null,
+      pan,
+      errorMessage: `Invalid state code '${stateCode}'. Must be 01 to 38 or 97.`,
+    };
+  }
+
+  if (!gstinRegex.test(clean)) {
+    return {
+      isValid: false,
+      stateCode,
+      stateName,
+      pan,
+      errorMessage: "Invalid GSTIN pattern (Expected 2 digits, 5 letters, 4 numbers, 1 letter, 1 alphanumeric, 'Z', 1 checksum)",
+    };
+  }
+
+  return {
+    isValid: true,
+    stateCode,
+    stateName,
+    pan,
+  };
+}
+
+

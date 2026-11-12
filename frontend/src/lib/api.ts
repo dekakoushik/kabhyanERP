@@ -363,10 +363,14 @@ export interface Client {
   email: string;
   phone?: string | null;
   gstin?: string | null;
+  pan?: string | null;
   address?: string | null;
   city?: string | null;
   state?: string | null;
   country?: string | null;
+  postal_code?: string | null;
+  currency?: string | null;
+  payment_terms?: string | null;
   portal_access_status: "active" | "inactive";
   notes?: string | null;
   projects_count?: number;

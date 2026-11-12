@@ -60,12 +60,17 @@ class ClientController extends Controller
             'email' => 'required|email|unique:clients,email',
             'phone' => 'nullable|string|max:20',
             'gstin' => 'nullable|string|max:25',
+            'pan' => 'nullable|string|max:20',
             'address' => 'nullable|string',
             'city' => 'nullable|string|max:100',
             'state' => 'nullable|string|max:100',
             'country' => 'nullable|string|max:100',
+            'postal_code' => 'nullable|string|max:20',
+            'currency' => 'nullable|string|max:10',
+            'payment_terms' => 'nullable|string|max:50',
             'notes' => 'nullable|string',
             'create_portal_account' => 'nullable|boolean',
+            'send_welcome_email' => 'nullable|boolean',
             'portal_password' => 'nullable|string|min:6',
         ]);
 
@@ -92,6 +97,12 @@ class ClientController extends Controller
             $userId = $user->id;
         }
 
+        // Auto-extract PAN from GSTIN if not explicitly provided
+        $pan = $validated['pan'] ?? null;
+        if (empty($pan) && !empty($validated['gstin']) && strlen($validated['gstin']) >= 10) {
+            $pan = substr($validated['gstin'], 2, 10);
+        }
+
         $client = Client::create([
             'user_id' => $userId,
             'client_code' => $clientCode,
@@ -100,17 +111,24 @@ class ClientController extends Controller
             'email' => $validated['email'],
             'phone' => $validated['phone'] ?? null,
             'gstin' => $validated['gstin'] ?? null,
+            'pan' => $pan,
             'address' => $validated['address'] ?? null,
             'city' => $validated['city'] ?? null,
             'state' => $validated['state'] ?? 'West Bengal',
             'country' => $validated['country'] ?? 'India',
+            'postal_code' => $validated['postal_code'] ?? null,
+            'currency' => $validated['currency'] ?? 'INR',
+            'payment_terms' => $validated['payment_terms'] ?? 'Net 30',
             'portal_access_status' => 'active',
             'notes' => $validated['notes'] ?? null,
         ]);
 
         $client->load(['user', 'projects']);
 
-        if (!empty($validated['create_portal_account']) && isset($password)) {
+        $shouldSendWelcome = !empty($validated['create_portal_account']) &&
+            (!isset($validated['send_welcome_email']) || !empty($validated['send_welcome_email']));
+
+        if ($shouldSendWelcome && isset($password)) {
             try {
                 MailNotificationService::sendClientWelcome($client, $password);
             } catch (\Throwable $e) {
@@ -152,14 +170,23 @@ class ClientController extends Controller
             'email' => 'required|email|unique:clients,email,' . $client->id,
             'phone' => 'nullable|string|max:20',
             'gstin' => 'nullable|string|max:25',
+            'pan' => 'nullable|string|max:20',
             'address' => 'nullable|string',
             'city' => 'nullable|string|max:100',
             'state' => 'nullable|string|max:100',
             'country' => 'nullable|string|max:100',
+            'postal_code' => 'nullable|string|max:20',
+            'currency' => 'nullable|string|max:10',
+            'payment_terms' => 'nullable|string|max:50',
             'portal_access_status' => 'nullable|in:active,inactive',
             'notes' => 'nullable|string',
             'reset_portal_password' => 'nullable|string|min:6',
         ]);
+
+        $pan = $validated['pan'] ?? $client->pan;
+        if (empty($pan) && !empty($validated['gstin']) && strlen($validated['gstin']) >= 10) {
+            $pan = substr($validated['gstin'], 2, 10);
+        }
 
         $client->update([
             'name' => $validated['name'],
@@ -167,10 +194,14 @@ class ClientController extends Controller
             'email' => $validated['email'],
             'phone' => $validated['phone'] ?? null,
             'gstin' => $validated['gstin'] ?? null,
+            'pan' => $pan,
             'address' => $validated['address'] ?? null,
             'city' => $validated['city'] ?? null,
             'state' => $validated['state'] ?? 'West Bengal',
             'country' => $validated['country'] ?? 'India',
+            'postal_code' => $validated['postal_code'] ?? $client->postal_code,
+            'currency' => $validated['currency'] ?? ($client->currency ?? 'INR'),
+            'payment_terms' => $validated['payment_terms'] ?? ($client->payment_terms ?? 'Net 30'),
             'portal_access_status' => $validated['portal_access_status'] ?? $client->portal_access_status,
             'notes' => $validated['notes'] ?? null,
         ]);
