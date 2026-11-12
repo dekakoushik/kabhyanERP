@@ -73,9 +73,12 @@ class Estimate extends Model
      */
     public function resolveRouteBinding($value, $field = null)
     {
-        return $this->where('estimate_number', $value)
-                    ->orWhere('id', $value)
-                    ->firstOrFail();
+        return $this->where(function ($query) use ($value) {
+            $query->where('estimate_number', $value);
+            if (is_numeric($value)) {
+                $query->orWhere('id', (int) $value);
+            }
+        })->firstOrFail();
     }
 
     /**
