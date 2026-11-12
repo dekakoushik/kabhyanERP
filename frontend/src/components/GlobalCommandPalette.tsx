@@ -162,11 +162,6 @@ export default function GlobalCommandPalette({
             <span>Project Deliverables Portfolio</span>
           </CommandItem>
 
-          <CommandItem onSelect={() => runCommand(() => router.push("/dashboard/tasks"))}>
-            <CheckSquare className="w-4 h-4 mr-2.5 text-slate-400" />
-            <span>Tasks & Kanban Board</span>
-          </CommandItem>
-
           <CommandItem onSelect={() => runCommand(() => router.push("/dashboard/tickets"))}>
             <LifeBuoy className="w-4 h-4 mr-2.5 text-slate-400" />
             <span>Client Support Desk</span>

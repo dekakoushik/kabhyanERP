@@ -481,10 +481,10 @@ export default function ProjectsPage() {
 
                   <div className="flex items-center gap-1">
                     <Link
-                      href={`/dashboard/tasks?project_id=${project.id}`}
-                      className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 text-xs font-semibold flex items-center gap-1"
+                      href={`/dashboard/projects/${project.id}`}
+                      className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 text-xs font-semibold flex items-center gap-1 cursor-pointer transition"
                     >
-                      <span>Board</span>
+                      <span>Workspace & Kanban</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                     <button

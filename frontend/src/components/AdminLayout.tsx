@@ -120,7 +120,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       items: [
         { name: "Client Directory", href: "/dashboard/clients", icon: Building, roles: ["superadmin", "admin", "manager"] },
         { name: "Projects Portfolio", href: "/dashboard/projects", icon: Briefcase },
-        { name: "Tasks & Kanban", href: "/dashboard/tasks", icon: CheckSquare },
         { name: "Support Tickets", href: "/dashboard/tickets", icon: LifeBuoy },
       ],
     },
@@ -473,12 +472,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     <Link href="/dashboard/projects" className="flex items-center gap-2 cursor-pointer">
                       <Briefcase className="w-4 h-4 text-slate-500" />
                       <span>Projects Portfolio</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/tasks" className="flex items-center gap-2 cursor-pointer">
-                      <CheckSquare className="w-4 h-4 text-slate-500" />
-                      <span>Tasks & Kanban</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
