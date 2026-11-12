@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition, Suspense } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { api, Project, Task, User } from "@/lib/api";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   DragDropContext,
   Droppable,
@@ -122,6 +123,10 @@ function TasksContent() {
   };
 
   const openCreateModal = (defaultStatus = "todo") => {
+    if (projects.length === 0) {
+      toast.error("Please create a Project first before adding tasks.");
+      return;
+    }
     setFormData({
       project_id: selectedProject || (projects[0]?.id ? projects[0].id.toString() : ""),
       title: "",
@@ -418,6 +423,28 @@ function TasksContent() {
         <div className="bg-white rounded-2xl border border-slate-200/80 py-20 flex flex-col items-center justify-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
           <p className="text-xs font-semibold text-slate-500">Updating tasks board...</p>
+        </div>
+      ) : projects.length === 0 ? (
+        /* Empty State: No Projects Created Yet */
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center space-y-4 max-w-xl mx-auto shadow-2xs">
+          <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto border border-blue-100">
+            <Briefcase className="w-8 h-8" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-base font-black text-slate-900">No Active Projects Found</h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+              In Kabhyan ERP, tasks belong strictly inside Projects. You need to launch a Project before assigning tasks and tracking engineering sprints.
+            </p>
+          </div>
+          <div className="pt-2">
+            <Link
+              href="/dashboard/projects"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create Your First Project</span>
+            </Link>
+          </div>
         </div>
       ) : viewMode === "kanban" ? (
         /* KANBAN BOARD WITH DRAG & DROP */

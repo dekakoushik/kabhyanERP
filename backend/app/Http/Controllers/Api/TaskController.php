@@ -16,7 +16,8 @@ class TaskController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Task::with(['project:id,name,code', 'assignee:id,name,email', 'creator:id,name,email']);
+        // Enforce that tasks must belong to an active, non-deleted project
+        $query = Task::has('project')->with(['project:id,name,code', 'assignee:id,name,email', 'creator:id,name,email']);
 
         if ($projectId = $request->input('project_id')) {
             $query->where('project_id', $projectId);
@@ -47,12 +48,12 @@ class TaskController extends Controller
         return response()->json([
             'tasks' => $tasks,
             'summary' => [
-                'total' => Task::count(),
-                'todo' => Task::where('status', 'todo')->count(),
-                'in_progress' => Task::where('status', 'in_progress')->count(),
-                'in_review' => Task::where('status', 'in_review')->count(),
-                'completed' => Task::where('status', 'completed')->count(),
-                'blocked' => Task::where('status', 'blocked')->count(),
+                'total' => Task::has('project')->count(),
+                'todo' => Task::has('project')->where('status', 'todo')->count(),
+                'in_progress' => Task::has('project')->where('status', 'in_progress')->count(),
+                'in_review' => Task::has('project')->where('status', 'in_review')->count(),
+                'completed' => Task::has('project')->where('status', 'completed')->count(),
+                'blocked' => Task::has('project')->where('status', 'blocked')->count(),
             ],
         ]);
     }
