@@ -91,10 +91,11 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 6. Projects Seeding
-        $p1 = Project::updateOrCreate(
-            ['code' => 'KAB-ERP-V1'],
-            [
+        // 6. Projects Seeding (handling withTrashed to avoid unique constraint violation if soft-deleted)
+        $p1 = Project::withTrashed()->where('code', 'KAB-ERP-V1')->first();
+        if ($p1) {
+            $p1->restore();
+            $p1->update([
                 'name' => 'Kabhyan Enterprise ERP Platform',
                 'description' => 'Comprehensive multi-tenant ERP platform supporting Auth, Projects, Tasks, HR, and Billing with Laravel and Next.js.',
                 'client_name' => 'Internal Corporate Systems',
@@ -105,13 +106,28 @@ class DatabaseSeeder extends Seeder
                 'start_date' => now()->subDays(10),
                 'deadline' => now()->addDays(45),
                 'progress_percentage' => 40,
-            ]
-        );
+            ]);
+        } else {
+            $p1 = Project::create([
+                'code' => 'KAB-ERP-V1',
+                'name' => 'Kabhyan Enterprise ERP Platform',
+                'description' => 'Comprehensive multi-tenant ERP platform supporting Auth, Projects, Tasks, HR, and Billing with Laravel and Next.js.',
+                'client_name' => 'Internal Corporate Systems',
+                'manager_id' => $manager->id,
+                'status' => 'in_progress',
+                'priority' => 'urgent',
+                'budget' => 75000.00,
+                'start_date' => now()->subDays(10),
+                'deadline' => now()->addDays(45),
+                'progress_percentage' => 40,
+            ]);
+        }
         $p1->members()->sync([$developer->id, $manager->id, $superadmin->id]);
 
-        $p2 = Project::updateOrCreate(
-            ['code' => 'KAB-CLOUD-MIG'],
-            [
+        $p2 = Project::withTrashed()->where('code', 'KAB-CLOUD-MIG')->first();
+        if ($p2) {
+            $p2->restore();
+            $p2->update([
                 'name' => 'Cloud Infrastructure & High Availability Redis',
                 'description' => 'Migration of caching, job queues, and load balancers to dedicated cloud clusters.',
                 'client_name' => 'FinTech Global Client',
@@ -122,13 +138,28 @@ class DatabaseSeeder extends Seeder
                 'start_date' => now()->addDays(5),
                 'deadline' => now()->addDays(60),
                 'progress_percentage' => 10,
-            ]
-        );
+            ]);
+        } else {
+            $p2 = Project::create([
+                'code' => 'KAB-CLOUD-MIG',
+                'name' => 'Cloud Infrastructure & High Availability Redis',
+                'description' => 'Migration of caching, job queues, and load balancers to dedicated cloud clusters.',
+                'client_name' => 'FinTech Global Client',
+                'manager_id' => $manager->id,
+                'status' => 'planning',
+                'priority' => 'high',
+                'budget' => 45000.00,
+                'start_date' => now()->addDays(5),
+                'deadline' => now()->addDays(60),
+                'progress_percentage' => 10,
+            ]);
+        }
         $p2->members()->sync([$developer->id, $superadmin->id]);
 
-        $p3 = Project::updateOrCreate(
-            ['code' => 'KAB-AI-DOC'],
-            [
+        $p3 = Project::withTrashed()->where('code', 'KAB-AI-DOC')->first();
+        if ($p3) {
+            $p3->restore();
+            $p3->update([
                 'name' => 'AI Automated Documentation Engine',
                 'description' => 'Automated parsing of codebases to generate live architectural diagrams and changelogs in .agent folder.',
                 'client_name' => 'Kabhyan R&D Labs',
@@ -139,8 +170,22 @@ class DatabaseSeeder extends Seeder
                 'start_date' => now()->subDays(20),
                 'deadline' => now()->addDays(25),
                 'progress_percentage' => 65,
-            ]
-        );
+            ]);
+        } else {
+            $p3 = Project::create([
+                'code' => 'KAB-AI-DOC',
+                'name' => 'AI Automated Documentation Engine',
+                'description' => 'Automated parsing of codebases to generate live architectural diagrams and changelogs in .agent folder.',
+                'client_name' => 'Kabhyan R&D Labs',
+                'manager_id' => $superadmin->id,
+                'status' => 'in_progress',
+                'priority' => 'medium',
+                'budget' => 30000.00,
+                'start_date' => now()->subDays(20),
+                'deadline' => now()->addDays(25),
+                'progress_percentage' => 65,
+            ]);
+        }
         $p3->members()->sync([$developer->id, $superadmin->id]);
 
         // 7. Tasks Seeding
