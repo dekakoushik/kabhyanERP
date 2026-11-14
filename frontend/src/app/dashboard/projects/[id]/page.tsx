@@ -57,8 +57,13 @@ const PRIORITIES: { id: Task["priority"]; label: string; badge: string }[] = [
 ];
 
 function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
+  const [isMounted, setIsMounted] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const initialTab = (searchParams.get("tab") as "kanban" | "list" | "overview") || "kanban";
 
@@ -460,6 +465,31 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
 
         {/* TAB 1: KANBAN BOARD */}
         {activeTab === "kanban" && (
+          !isMounted ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-start">
+              {COLUMNS.map((col) => {
+                const colTasks = filteredTasks.filter((t) => t.status === col.id);
+                return (
+                  <div
+                    key={col.id}
+                    className={`rounded-2xl border border-slate-200/80 ${col.bg} p-3 flex flex-col min-h-[500px] shadow-2xs`}
+                  >
+                    <div className="flex items-center justify-between mb-3 px-1">
+                      <span className="text-xs font-black text-slate-800 tracking-tight">{col.label}</span>
+                      <span className={`text-2xs font-bold px-2 py-0.5 rounded-full ${col.badge}`}>{colTasks.length}</span>
+                    </div>
+                    <div className="flex-1 space-y-2.5 rounded-xl p-1">
+                      {colTasks.map((task) => (
+                        <div key={task.id} className="bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-2xs">
+                          <h4 className="text-xs font-bold text-slate-900">{task.title}</h4>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
           <DragDropContext onDragEnd={handleDragEnd}>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-start">
               {COLUMNS.map((col) => {
@@ -597,6 +627,7 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
               })}
             </div>
           </DragDropContext>
+          )
         )}
 
         {/* TAB 2: TASK LIST TABLE */}
