@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ClientSnapshotCard from "@/components/ClientSnapshotCard";
 import DocumentItemsTable from "@/components/DocumentItemsTable";
+import QuickAddProjectModal from "@/components/QuickAddProjectModal";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -35,6 +36,9 @@ export default function CreateProformaPage() {
   // Quick Add Client Modal State
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [quickAddSaving, setQuickAddSaving] = useState(false);
+
+  // Quick Add Project Modal State
+  const [quickAddProjectOpen, setQuickAddProjectOpen] = useState(false);
   const [quickAddData, setQuickAddData] = useState({
     name: "",
     company_name: "",
@@ -368,11 +372,21 @@ export default function CreateProformaPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Linked Project</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-slate-700">Linked Project</label>
+                    <button
+                      type="button"
+                      onClick={() => setQuickAddProjectOpen(true)}
+                      className="text-[11px] font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Quick Add</span>
+                    </button>
+                  </div>
                   <select
                     value={formData.project_id}
                     onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
-                    className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                   >
                     <option value="">-- No Direct Project Link --</option>
                     {projects.map((p) => (
@@ -726,6 +740,19 @@ export default function CreateProformaPage() {
           </div>
         </div>
       )}
+
+      {/* Quick Add Project Modal */}
+      <QuickAddProjectModal
+        open={quickAddProjectOpen}
+        onClose={() => setQuickAddProjectOpen(false)}
+        clientId={selectedClientId}
+        clientName={formData.client_company || formData.client_name || undefined}
+        defaultBudget={grandTotal > 0 ? grandTotal : undefined}
+        onProjectCreated={(newProj) => {
+          setProjects((prev) => [newProj, ...prev]);
+          setFormData((prev) => ({ ...prev, project_id: String(newProj.id) }));
+        }}
+      />
     </AdminLayout>
   );
 }
