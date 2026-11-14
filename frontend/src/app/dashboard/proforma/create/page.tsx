@@ -345,7 +345,7 @@ export default function CreateProformaPage() {
                   Proforma Identification
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <CardContent className="pt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
                     Proforma Number <span className="text-red-500">*</span>
@@ -588,6 +588,27 @@ export default function CreateProformaPage() {
               </Button>
             </div>
           </div>
+        </div>
+
+        {/* Sticky Mobile Quick Submit Bar */}
+        <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 sm:p-4 shadow-lg flex items-center justify-between gap-3 lg:hidden">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              Total ({formData.currency})
+            </p>
+            <p className="font-mono text-base sm:text-lg font-black text-slate-900 leading-tight">
+              ₹{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </p>
+          </div>
+
+          <Button
+            type="submit"
+            disabled={loading}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm px-5 py-2.5 shadow-md flex items-center gap-1.5 cursor-pointer"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            <span>Issue Proforma</span>
+          </Button>
         </div>
       </form>
 
