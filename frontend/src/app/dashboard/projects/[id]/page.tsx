@@ -275,12 +275,37 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
     return { total, completed, inProgress, blocked, progress };
   }, [tasks]);
 
-  if (loading || !project) {
+  if (loading) {
     return (
       <AdminLayout>
         <div className="py-24 flex flex-col items-center justify-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
           <p className="text-xs font-semibold text-slate-500">Loading project workspace...</p>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (!project) {
+    return (
+      <AdminLayout>
+        <div className="py-24 flex flex-col items-center justify-center gap-4 text-center max-w-md mx-auto">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+            <AlertCircle className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Project Not Found</h2>
+            <p className="text-xs text-slate-500 mt-1">
+              This project may have been deleted, archived, or the link is invalid.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/projects"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Return to Projects</span>
+          </Link>
         </div>
       </AdminLayout>
     );
@@ -990,13 +1015,20 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
   );
 }
 
-export default function ProjectWorkspacePage({
+function ProjectWorkspaceResolver({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const resolvedParams = use(params);
+  return <ProjectWorkspaceContent projectId={resolvedParams.id} />;
+}
 
+export default function ProjectWorkspacePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   return (
     <Suspense
       fallback={
@@ -1008,7 +1040,7 @@ export default function ProjectWorkspacePage({
         </AdminLayout>
       }
     >
-      <ProjectWorkspaceContent projectId={resolvedParams.id} />
+      <ProjectWorkspaceResolver params={params} />
     </Suspense>
   );
 }
