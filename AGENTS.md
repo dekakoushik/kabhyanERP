@@ -29,3 +29,4 @@ This repository contains the enterprise ERP system for **Kabhyan Technologies Pr
 ### 4. Build & Type Safety
 - Always run `./node_modules/.bin/tsc --noEmit` in `frontend/` before pushing commits.
 - Ensure 0 TypeScript errors.
+

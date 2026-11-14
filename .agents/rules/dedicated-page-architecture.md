@@ -24,3 +24,4 @@ Whenever creating or editing a primary resource (Estimates, Proforma Invoices, T
 - [ ] Top action button uses `<Link href="/dashboard/{resource}/create">`.
 - [ ] Empty state action button uses `<Link href="/dashboard/{resource}/create">`.
 - [ ] No duplicate modal creation forms left in the listing page component.
+
