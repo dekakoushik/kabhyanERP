@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useTransition, useMemo } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, useTransition, useMemo, use, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AdminLayout from "@/components/AdminLayout";
 import { api, Project, Task, User } from "@/lib/api";
@@ -56,12 +56,10 @@ const PRIORITIES: { id: Task["priority"]; label: string; badge: string }[] = [
   { id: "urgent", label: "Urgent", badge: "bg-rose-50 text-rose-700 border-rose-200" },
 ];
 
-export default function ProjectWorkspacePage() {
-  const params = useParams();
+function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const projectId = params?.id as string;
   const initialTab = (searchParams.get("tab") as "kanban" | "list" | "overview") || "kanban";
 
   const [activeTab, setActiveTab] = useState<"kanban" | "list" | "overview">(initialTab);
@@ -958,5 +956,28 @@ export default function ProjectWorkspacePage() {
         )}
       </div>
     </AdminLayout>
+  );
+}
+
+export default function ProjectWorkspacePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const resolvedParams = use(params);
+
+  return (
+    <Suspense
+      fallback={
+        <AdminLayout>
+          <div className="py-24 flex flex-col items-center justify-center gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <p className="text-xs font-semibold text-slate-500">Loading project workspace...</p>
+          </div>
+        </AdminLayout>
+      }
+    >
+      <ProjectWorkspaceContent projectId={resolvedParams.id} />
+    </Suspense>
   );
 }
