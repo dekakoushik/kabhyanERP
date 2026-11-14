@@ -265,6 +265,15 @@ export default function CreateInvoicePage() {
     });
   };
 
+  const handleReorderItems = (startIndex: number, endIndex: number) => {
+    setFormData((prev) => {
+      const nextItems = Array.from(prev.items);
+      const [moved] = nextItems.splice(startIndex, 1);
+      nextItems.splice(endIndex, 0, moved);
+      return { ...prev, items: nextItems };
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -476,6 +485,7 @@ export default function CreateInvoicePage() {
               onItemChange={handleItemChange}
               onAddItem={addItem}
               onRemoveItem={removeItem}
+              onReorderItems={handleReorderItems}
             />
 
             {/* 4. Payment Terms & Notes */}
