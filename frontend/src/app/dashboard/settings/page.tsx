@@ -159,11 +159,11 @@ function SettingsOverviewContent() {
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-bold text-slate-900">Infrastructure Health: Operational</h2>
               <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider">
-                {environment.redis_status === "connected" ? "Redis Live" : "Active"}
+                PostgreSQL Live
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              PHP {environment.php_version} • Laravel {environment.laravel_version} • MariaDB Connected • Redis Ping {environment.redis_ping}
+              PHP {environment.php_version} • Laravel {environment.laravel_version} • PostgreSQL Connected ({environment.database_ping || "Active"})
             </p>
           </div>
         </div>

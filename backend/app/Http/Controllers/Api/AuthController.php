@@ -11,7 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Redis;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -46,21 +45,8 @@ class AuthController extends Controller
             'last_login_ip' => $request->ip(),
         ]);
 
-        // Revoke prior tokens for security if desired, or keep multiple devices
+        // Issue personal access token backed by PostgreSQL
         $token = $user->createToken('kabhyan_auth_token')->plainTextToken;
-
-        // Cache session indicator in Redis for audit & instant logout support
-        try {
-            Redis::setex("user_session:{$user->id}", 86400, json_encode([
-                'user_id' => $user->id,
-                'email' => $user->email,
-                'role' => $user->role,
-                'login_time' => now()->toIso8601String(),
-                'ip' => $request->ip(),
-            ]));
-        } catch (\Throwable $e) {
-            // Redis fallback if offline
-        }
 
         return response()->json([
             'message' => 'Login successful',
@@ -98,12 +84,6 @@ class AuthController extends Controller
 
         if ($user) {
             $user->currentAccessToken()->delete();
-
-            try {
-                Redis::del("user_session:{$user->id}");
-            } catch (\Throwable $e) {
-                // Redis fail-safe
-            }
         }
 
         return response()->json([

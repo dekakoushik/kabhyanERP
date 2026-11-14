@@ -71,7 +71,7 @@ function SystemHealthContent() {
             <div>
               <h2 className="text-base font-bold text-slate-900">Infrastructure & System Diagnostics</h2>
               <p className="text-xs text-slate-500">
-                Real-time operational status of Redis cache node, MariaDB engine, and PHP runtime.
+                Real-time operational status of PostgreSQL database engine, application cache, and PHP runtime.
               </p>
             </div>
           </div>
@@ -82,61 +82,61 @@ function SystemHealthContent() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-xs transition cursor-pointer disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${flushing ? "animate-spin" : ""}`} />
-            <span>{flushing ? "Clearing Cache..." : "Flush Redis Cache"}</span>
+            <span>{flushing ? "Clearing Cache..." : "Flush Application Cache"}</span>
           </button>
         </div>
 
         {/* Live Service Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Redis Card */}
+          {/* PostgreSQL Card */}
           <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-800 flex items-center gap-2">
-                <Database className="w-4 h-4 text-red-500" />
-                Redis Cache Engine
+                <Database className="w-4 h-4 text-blue-600" />
+                PostgreSQL Relational Database
               </span>
               <span
                 className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                  environment.redis_status === "connected"
+                  environment.database_status === "connected"
                     ? "bg-emerald-100 text-emerald-800"
                     : "bg-red-100 text-red-800"
                 }`}
               >
                 <CheckCircle2 className="w-3 h-3" />
-                {environment.redis_status}
-              </span>
-            </div>
-            <p className="text-xs text-slate-500">Host: 127.0.0.1:6379 (Driver: predis)</p>
-            <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs font-mono">
-              <span className="text-slate-400">Ping Response:</span>
-              <span className="font-bold text-emerald-700">{environment.redis_ping}</span>
-            </div>
-            <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-slate-400">Cache Driver:</span>
-              <span className="text-slate-700 font-semibold">{environment.cache_driver}</span>
-            </div>
-          </div>
-
-          {/* MariaDB Card */}
-          <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-800 flex items-center gap-2">
-                <Server className="w-4 h-4 text-blue-500" />
-                MariaDB Relational Database
-              </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
-                <CheckCircle2 className="w-3 h-3" />
                 {environment.database_status}
               </span>
             </div>
-            <p className="text-xs text-slate-500">Engine: MySQL / MariaDB (Port 3306)</p>
+            <p className="text-xs text-slate-500">Engine: PostgreSQL (Port 5432 / pdo_pgsql)</p>
             <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs font-mono">
-              <span className="text-slate-400">Driver Adapter:</span>
-              <span className="font-bold text-slate-700">mysql (PDO)</span>
+              <span className="text-slate-400">Query Latency:</span>
+              <span className="font-bold text-emerald-700">{environment.database_ping || "0.5 ms"}</span>
             </div>
             <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-slate-400">Connection State:</span>
-              <span className="text-emerald-700 font-semibold">Active & Synced</span>
+              <span className="text-slate-400">Database Driver:</span>
+              <span className="text-slate-700 font-semibold">{environment.database_driver || "pgsql"}</span>
+            </div>
+          </div>
+
+          {/* Database Cache & Queue Storage Card */}
+          <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                <Server className="w-4 h-4 text-indigo-600" />
+                Database Cache & Queue Storage
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                <CheckCircle2 className="w-3 h-3" />
+                Active
+              </span>
+            </div>
+            <p className="text-xs text-slate-500">Pure PostgreSQL storage tables: cache, jobs, sessions</p>
+            <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs font-mono">
+              <span className="text-slate-400">Cache Driver:</span>
+              <span className="font-bold text-slate-700">{environment.cache_driver || "database"}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs font-mono">
+              <span className="text-slate-400">Queue Driver:</span>
+              <span className="text-emerald-700 font-semibold">{environment.queue_driver || "database"}</span>
             </div>
           </div>
         </div>

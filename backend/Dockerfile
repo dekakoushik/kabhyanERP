@@ -12,7 +12,7 @@ RUN composer install \
 # Stage 2: Production Runtime with PHP 8.3-FPM + Nginx + Supervisor
 FROM php:8.3-fpm-alpine AS runner
 
-# Install system dependencies, Nginx, Supervisor, and database/redis PHP extensions
+# Install system dependencies, Nginx, Supervisor, and PostgreSQL PHP extensions
 RUN apk add --no-cache \
     nginx \
     supervisor \
@@ -23,15 +23,9 @@ RUN apk add --no-cache \
     unzip \
     postgresql-dev \
     postgresql-client \
-    mariadb-client \
     oniguruma-dev \
     libxml2-dev \
-    linux-headers \
-    $PHPIZE_DEPS \
-    && pecl install redis \
-    && docker-php-ext-enable redis \
-    && docker-php-ext-install pdo_pgsql pdo_mysql bcmath mbstring pcntl xml opcache gd \
-    && apk del $PHPIZE_DEPS
+    && docker-php-ext-install pdo_pgsql bcmath mbstring pcntl xml opcache gd
 
 # Configure PHP for production
 RUN { \

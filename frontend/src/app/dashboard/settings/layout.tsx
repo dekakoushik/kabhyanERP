@@ -44,7 +44,7 @@ export default function SettingsLayout({
     try {
       setFlushing(true);
       const res = await api.request("/settings/flush-cache", { method: "POST" });
-      toast.success(res?.message || "Application & Redis cache cleared successfully");
+      toast.success(res?.message || "Application cache cleared successfully");
     } catch (err: any) {
       toast.error(err.message || "Failed to flush application cache");
     } finally {
@@ -70,7 +70,7 @@ export default function SettingsLayout({
               System Configuration & Controls
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Manage corporate legal entity, Indian GST compliance, banking coordinates, and Redis cache.
+              Manage corporate legal entity, Indian GST compliance, banking coordinates, and application cache.
             </p>
           </div>
 
@@ -79,7 +79,7 @@ export default function SettingsLayout({
               onClick={handleFlushCache}
               disabled={flushing}
               className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs tracking-wide shadow-xs transition cursor-pointer disabled:opacity-50"
-              title="Clear Laravel config cache and Redis keys"
+              title="Clear Laravel application and configuration cache"
             >
               <RefreshCw className={`w-3.5 h-3.5 text-blue-600 ${flushing ? "animate-spin" : ""}`} />
               <span>{flushing ? "Flushing..." : "Flush Cache"}</span>

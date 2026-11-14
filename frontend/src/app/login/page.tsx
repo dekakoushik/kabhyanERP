@@ -81,7 +81,7 @@ export default function LoginPage() {
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-slate-900">Sign in to your account</h3>
             <p className="text-xs text-slate-500 mt-1">
-              Authorized personnel only. Sessions are monitored and secured with Redis.
+              Authorized personnel only. Sessions are encrypted and secured.
             </p>
           </div>
 

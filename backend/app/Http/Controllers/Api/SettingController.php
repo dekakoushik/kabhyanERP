@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\SystemSetting;
 use App\Services\DocumentNumberService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redis;
 
 class SettingController extends Controller
 {
@@ -24,28 +24,32 @@ class SettingController extends Controller
             $grouped[$item->group][] = $item;
         }
 
-        // Check Redis status
-        $redisStatus = 'connected';
-        $redisPing = 'PONG';
+        // Check PostgreSQL Database status & latency
+        $dbStatus = 'connected';
+        $dbPing = '0 ms';
         try {
-            $redisPing = Redis::ping();
+            $start = microtime(true);
+            DB::select('SELECT 1');
+            $dbPing = round((microtime(true) - $start) * 1000, 2) . ' ms';
         } catch (\Throwable $e) {
-            $redisStatus = 'disconnected: ' . $e->getMessage();
+            $dbStatus = 'disconnected: ' . $e->getMessage();
+            $dbPing = 'ERR';
         }
 
-        // Database status
-        $dbStatus = 'connected';
-
-        // System Health / Environment
+        // System Health / Environment (Pure Laravel + PostgreSQL)
         $environment = [
             'app_name' => config('app.name'),
             'app_env' => config('app.env'),
             'php_version' => PHP_VERSION,
             'laravel_version' => app()->version(),
             'database_status' => $dbStatus,
-            'redis_status' => $redisStatus,
-            'redis_ping' => $redisPing,
+            'database_ping' => $dbPing,
+            'database_driver' => config('database.default'),
+            'redis_status' => 'disabled',
+            'redis_ping' => 'N/A',
             'cache_driver' => config('cache.default'),
+            'queue_driver' => config('queue.default'),
+            'session_driver' => config('session.driver'),
             'server_time' => now()->toDateTimeString(),
             'timezone' => config('app.timezone'),
         ];
@@ -88,14 +92,14 @@ class SettingController extends Controller
     }
 
     /**
-     * Flush application and Redis cache.
+     * Flush application cache.
      */
     public function flushCache(Request $request)
     {
         try {
             Cache::flush();
-            Redis::flushall();
-            return response()->json(['message' => 'Application & Redis cache cleared successfully.']);
+            Artisan::call('cache:clear');
+            return response()->json(['message' => 'Application cache cleared successfully.']);
         } catch (\Throwable $e) {
             return response()->json(['message' => 'Cache cleared (partial): ' . $e->getMessage()]);
         }

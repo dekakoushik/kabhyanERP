@@ -201,7 +201,7 @@ class ExpenseController extends Controller
         // Auto-seed default categories if database table is completely empty
         if ($categories->isEmpty()) {
             $defaults = [
-                ['name' => 'Cloud Infrastructure & Servers', 'slug' => 'cloud-infrastructure', 'color' => '#3B82F6', 'description' => 'AWS, GCP, Redis, Dokploy hosting'],
+                ['name' => 'Cloud Infrastructure & Servers', 'slug' => 'cloud-infrastructure', 'color' => '#3B82F6', 'description' => 'AWS, GCP, PostgreSQL, Dokploy hosting'],
                 ['name' => 'Software & Tool Subscriptions', 'slug' => 'software-tools', 'color' => '#8B5CF6', 'description' => 'GitHub, Figma, IDE licenses, SaaS tools'],
                 ['name' => 'Salaries & Contractor Stipends', 'slug' => 'salaries-contractors', 'color' => '#10B981', 'description' => 'Engineering compensation and freelance disbursements'],
                 ['name' => 'Office Utilities & Rent', 'slug' => 'office-utilities', 'color' => '#F59E0B', 'description' => 'Electricity, high-speed broadband, workspace lease'],

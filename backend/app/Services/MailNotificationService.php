@@ -424,7 +424,7 @@ class MailNotificationService
             </div>
 
             <p style="font-size: 13px; line-height: 1.6; color: #64748b; margin: 16px 0 0;">
-                Please log in to your workspace promptly. Sessions are protected with Redis and role-based access control.
+                Please log in to your workspace promptly. Sessions are protected with enterprise role-based access control.
             </p>
         ';
 

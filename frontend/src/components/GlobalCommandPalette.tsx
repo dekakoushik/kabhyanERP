@@ -209,7 +209,7 @@ export default function GlobalCommandPalette({
 
           <CommandItem onSelect={() => runCommand(() => router.push("/dashboard/settings/system"))}>
             <Cpu className="w-4 h-4 mr-2.5 text-emerald-500" />
-            <span>Settings: Redis & Server Infrastructure Health</span>
+            <span>Settings: PostgreSQL & Server Infrastructure Health</span>
           </CommandItem>
         </CommandGroup>
 

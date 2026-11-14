@@ -141,7 +141,7 @@ function SecuritySettingsContent() {
 
           <div>
             <label className="block font-bold text-slate-700 mb-1.5">
-              Sanctum / Redis Session Inactivity Lifetime (Minutes)
+              Sanctum Session Inactivity Lifetime (Minutes)
             </label>
             <input
               type="number"
