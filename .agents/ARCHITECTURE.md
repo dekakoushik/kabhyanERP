@@ -4,11 +4,11 @@
 - **Organization**: Kabhyan (IT Solutions & Services Company)
 - **Product**: KabhyanERP
 - **Architecture**: Decoupled Monorepo
-  - **Backend**: Laravel 11/12 (PHP 8.3+) RESTful API with Sanctum / Bearer Tokens & Redis Caching/Queue
-  - **Frontend**: Next.js 14/15 (App Router, TypeScript, Tailwind CSS, Lucide Icons)
-  - **Database**: MariaDB / MySQL (`kabhyan_erp`) on port 3306
-  - **Cache & Session Management**: Redis (Port 6379, Predis client)
-  - **Documentation & Agent Brain**: `.agent/` folder containing architecture, schema, API contracts, task progress, and migration guides.
+  - **Backend**: Laravel 12/13 (PHP 8.3+) RESTful API with Sanctum / Bearer Tokens
+  - **Frontend**: Next.js 15 (App Router, React 19, TypeScript, Tailwind CSS, Lucide Icons)
+  - **Database**: PostgreSQL (`kabhyan_erp`) on port 5432
+  - **Cache & Queue Management**: PostgreSQL Database-backed (`cache`, `jobs`, `sessions` tables)
+  - **Documentation & Agent Brain**: `.agents/` folder containing architecture, rules, API contracts, task progress, and migration guides.
 
 ---
 

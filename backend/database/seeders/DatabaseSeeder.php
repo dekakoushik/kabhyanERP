@@ -126,7 +126,7 @@ class DatabaseSeeder extends Seeder
             $p3 = Project::create([
                 'code' => 'KAB-AI-DOC',
                 'name' => 'AI Automated Documentation Engine',
-                'description' => 'Automated parsing of codebases to generate live architectural diagrams and changelogs in .agent folder.',
+                'description' => 'Automated parsing of codebases to generate live architectural diagrams and changelogs in .agents folder.',
                 'client_name' => 'Kabhyan R&D Labs',
                 'manager_id' => $superadmin->id,
                 'status' => 'in_progress',
