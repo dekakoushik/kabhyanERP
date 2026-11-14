@@ -594,9 +594,16 @@ function InvoicesContent() {
           <div className="py-16 text-center">
             <FileCheck className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <h3 className="text-sm font-bold text-slate-700">No Tax Invoices Found</h3>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
+            <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-4">
               Create your first GST invoice or convert an accepted proforma invoice.
             </p>
+            <Link
+              href="/dashboard/invoices/create"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create Tax Invoice</span>
+            </Link>
           </div>
         ) : (
           <div className="overflow-x-auto">

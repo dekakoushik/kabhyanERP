@@ -522,13 +522,13 @@ export default function EstimatesPage() {
               <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
                 Generate your first itemized IT proposal for prospective or current clients.
               </p>
-              <button
-                onClick={openCreateModal}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-semibold"
+              <Link
+                href="/dashboard/estimates/create"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Create Proposal</span>
-              </button>
+              </Link>
             </div>
           ) : (
             <div className="overflow-x-auto">

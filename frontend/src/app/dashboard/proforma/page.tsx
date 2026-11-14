@@ -521,10 +521,17 @@ function ProformaContent() {
         ) : invoices.length === 0 ? (
           <div className="py-16 text-center px-4">
             <Receipt className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-base font-bold text-slate-800">No Proforma Invoices</p>
+            <p className="text-base font-bold text-slate-800">No Proforma Invoices Found</p>
             <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
-              Accepted client estimates can be converted into Proforma Invoices with 1-click.
+              Accepted client estimates can be converted into Proforma Invoices, or you can create one directly.
             </p>
+            <Link
+              href="/dashboard/proforma/create"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create Proforma Invoice</span>
+            </Link>
           </div>
         ) : (
           <div className="overflow-x-auto">

@@ -364,13 +364,13 @@ export default function ProjectsPage() {
             <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
               Get started by launching your first company project.
             </p>
-            <button
-              onClick={openCreateModal}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-semibold"
+            <Link
+              href="/dashboard/projects/create"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Create Project</span>
-            </button>
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

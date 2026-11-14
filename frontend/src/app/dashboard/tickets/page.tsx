@@ -390,9 +390,16 @@ function TicketsContent() {
           <div className="py-16 text-center">
             <LifeBuoy className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <h3 className="text-sm font-bold text-slate-700">No Tickets Found</h3>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
+            <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-4">
               There are currently no tickets matching your filter criteria.
             </p>
+            <Link
+              href="/dashboard/tickets/create"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Support Ticket</span>
+            </Link>
           </div>
         ) : (
           <div className="overflow-x-auto">
