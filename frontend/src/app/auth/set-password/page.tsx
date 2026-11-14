@@ -150,8 +150,8 @@ function SetPasswordContent() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       {/* Brand Header */}
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="inline-flex items-center justify-center mb-3">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center flex flex-col items-center">
+        <div className="mb-3 flex items-center justify-center">
           <Image
             src={brand.logoPrimary || "/logo.png"}
             alt={brand.companyName || "Kabhyan Technologies"}
@@ -162,7 +162,7 @@ function SetPasswordContent() {
             className="h-12 w-auto object-contain"
           />
         </div>
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-semibold uppercase tracking-wider mb-2">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-semibold uppercase tracking-wider mb-2.5">
           <Smartphone className="w-3.5 h-3.5 text-blue-600" />
           Client Mobile App Access
         </div>

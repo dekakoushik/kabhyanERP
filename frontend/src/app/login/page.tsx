@@ -55,8 +55,8 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       {/* Brand Header */}
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="inline-flex items-center justify-center mb-3">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center flex flex-col items-center">
+        <div className="mb-3 flex items-center justify-center">
           <Image
             src={brand.logoPrimary || "/logo.png"}
             alt={brand.companyName || "Kabhyan Technologies"}
@@ -67,7 +67,7 @@ export default function LoginPage() {
             unoptimized
           />
         </div>
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-semibold uppercase tracking-wider mb-2">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-semibold uppercase tracking-wider mb-2.5">
           Enterprise ERP Portal
         </div>
         <p className="text-xs sm:text-sm text-slate-500">
@@ -196,9 +196,14 @@ export default function LoginPage() {
                 Employee
               </button>
             </div>
-            <div className="flex items-center gap-1 text-[11px] text-slate-400 mt-3">
-              <KeyRound className="w-3 h-3" />
-              <span>Default password for all demo accounts: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-600 font-mono">Kabhyan@2026</code></span>
+            <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 mt-3 pt-2">
+              <span className="inline-flex items-center gap-1 text-slate-400">
+                <KeyRound className="w-3.5 h-3.5 shrink-0" />
+                <span>Default password for all accounts:</span>
+              </span>
+              <code className="bg-slate-100 border border-slate-200/80 px-1.5 py-0.5 rounded text-slate-700 font-mono font-medium">
+                Kabhyan@2026
+              </code>
             </div>
           </div>
         </div>
