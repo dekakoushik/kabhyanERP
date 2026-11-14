@@ -472,10 +472,7 @@ export default function CreateInvoicePage() {
               items={formData.items}
               currency={formData.currency}
               taxRate={formData.tax_rate}
-              title="Line Items & Billable Deliverables"
-              subtitle="Add line items, SAC/HSN codes, quantity, rate, and check per-item GST breakdown"
-              itemLabel="Line Item"
-              allowSacCode={true}
+              title="Item Table"
               onItemChange={handleItemChange}
               onAddItem={addItem}
               onRemoveItem={removeItem}

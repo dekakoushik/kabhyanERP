@@ -469,10 +469,7 @@ export default function CreateEstimatePage() {
               items={formData.items}
               currency={formData.currency}
               taxRate={formData.tax_rate}
-              title="Itemized Deliverables & Pricing"
-              subtitle="Add scope deliverables, specify billable quantities, rates, and inspect per-item taxes"
-              itemLabel="Deliverable"
-              allowSacCode={false}
+              title="Item Table"
               onItemChange={handleItemChange}
               onAddItem={addItem}
               onRemoveItem={removeItem}

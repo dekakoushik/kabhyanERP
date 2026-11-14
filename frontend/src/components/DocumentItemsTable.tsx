@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Plus, Trash2, HelpCircle } from "lucide-react";
+import { Plus, Trash2, GripVertical, Calculator, Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -10,16 +10,18 @@ export interface DocumentItemRow {
   item_name: string;
   description?: string | null;
   sac_code?: string | null;
-  quantity: number;
-  unit: string;
-  unit_price: number;
+  quantity: number | string;
+  unit?: string;
+  unit_price: number | string;
+  tax_rate?: number | string;
+  tax_amount?: number;
   amount: number;
 }
 
 interface DocumentItemsTableProps {
   items: any[];
   currency?: string;
-  taxRate: number | string;
+  taxRate?: number | string; // default fallback tax rate if item doesn't specify
   title?: string;
   subtitle?: string;
   itemLabel?: string;
@@ -33,191 +35,148 @@ export default function DocumentItemsTable({
   items,
   currency = "INR",
   taxRate = 18,
-  title = "Itemized Deliverables & Pricing",
-  subtitle = "Add scope deliverables, specify billable quantities, rates, and inspect per-item taxes",
-  itemLabel = "Deliverable",
-  allowSacCode = false,
+  title = "Item Table",
   onItemChange,
   onAddItem,
   onRemoveItem,
 }: DocumentItemsTableProps) {
-  const numTaxRate = Number(taxRate) || 0;
-  const currencySymbol = currency === "USD" ? "$" : currency === "EUR" ? "€" : currency === "GBP" ? "£" : "₹";
+  const defaultNumTax = Number(taxRate) || 0;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
-      {/* Header bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 border-b border-slate-100 bg-slate-50/50">
-        <div>
-          <h3 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            {title}
-            <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-mono text-[11px] font-bold border border-blue-200/60">
-              {items.length} {items.length === 1 ? "Line Item" : "Line Items"}
-            </span>
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>
-        </div>
-
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onAddItem}
-          className="text-xs font-semibold text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700 shadow-2xs shrink-0 cursor-pointer"
-        >
-          <Plus className="w-3.5 h-3.5 mr-1" />
-          Add {itemLabel}
-        </Button>
+    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden font-sans">
+      {/* Card Header matching reference: clean "Item Table" */}
+      <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <h3 className="text-base font-bold text-slate-900 tracking-tight">{title}</h3>
       </div>
 
-      {/* Desktop Ledger Table */}
+      {/* Responsive Desktop Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-slate-100/75 border-b border-slate-200/80 text-[11px] font-bold text-slate-600 uppercase tracking-wider select-none">
-              <th className="py-3 px-4 w-12 text-center text-slate-400">#</th>
-              <th className="py-3 px-4 min-w-[280px]">
-                {itemLabel} & Description
+            <tr className="border-b border-slate-200/90 bg-slate-50/60 text-[11px] font-bold uppercase tracking-wider text-slate-500 select-none">
+              <th className="py-3 px-3 w-10 text-center"></th>
+              <th className="py-3 px-4 min-w-[320px] text-slate-600">ITEM DETAILS</th>
+              <th className="py-3 px-4 w-32 text-right text-slate-600">QUANTITY</th>
+              <th className="py-3 px-4 w-36 text-right text-slate-600">
+                <span className="inline-flex items-center gap-1.5 justify-end">
+                  <span>RATE</span>
+                  <Calculator className="w-3.5 h-3.5 text-slate-400" />
+                </span>
               </th>
-              {allowSacCode && (
-                <th className="py-3 px-3 w-28 text-center">HSN / SAC</th>
-              )}
-              <th className="py-3 px-3 w-40 text-center">Qty & Units</th>
-              <th className="py-3 px-3 w-36 text-right">Unit Rate ({currency})</th>
-              <th className="py-3 px-3 w-32 text-right">Taxable</th>
-              <th className="py-3 px-3 w-32 text-right">GST ({numTaxRate}%)</th>
-              <th className="py-3 px-4 w-36 text-right">Line Total</th>
-              <th className="py-3 px-3 w-12 text-center"></th>
+              <th className="py-3 px-4 w-44 text-slate-600">
+                <span className="inline-flex items-center gap-1">
+                  <span>TAX</span>
+                  <Info className="w-3.5 h-3.5 text-slate-400" />
+                </span>
+              </th>
+              <th className="py-3 px-6 w-36 text-right text-slate-600">AMOUNT</th>
+              <th className="py-3 px-2 w-10 text-center"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs">
             {items.map((item, idx) => {
-              const taxable = Number(item.amount) || 0;
-              const gstAmount = taxable * (numTaxRate / 100);
-              const grossTotal = taxable + gstAmount;
+              const qty = Number(item.quantity) || 0;
+              const rate = Number(item.unit_price) || 0;
+              const taxable = Number((qty * rate).toFixed(2));
+              
+              // Item tax rate or fall back to document default
+              const currentItemTaxRate = item.tax_rate !== undefined && item.tax_rate !== null && item.tax_rate !== ""
+                ? Number(item.tax_rate)
+                : defaultNumTax;
 
               return (
                 <tr
                   key={idx}
-                  className="hover:bg-blue-50/20 transition-colors group"
+                  className="hover:bg-slate-50/70 transition-colors group align-top"
                 >
-                  {/* Row Index */}
-                  <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-400 text-xs align-top pt-4">
-                    {idx + 1}
+                  {/* Drag Grip Handle */}
+                  <td className="py-4 px-2 text-center text-slate-300 group-hover:text-slate-400 cursor-grab pt-4 select-none">
+                    <GripVertical className="w-4 h-4 mx-auto" />
                   </td>
 
-                  {/* Title & Scope in single cohesive block */}
-                  <td className="py-3.5 px-4 align-top space-y-1.5">
-                    <Input
-                      placeholder={`${itemLabel} Title (e.g. Frontend Development)`}
-                      value={item.item_name}
+                  {/* ITEM DETAILS (Title + Subtle Expandable Description) */}
+                  <td className="py-3.5 px-4 space-y-1.5">
+                    <input
+                      type="text"
+                      placeholder="Type or click to select an item."
+                      value={item.item_name || ""}
                       onChange={(e) => onItemChange(idx, "item_name", e.target.value)}
                       required
-                      className="h-9 font-semibold text-slate-900 bg-white placeholder:text-slate-400 border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-lg text-xs"
+                      className="w-full text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-0 bg-transparent border-0 p-0"
                     />
                     <textarea
-                      rows={2}
-                      placeholder="Scope details, deliverables, milestone requirements..."
+                      rows={1}
+                      placeholder="Add milestone description or deliverable scope (optional)..."
                       value={item.description || ""}
                       onChange={(e) => onItemChange(idx, "description", e.target.value)}
-                      className="w-full rounded-lg border border-slate-200/90 bg-white/90 p-2 text-xs text-slate-600 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none transition"
+                      className="w-full text-[11px] text-slate-500 placeholder:text-slate-300 focus:outline-none focus:text-slate-700 bg-transparent border-0 p-0 resize-none transition"
                     />
                   </td>
 
-                  {/* Optional HSN / SAC Code */}
-                  {allowSacCode && (
-                    <td className="py-3.5 px-3 align-top pt-4">
-                      <Input
-                        placeholder="998311"
-                        value={item.sac_code || ""}
-                        onChange={(e) => onItemChange(idx, "sac_code", e.target.value)}
-                        className="h-9 font-mono text-center text-xs bg-white rounded-lg border-slate-200"
-                      />
-                    </td>
-                  )}
-
-                  {/* Qty & Unit Input Group */}
-                  <td className="py-3.5 px-3 align-top pt-4">
-                    <div className="flex rounded-lg shadow-2xs border border-slate-200 bg-white overflow-hidden focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500">
-                      <input
-                        type="number"
-                        min="0.01"
-                        step="any"
-                        placeholder="1"
-                        value={item.quantity}
-                        onChange={(e) => onItemChange(idx, "quantity", e.target.value)}
-                        required
-                        className="w-16 h-9 px-2 text-center font-mono text-xs font-semibold text-slate-800 focus:outline-none border-r border-slate-200"
-                      />
-                      <select
-                        value={item.unit || "hours"}
-                        onChange={(e) => onItemChange(idx, "unit", e.target.value)}
-                        className="h-9 px-2 text-xs font-medium text-slate-600 bg-slate-50/50 hover:bg-slate-100/50 focus:outline-none cursor-pointer"
-                      >
-                        <option value="hours">hrs</option>
-                        <option value="days">days</option>
-                        <option value="units">units</option>
-                        <option value="milestone">mile</option>
-                        <option value="months">mos</option>
-                        <option value="service">srv</option>
-                      </select>
-                    </div>
+                  {/* QUANTITY */}
+                  <td className="py-3.5 px-4 text-right">
+                    <input
+                      type="number"
+                      step="any"
+                      min="0.01"
+                      placeholder="1.00"
+                      value={item.quantity}
+                      onChange={(e) => onItemChange(idx, "quantity", e.target.value)}
+                      required
+                      className="w-full text-right font-mono text-xs font-medium text-slate-800 focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 bg-transparent border border-transparent hover:border-slate-200 transition"
+                    />
                   </td>
 
-                  {/* Unit Rate */}
-                  <td className="py-3.5 px-3 align-top pt-4">
-                    <div className="relative">
-                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-xs select-none">
-                        {currencySymbol}
-                      </span>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="any"
-                        placeholder="0.00"
-                        value={item.unit_price}
-                        onChange={(e) => onItemChange(idx, "unit_price", e.target.value)}
-                        required
-                        className="h-9 pl-7 pr-2.5 text-right font-mono font-semibold text-slate-900 bg-white border-slate-200 rounded-lg text-xs"
-                      />
-                    </div>
+                  {/* RATE */}
+                  <td className="py-3.5 px-4 text-right">
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      placeholder="0.00"
+                      value={item.unit_price}
+                      onChange={(e) => onItemChange(idx, "unit_price", e.target.value)}
+                      required
+                      className="w-full text-right font-mono text-xs font-medium text-slate-800 focus:outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 bg-transparent border border-transparent hover:border-slate-200 transition"
+                    />
                   </td>
 
-                  {/* Taxable Amount */}
-                  <td className="py-3.5 px-3 text-right align-top pt-5 font-mono text-xs font-semibold text-slate-800">
-                    {currencySymbol}{taxable.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {/* TAX DROPDOWN (matching reference: "Select a Tax ▾") */}
+                  <td className="py-3.5 px-4">
+                    <select
+                      value={currentItemTaxRate}
+                      onChange={(e) => onItemChange(idx, "tax_rate", Number(e.target.value))}
+                      className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer shadow-2xs font-medium"
+                    >
+                      <option value={18}>GST [18%]</option>
+                      <option value={12}>GST [12%]</option>
+                      <option value={5}>GST [5%]</option>
+                      <option value={28}>GST [28%]</option>
+                      <option value={0}>Non-Taxable [0%]</option>
+                    </select>
                   </td>
 
-                  {/* Per-Item GST Breakdown */}
-                  <td className="py-3.5 px-3 text-right align-top pt-4">
-                    <div className="inline-flex flex-col items-end">
-                      <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200/50">
-                        +{currencySymbol}{gstAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-medium mt-0.5">
-                        {numTaxRate}% GST
-                      </span>
-                    </div>
+                  {/* AMOUNT (Calculated Taxable / Gross Total) */}
+                  <td className="py-4 px-6 text-right font-mono text-xs font-bold text-slate-900 select-none">
+                    {taxable.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </td>
 
-                  {/* Line Total (Gross) */}
-                  <td className="py-3.5 px-4 text-right align-top pt-5 font-mono text-xs font-extrabold text-slate-900">
-                    {currencySymbol}{grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </td>
-
-                  {/* Row Delete Action */}
-                  <td className="py-3.5 px-3 text-center align-top pt-4">
+                  {/* Delete Item Action */}
+                  <td className="py-4 px-2 text-center">
                     {items.length > 1 ? (
                       <button
                         type="button"
                         onClick={() => onRemoveItem(idx)}
-                        className="w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition opacity-60 group-hover:opacity-100 cursor-pointer"
-                        title="Remove Line Item"
+                        className="w-7 h-7 rounded-lg text-slate-300 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition opacity-0 group-hover:opacity-100 cursor-pointer"
+                        title="Delete Line Item"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     ) : (
-                      <span className="w-8 h-8 block" />
+                      <span className="w-7 h-7 block" />
                     )}
                   </td>
                 </tr>
@@ -227,21 +186,19 @@ export default function DocumentItemsTable({
         </table>
       </div>
 
-      {/* Bottom Quick-Add Bar */}
-      <div className="p-3 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between text-xs">
-        <Button
+      {/* Add New Line Footer Bar */}
+      <div className="p-3 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between text-xs">
+        <button
           type="button"
-          variant="ghost"
-          size="sm"
           onClick={onAddItem}
-          className="text-xs font-semibold text-blue-600 hover:bg-blue-100/60 cursor-pointer"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline px-3 py-1.5 rounded-lg transition cursor-pointer"
         >
-          <Plus className="w-3.5 h-3.5 mr-1.5" />
-          Add Another Deliverable Line
-        </Button>
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add Another Line</span>
+        </button>
 
-        <span className="text-[11px] text-slate-400">
-          Amounts reflect <span className="font-semibold text-slate-600">{numTaxRate}% standard GST</span> rate.
+        <span className="text-[11px] text-slate-400 font-medium">
+          Line amounts represent net taxable item subtotal before aggregate deductions.
         </span>
       </div>
     </div>

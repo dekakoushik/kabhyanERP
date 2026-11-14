@@ -452,10 +452,7 @@ export default function CreateProformaPage() {
               items={formData.items}
               currency={formData.currency}
               taxRate={formData.tax_rate}
-              title="Deliverables & Milestones"
-              subtitle="Specify billable project milestones, quantities, rates, and review automated tax calculations"
-              itemLabel="Milestone"
-              allowSacCode={false}
+              title="Item Table"
               onItemChange={handleItemChange}
               onAddItem={addItem}
               onRemoveItem={removeItem}
