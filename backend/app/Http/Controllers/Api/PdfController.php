@@ -25,13 +25,14 @@ class PdfController extends Controller
      */
     public function downloadInvoice(Request $request, $id): Response
     {
-        $invoice = Invoice::with(['items', 'project'])
+        $invoice = Invoice::with(['items', 'project', 'proformaInvoice'])
             ->where('id', $id)
             ->orWhere('invoice_number', $id)
             ->firstOrFail();
 
         $company = $this->getCompanySettings();
         $bank = $this->getBankSettings();
+        $logoPath = $this->getLogoPath();
 
         // GST Place of supply and state check
         $clientGstin = $invoice->client_gstin;
@@ -72,6 +73,7 @@ class PdfController extends Controller
             'invoice' => $invoice,
             'company' => $company,
             'bank' => $bank,
+            'logoPath' => $logoPath,
             'isInterState' => $isInterState,
             'placeOfSupply' => $placeOfSupply,
             'cgstAmount' => $cgstAmount,
@@ -107,13 +109,14 @@ class PdfController extends Controller
      */
     public function downloadProforma(Request $request, $id): Response
     {
-        $proforma = ProformaInvoice::with(['items', 'project'])
+        $proforma = ProformaInvoice::with(['items', 'project', 'estimate'])
             ->where('id', $id)
             ->orWhere('proforma_number', $id)
             ->firstOrFail();
 
         $company = $this->getCompanySettings();
         $bank = $this->getBankSettings();
+        $logoPath = $this->getLogoPath();
 
         $clientGstin = $proforma->client_gstin;
         $isInterState = $this->isInterStateSupply($clientGstin, $proforma->client_address);
@@ -150,6 +153,7 @@ class PdfController extends Controller
             'proforma' => $proforma,
             'company' => $company,
             'bank' => $bank,
+            'logoPath' => $logoPath,
             'isInterState' => $isInterState,
             'placeOfSupply' => $placeOfSupply,
             'cgstAmount' => $cgstAmount,
@@ -192,6 +196,7 @@ class PdfController extends Controller
 
         $company = $this->getCompanySettings();
         $bank = $this->getBankSettings();
+        $logoPath = $this->getLogoPath();
 
         $clientGstin = $estimate->client_gstin;
         $isInterState = $this->isInterStateSupply($clientGstin, $estimate->client_address);
@@ -228,6 +233,7 @@ class PdfController extends Controller
             'estimate' => $estimate,
             'company' => $company,
             'bank' => $bank,
+            'logoPath' => $logoPath,
             'isInterState' => $isInterState,
             'placeOfSupply' => $placeOfSupply,
             'cgstAmount' => $cgstAmount,
@@ -256,6 +262,24 @@ class PdfController extends Controller
             'Cache-Control' => 'private, max-age=0, must-revalidate',
             'Pragma' => 'public',
         ]);
+    }
+
+    /**
+     * Get path or base64 data for the corporate logo.
+     */
+    protected function getLogoPath(): ?string
+    {
+        $logo = public_path('kabhyan-logo.png');
+        if (file_exists($logo)) {
+            return $logo;
+        }
+
+        $altLogo = public_path('logo.png');
+        if (file_exists($altLogo)) {
+            return $altLogo;
+        }
+
+        return null;
     }
 
     /**

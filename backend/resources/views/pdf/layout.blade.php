@@ -5,18 +5,16 @@
     <title>@yield('title')</title>
     <style>
         @page {
-            margin: 12mm 14mm 16mm 14mm;
+            margin: 10mm 12mm 10mm 12mm;
         }
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
-            font-size: 9.5pt;
-            color: #1e293b;
+            font-size: 8.5pt;
+            color: #0f172a;
             line-height: 1.35;
             background-color: #ffffff;
-            background-image: url('{{ $voidPantographUrl }}');
-            background-repeat: repeat;
         }
-        .header-table, .meta-table, .items-table, .totals-table, .footer-table {
+        table {
             width: 100%;
             border-collapse: collapse;
         }
@@ -25,235 +23,271 @@
         .text-left { text-align: left; }
         .bold { font-weight: bold; }
         .font-mono { font-family: 'Courier', monospace; }
-        
-        .primary-color { color: #1e3a8a; }
-        .text-slate { color: #64748b; }
-        .text-dark { color: #0f172a; }
-        
-        /* Top Banner */
-        .company-title {
-            font-size: 15pt;
+
+        /* Colors */
+        .text-primary-blue { color: #2563eb; }
+        .text-slate-900 { color: #0f172a; }
+        .text-slate-700 { color: #334155; }
+        .text-slate-500 { color: #64748b; }
+        .text-slate-400 { color: #94a3b8; }
+        .text-emerald { color: #059669; }
+
+        /* Header Elements */
+        .company-legal-name {
+            font-size: 10.5pt;
             font-weight: bold;
-            color: #1e3a8a;
-            letter-spacing: -0.3px;
-            margin: 0;
-            padding: 0;
+            color: #0f172a;
+            margin-top: 4px;
         }
-        .company-sub {
+        .company-tagline {
             font-size: 8pt;
+            color: #64748b;
+            margin-top: 1px;
+        }
+        .company-contact {
+            font-size: 7.5pt;
+            color: #64748b;
+            margin-top: 2px;
+        }
+        .company-statutory {
+            font-size: 7pt;
             color: #475569;
             margin-top: 2px;
-            margin-bottom: 5px;
-        }
-        .doc-title-badge {
-            display: inline-block;
-            font-size: 13pt;
-            font-weight: bold;
-            color: #1e3a8a;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            text-align: right;
-            margin-bottom: 2px;
-        }
-        .doc-badge-original {
-            font-size: 7.5pt;
-            color: #047857;
-            background-color: #ecfdf5;
-            border: 1px solid #a7f3d0;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-weight: bold;
-            text-transform: uppercase;
-            display: inline-block;
-        }
-        
-        .divider {
-            height: 1.5px;
-            background-color: #cbd5e1;
-            margin: 8px 0;
+            line-height: 1.3;
         }
 
-        /* Micro-print anti-tamper security border */
-        .micro-security-border {
-            font-size: 3pt;
-            color: #94a3b8;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            overflow: hidden;
-            white-space: nowrap;
-            line-height: 4pt;
-            margin: 4px 0 8px 0;
-        }
-        
-        /* Section Cards */
-        .info-card {
-            background-color: #ffffff;
-            border: 1px solid #e2e8f0;
-            padding: 8px 10px;
-            border-radius: 5px;
-        }
-        .info-card-header {
+        /* Top Right Badge Pills */
+        .badge-pill-blue {
+            background-color: #eff6ff;
+            color: #2563eb;
             font-size: 7.5pt;
             font-weight: bold;
-            color: #1e3a8a;
+            letter-spacing: 0.8px;
+            padding: 4px 10px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            border-radius: 9999px;
+            display: inline-block;
+        }
+        .badge-pill-purple {
+            background-color: #f5f3ff;
+            color: #7c3aed;
+            font-size: 7.5pt;
+            font-weight: bold;
+            letter-spacing: 0.8px;
+            padding: 4px 10px;
+            text-transform: uppercase;
+            border-radius: 9999px;
+            display: inline-block;
+        }
+        .badge-pill-green {
+            background-color: #ecfdf5;
+            color: #059669;
+            font-size: 7.5pt;
+            font-weight: bold;
+            letter-spacing: 0.8px;
+            padding: 4px 10px;
+            text-transform: uppercase;
+            border-radius: 9999px;
+            display: inline-block;
+        }
+
+        .doc-number {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #0f172a;
+            margin-top: 3px;
+            margin-bottom: 2px;
+            letter-spacing: -0.5px;
+        }
+        .doc-meta {
+            font-size: 8pt;
+            color: #64748b;
+            line-height: 1.45;
+        }
+        .doc-value {
+            color: #0f172a;
+            font-weight: bold;
+        }
+
+        /* Modern Information Cards */
+        .card-box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+        .card-header-label {
+            font-size: 7pt;
+            font-weight: bold;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
             margin-bottom: 4px;
-            border-bottom: 1px solid #f1f5f9;
-            padding-bottom: 2px;
+        }
+        .card-main-title {
+            font-size: 10.5pt;
+            font-weight: bold;
+            color: #0f172a;
+            margin-bottom: 2px;
+        }
+        .card-sub-title {
+            font-size: 8.5pt;
+            font-weight: 500;
+            color: #334155;
+            margin-bottom: 2px;
+        }
+        .card-body-text {
+            font-size: 8pt;
+            color: #64748b;
+            line-height: 1.4;
         }
 
         /* Items Table */
         .items-table {
-            margin-top: 10px;
-            margin-bottom: 10px;
+            margin-top: 14px;
+            margin-bottom: 14px;
         }
         .items-table th {
-            background-color: #1e3a8a;
-            color: #ffffff;
-            font-size: 8pt;
+            font-size: 7.5pt;
             font-weight: bold;
+            color: #64748b;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 6px 8px;
-            border: 1px solid #1e3a8a;
+            letter-spacing: 0.6px;
+            padding: 7px 4px;
+            border-bottom: 1.5px solid #e2e8f0;
         }
         .items-table td {
-            padding: 6px 8px;
-            border: 1px solid #e2e8f0;
-            font-size: 8.5pt;
-            background-color: #ffffff;
-        }
-        .items-table tr.alt td {
-            background-color: #f8fafc;
+            padding: 8px 4px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: top;
         }
 
-        /* Moiré Anti-Rasterization Background for Totals */
-        .moire-summary-box {
+        /* Notes Card */
+        .note-card {
             background-color: #f8fafc;
-            background-image: url('{{ $moireGridUrl }}');
-            background-repeat: repeat;
-            border: 1.5px solid #cbd5e1;
+            border: 1px solid #f1f5f9;
+            border-radius: 6px;
             padding: 8px 10px;
-            border-radius: 5px;
+            margin-bottom: 6px;
         }
-        .grand-total-row {
-            border-top: 2px solid #1e3a8a;
-            padding-top: 5px;
-            margin-top: 5px;
-        }
-        .grand-total-val {
-            font-size: 13pt;
+        .note-card-title {
+            font-size: 7pt;
             font-weight: bold;
-            color: #1e3a8a;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 2px;
+        }
+        .note-card-body {
+            font-size: 7.5pt;
+            color: #475569;
+            line-height: 1.35;
         }
 
-        /* Digital Security Certificate Box */
-        .cert-box {
-            background-color: #f0fdf4;
-            border: 1.5px solid #86efac;
-            padding: 6px 10px;
-            border-radius: 4px;
-            margin-top: 10px;
+        /* Totals */
+        .totals-table td {
+            padding: 3px 0;
+            font-size: 8.5pt;
         }
-        .cert-title {
-            font-size: 8pt;
+        .grand-total-label {
+            font-size: 11pt;
             font-weight: bold;
-            color: #15803d;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            color: #0f172a;
         }
-        .cert-text {
-            font-size: 7pt;
-            color: #166534;
-            line-height: 1.25;
+        .grand-total-amount {
+            font-size: 13.5pt;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        /* Footer Signatures */
+        .sign-title {
+            font-size: 8.5pt;
+            font-weight: bold;
+            color: #0f172a;
+        }
+        .sign-sub {
+            font-size: 7.5pt;
+            color: #64748b;
             margin-top: 2px;
         }
 
-        /* Bank Remittance Box */
-        .bank-box {
-            background-color: #ffffff;
-            background-image: url('{{ $moireGridUrl }}');
-            border: 1px solid #cbd5e1;
-            padding: 7px 9px;
-            border-radius: 4px;
-            font-size: 7.5pt;
+        /* Security Micro-Footer */
+        .security-footer {
+            font-size: 4.5pt;
+            color: #94a3b8;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-top: 14px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
-    <!-- Micro-print security strip (Top) -->
-    <div class="micro-security-border">
-        KABHYAN-SECURE-DOCUMENT • PAdES-CERTIFIED • HASH: {{ $documentHash }} • SECTION 31 CGST ACT 2017 • INTEGRITY-KEY: {{ $integrityKey }} • AUTHENTIC CORPORATE BILLING RECORD • KABHYAN TECHNOLOGIES PRIVATE LIMITED •
-    </div>
-
-    <!-- Corporate Header & Document Title -->
-    <table class="header-table">
+    <!-- Header Table: Logo & Company (Left) + Document Badge & Info (Right) -->
+    <table>
         <tr>
-            <td style="width: 62%; vertical-align: top;">
-                <div class="company-title">{{ $company['name'] }}</div>
-                <div class="company-sub">{{ $company['tagline'] }}</div>
-                <div style="font-size: 7.2pt; color: #475569; line-height: 1.35;">
-                    CIN: <strong class="font-mono" style="color: #1e3a8a;">{{ $company['cin'] }}</strong> | State Code: <strong>18 (Assam)</strong><br/>
-                    <strong>Regd. Office:</strong> {{ $company['registered_office'] }}<br/>
-                    <strong>Corp. Office:</strong> {{ $company['corporate_office'] }}<br/>
-                    Phone: <strong>{{ $company['phone'] }}</strong> | Email: <strong>{{ $company['email'] }}</strong> | Web: {{ $company['website'] }}<br/>
-                    GSTIN: <strong style="color: #1e3a8a;">{{ $company['gstin'] }}</strong> | PAN: <strong>{{ $company['pan'] }}</strong>
+            <td style="width: 55%; vertical-align: top;">
+                @if(!empty($logoPath) && file_exists($logoPath))
+                    <img src="{{ $logoPath }}" height="36" style="margin-bottom: 4px;"/><br/>
+                @else
+                    <div style="font-size: 15pt; font-weight: bold; color: #2563eb; letter-spacing: -0.5px;">KABHYAN</div>
+                    <div style="font-size: 6.5pt; font-weight: bold; color: #64748b; letter-spacing: 2px; margin-bottom: 4px;">TECHNOLOGIES</div>
+                @endif
+                <div class="company-legal-name">{{ $company['name'] }}</div>
+                <div class="company-tagline">{{ $company['tagline'] }}</div>
+                <div class="company-contact">
+                    {{ $company['email'] }} &bull; {{ str_replace(['https://', 'http://'], '', $company['website']) }}
+                    @if(!empty($company['phone']))
+                        &bull; {{ $company['phone'] }}
+                    @endif
+                </div>
+                <div class="company-statutory">
+                    GSTIN: <strong>{{ $company['gstin'] }}</strong> &bull; CIN: <strong>{{ $company['cin'] }}</strong> &bull; State Code: <strong>{{ $company['state_code'] ?? '18' }} ({{ $company['state_name'] ?? 'Assam' }})</strong><br/>
+                    Regd. Office: {{ $company['registered_office'] }}
                 </div>
             </td>
-            <td style="width: 38%; vertical-align: top;" class="text-right">
-                <div class="doc-title-badge">@yield('doc-title')</div><br/>
-                <div class="doc-badge-original">Original for Recipient</div>
-                <div style="margin-top: 6px; font-size: 8pt; line-height: 1.4;">
-                    <strong>@yield('doc-number-label'):</strong> <span class="font-mono" style="font-size: 9.5pt; font-weight: bold; color: #1e3a8a;">@yield('doc-number')</span><br/>
-                    <strong>Issue Date:</strong> @yield('doc-date')<br/>
-                    <strong>Due / Expiry Date:</strong> @yield('doc-due-date')<br/>
-                    @yield('doc-additional-meta')
+            <td style="width: 45%; vertical-align: top;" class="text-right">
+                <!-- Pill Badge -->
+                <div style="margin-bottom: 4px;">
+                    @yield('badge')
+                </div>
+                <!-- Document Number -->
+                <div class="doc-number">#@yield('doc-number')</div>
+                <!-- Document Dates -->
+                <div class="doc-meta">
+                    Date: <span class="doc-value">@yield('doc-date')</span><br/>
+                    @yield('doc-meta-right')
                 </div>
             </td>
         </tr>
     </table>
 
-    <div class="divider"></div>
+    <div style="height: 12px;"></div>
 
-    <!-- Main Content Yield -->
+    <!-- Main Dynamic Content (Cards, Items Table, Totals & Notes) -->
     @yield('content')
 
-    <!-- Micro-print security strip (Bottom) -->
-    <div class="micro-security-border" style="margin-top: 12px;">
-        ORIGINAL SECURE BILLING MANIFEST • ENCRYPTED PAdES X.509 DIGITAL CERTIFICATE APPLIED • TAMPERING OR ALTERING THIS RECORD CONSTITUTES STATUTORY OFFENCE • VERIFICATION KEY: {{ $integrityKey }} • KABHYAN TECHNOLOGIES •
-    </div>
+    <div style="height: 14px;"></div>
 
-    <!-- Digital Certification Seal & Cryptographic Keys -->
-    <table class="footer-table" style="margin-top: 4px;">
+    <!-- Signatures & Acceptance Footer -->
+    <table>
         <tr>
-            <td style="width: 70%; vertical-align: top;">
-                <div class="cert-box">
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr>
-                            <td style="width: 24px; vertical-align: top; font-size: 14pt; color: #16a34a;">✔</td>
-                            <td style="vertical-align: top;">
-                                <div class="cert-title">PAdES Digitally Certified & Cryptographically Signed Document</div>
-                                <div class="cert-text">
-                                    Signed by: <strong>Kabhyan Technologies Private Limited</strong> | Algorithm: <strong>RSA-2048 / SHA-256 (RFC 3161)</strong><br/>
-                                    Integrity Key: <strong class="font-mono" style="color: #047857;">{{ $integrityKey }}</strong> | Checksum: <span class="font-mono" style="font-size: 6.5pt;">{{ substr($documentHash, 0, 32) }}...</span><br/>
-                                    <em>This PDF is cryptographically sealed. Opening in Adobe Acrobat Reader verifies the digital signature. Any post-issuance alteration invalidates the document.</em>
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
+            <td style="width: 50%; vertical-align: top;">
+                <div class="sign-title">Authorized Signatory</div>
+                <div class="sign-sub">Kabhyan Technologies Pvt. Ltd.</div>
             </td>
-            <td style="width: 30%; vertical-align: middle;" class="text-right">
-                <div style="font-size: 8pt; color: #475569; font-weight: bold;">For Kabhyan Technologies Pvt. Ltd.</div>
-                <div style="margin-top: 25px; border-top: 1px dashed #94a3b8; display: inline-block; padding-top: 2px;">
-                    <span style="font-size: 7.5pt; font-weight: bold; color: #1e3a8a;">Authorized Signatory</span><br/>
-                    <span style="font-size: 6.5pt; color: #64748b;">(Digitally Generated & Certified)</span>
-                </div>
+            <td style="width: 50%; vertical-align: top;" class="text-right">
+                @yield('signature-right')
             </td>
         </tr>
     </table>
+
+    <!-- Subtle Security Micro-Footer -->
+    <div class="security-footer">
+        KABHYAN SECURE PAdES-CERTIFIED RECORD &bull; ENCRYPTED X.509 DIGITAL CERTIFICATE APPLIED &bull; INTEGRITY KEY: {{ $integrityKey }} &bull; HASH: {{ substr($documentHash, 0, 32) }}...
+    </div>
 
 </body>
 </html>
