@@ -62,4 +62,4 @@ php artisan queue:work --sleep=3 --tries=3 --max-time=3600 &
 
 # 9. Start Laravel Native Server via Artisan Octane
 echo "==> Starting Laravel Octane Server on port 80..."
-exec php artisan octane:start --server=frankenphp --host=0.0.0.0 --port=80 --workers=auto
+exec php artisan octane:start --server=frankenphp --host=0.0.0.0 --port=80 --admin-port=2019 --workers=auto
