@@ -9,6 +9,7 @@ import Image from "next/image";
 import { formatDate, getDueDateStatus, formatRelativeTime } from "@/lib/date";
 import { useBrand } from "@/context/BrandContext";
 import { toast } from "sonner";
+import { exportElementToPdf } from "@/lib/pdfExporter";
 import {
   Receipt,
   ArrowLeft,
@@ -92,11 +93,17 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
     if (!proforma) return;
     try {
       setDownloadingPdf(true);
-      await api.downloadPdf(
-        `/proforma-invoices/${proforma.id}/pdf?download=1`,
-        `Proforma-${proforma.proforma_number}.pdf`
-      );
-      toast.success("Proforma Invoice PDF downloaded!");
+      const sheet = document.getElementById("printable-sheet");
+      if (sheet) {
+        await exportElementToPdf(sheet, `Proforma-${proforma.proforma_number}.pdf`);
+        toast.success("Proforma Invoice PDF downloaded!");
+      } else {
+        await api.downloadPdf(
+          `/proforma-invoices/${proforma.id}/pdf?download=1`,
+          `Proforma-${proforma.proforma_number}.pdf`
+        );
+        toast.success("Proforma Invoice PDF downloaded!");
+      }
     } catch (err: any) {
       toast.error(err.message || "Failed to download PDF.");
     } finally {
@@ -234,7 +241,7 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
         {/* Left Column (8 cols): Sheet + Tax Invoices */}
         <div className="lg:col-span-8 space-y-6">
           {/* Printable A4 Document Sheet */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-8 sm:p-12 print:p-0 print:border-none print:shadow-none space-y-8">
+          <div id="printable-sheet" className="bg-white rounded-2xl border border-slate-200 shadow-xs p-8 sm:p-12 print:p-0 print:border-none print:shadow-none space-y-8">
           {/* Header with Kabhyan Logo */}
           <div className="flex justify-between items-start pb-8 border-b border-slate-100">
             <div className="space-y-2">
@@ -250,22 +257,26 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
                   />
                 </div>
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed max-w-sm pt-2">
-                <strong>{brand.companyName || "Kabhyan Technologies Private Limited"}</strong>
-                <br />
-                {brand.companyTagline || "Enterprise IT & Software Engineering Solutions"}
-                <br />
-                GSTIN: <strong>18AAGCK2934D1Z2</strong>
-                <br />
-                support@kabhyan.com • www.kabhyan.com
-              </p>
+              <div className="text-xs text-slate-500 space-y-0.5 leading-relaxed pt-2">
+                <p className="font-semibold text-slate-700">{brand.companyName || "Kabhyan Technologies Private Limited"}</p>
+                <p>{brand.companyTagline || "Enterprise IT & Software Engineering Solutions"}</p>
+                <p>{brand.companyEmail || "contact@kabhyan.com"} • {brand.companyWebsite ? brand.companyWebsite.replace(/^https?:\/\//, '') : "www.kabhyan.com"} • +91 70869 59737</p>
+                <p className="text-[10px] text-slate-400">
+                  GSTIN: <strong className="text-slate-600 font-mono">18AAGCK2934D1Z2</strong> • CIN: <strong className="text-slate-600 font-mono">U62012AS2026PTC030422</strong> • State: <strong>18 (Assam)</strong>
+                </p>
+                <p className="text-[9.5px] text-slate-400 leading-tight">
+                  Regd. Office: Ward No. 9, Rangia-Tamulpur Rd, near Padum Pukhuri Park, Rangia, Assam 781354
+                </p>
+              </div>
             </div>
             <div className="text-right space-y-1">
-              <h2 className="text-xl font-black text-slate-900 tracking-tight">PROFORMA INVOICE</h2>
-              <p className="font-mono text-sm font-bold text-purple-600">#{proforma.proforma_number}</p>
+              <span className="text-[11px] font-bold tracking-widest uppercase text-purple-600 bg-purple-50 px-2.5 py-1 rounded inline-block">
+                Proforma Invoice
+              </span>
+              <p className="font-mono text-xl sm:text-2xl font-black text-slate-900 mt-2">#{proforma.proforma_number}</p>
               <div className="text-xs text-slate-500 space-y-0.5 pt-1">
-                <p>Date: <span className="font-medium text-slate-700">{formatDate(proforma.invoice_date)}</span></p>
-                <p>Due Date: <span className="font-medium text-slate-700">{formatDate(proforma.due_date)}</span></p>
+                <p>Date: <span className="font-semibold text-slate-700">{formatDate(proforma.invoice_date)}</span></p>
+                <p>Due Date: <span className="font-semibold text-slate-700">{formatDate(proforma.due_date)}</span></p>
                 {proforma.estimate && (
                   <p>Source Quote: <span className="font-mono font-bold text-slate-700">{proforma.estimate.estimate_number}</span></p>
                 )}

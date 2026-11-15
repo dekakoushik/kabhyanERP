@@ -9,6 +9,7 @@ import Image from "next/image";
 import { formatDate, getDueDateStatus, formatRelativeTime } from "@/lib/date";
 import { useBrand } from "@/context/BrandContext";
 import { toast } from "sonner";
+import { exportElementToPdf } from "@/lib/pdfExporter";
 import {
   FileText,
   ArrowLeft,
@@ -96,11 +97,17 @@ function EstimateDetailContent({
     if (!estimate) return;
     try {
       setDownloadingPdf(true);
-      await api.downloadPdf(
-        `/estimates/${estimate.id}/pdf?download=1`,
-        `Estimate-${estimate.estimate_number}.pdf`
-      );
-      toast.success("Estimate PDF downloaded!");
+      const sheet = document.getElementById("printable-sheet");
+      if (sheet) {
+        await exportElementToPdf(sheet, `Estimate-${estimate.estimate_number}.pdf`);
+        toast.success("Estimate PDF downloaded!");
+      } else {
+        await api.downloadPdf(
+          `/estimates/${estimate.id}/pdf?download=1`,
+          `Estimate-${estimate.estimate_number}.pdf`
+        );
+        toast.success("Estimate PDF downloaded!");
+      }
     } catch (err: any) {
       toast.error(err.message || "Failed to download PDF.");
     } finally {
@@ -233,7 +240,7 @@ function EstimateDetailContent({
       {/* 2-Column Responsive Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Realistic A4 Printable Document Sheet (8 cols) */}
-        <div className="lg:col-span-8 bg-white border border-slate-200/90 rounded-2xl shadow-sm p-6 sm:p-10 space-y-8 print:border-none print:shadow-none print:p-0 print:m-0">
+        <div id="printable-sheet" className="lg:col-span-8 bg-white border border-slate-200/90 rounded-2xl shadow-sm p-6 sm:p-10 space-y-8 print:border-none print:shadow-none print:p-0 print:m-0">
           {/* Header / Brand & Document Metadata */}
           <div className="flex flex-col sm:flex-row items-start justify-between gap-6 pb-6 border-b border-slate-200">
             <div className="space-y-2">
@@ -259,9 +266,15 @@ function EstimateDetailContent({
                 )}
               </div>
               <div className="text-xs text-slate-500 space-y-0.5 leading-relaxed">
-                <p className="font-semibold text-slate-700">{brand.companyName}</p>
-                <p>{brand.companyTagline}</p>
-                <p>{brand.companyEmail} • {brand.companyWebsite.replace(/^https?:\/\//, '')}</p>
+                <p className="font-semibold text-slate-700">{brand.companyName || "Kabhyan Technologies Private Limited"}</p>
+                <p>{brand.companyTagline || "Enterprise IT & Software Engineering Solutions"}</p>
+                <p>{brand.companyEmail || "contact@kabhyan.com"} • {brand.companyWebsite ? brand.companyWebsite.replace(/^https?:\/\//, '') : "www.kabhyan.com"} • +91 70869 59737</p>
+                <p className="text-[10px] text-slate-400">
+                  GSTIN: <strong className="text-slate-600 font-mono">18AAGCK2934D1Z2</strong> • CIN: <strong className="text-slate-600 font-mono">U62012AS2026PTC030422</strong> • State: <strong>18 (Assam)</strong>
+                </p>
+                <p className="text-[9.5px] text-slate-400 leading-tight">
+                  Regd. Office: Ward No. 9, Rangia-Tamulpur Rd, near Padum Pukhuri Park, Rangia, Assam 781354
+                </p>
               </div>
             </div>
 

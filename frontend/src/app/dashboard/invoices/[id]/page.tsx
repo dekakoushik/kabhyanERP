@@ -10,6 +10,7 @@ import { formatDate, getDueDateStatus, formatRelativeTime } from "@/lib/date";
 import { calculateGSTSplit, numberToIndianWords, getStateName, extractStateCode } from "@/lib/gst";
 import { useBrand } from "@/context/BrandContext";
 import { toast } from "sonner";
+import { exportElementToPdf } from "@/lib/pdfExporter";
 import {
   FileCheck,
   ArrowLeft,
@@ -109,11 +110,17 @@ function InvoiceDetailContent({ invoiceParam }: { invoiceParam: string }) {
     if (!invoice) return;
     try {
       setDownloadingPdf(true);
-      await api.downloadPdf(
-        `/invoices/${invoice.id}/pdf?download=1`,
-        `Tax-Invoice-${invoice.invoice_number}.pdf`
-      );
-      toast.success("Tax Invoice PDF downloaded!");
+      const sheet = document.getElementById("printable-sheet");
+      if (sheet) {
+        await exportElementToPdf(sheet, `Tax-Invoice-${invoice.invoice_number}.pdf`);
+        toast.success("Tax Invoice PDF downloaded!");
+      } else {
+        await api.downloadPdf(
+          `/invoices/${invoice.id}/pdf?download=1`,
+          `Tax-Invoice-${invoice.invoice_number}.pdf`
+        );
+        toast.success("Tax Invoice PDF downloaded!");
+      }
     } catch (err: any) {
       toast.error(err.message || "Failed to download PDF.");
     } finally {
@@ -257,7 +264,7 @@ function InvoiceDetailContent({ invoiceParam }: { invoiceParam: string }) {
       {/* Main Grid: Document Sheet (Left) + Document Lifecycle Sidebar (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Printable A4 Tax Invoice Document Sheet */}
-        <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-xs p-8 sm:p-12 print:p-0 print:border-none print:shadow-none space-y-8">
+        <div id="printable-sheet" className="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-xs p-8 sm:p-12 print:p-0 print:border-none print:shadow-none space-y-8">
           {/* Header with Kabhyan Logo */}
           <div className="flex justify-between items-start pb-8 border-b border-slate-100">
             <div className="space-y-2">
@@ -273,24 +280,28 @@ function InvoiceDetailContent({ invoiceParam }: { invoiceParam: string }) {
                   />
                 </div>
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed max-w-sm pt-2">
-                <strong>{brand.companyName || "Kabhyan Technologies Private Limited"}</strong>
-                <br />
-                {brand.companyTagline || "Enterprise IT & Software Engineering Solutions"}
-                <br />
-                GSTIN: <strong>18AAGCK2934D1Z2</strong>
-                <br />
-                support@kabhyan.com • www.kabhyan.com
-              </p>
+              <div className="text-xs text-slate-500 space-y-0.5 leading-relaxed pt-2">
+                <p className="font-semibold text-slate-700">{brand.companyName || "Kabhyan Technologies Private Limited"}</p>
+                <p>{brand.companyTagline || "Enterprise IT & Software Engineering Solutions"}</p>
+                <p>{brand.companyEmail || "contact@kabhyan.com"} • {brand.companyWebsite ? brand.companyWebsite.replace(/^https?:\/\//, '') : "www.kabhyan.com"} • +91 70869 59737</p>
+                <p className="text-[10px] text-slate-400">
+                  GSTIN: <strong className="text-slate-600 font-mono">18AAGCK2934D1Z2</strong> • CIN: <strong className="text-slate-600 font-mono">U62012AS2026PTC030422</strong> • State: <strong>18 (Assam)</strong>
+                </p>
+                <p className="text-[9.5px] text-slate-400 leading-tight">
+                  Regd. Office: Ward No. 9, Rangia-Tamulpur Rd, near Padum Pukhuri Park, Rangia, Assam 781354
+                </p>
+              </div>
             </div>
             <div className="text-right space-y-1">
-              <h2 className="text-xl font-black text-slate-900 tracking-tight">TAX INVOICE</h2>
-              <p className="font-mono text-sm font-bold text-blue-600">#{invoice.invoice_number}</p>
+              <span className="text-[11px] font-bold tracking-widest uppercase text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded inline-block">
+                Tax Invoice
+              </span>
+              <p className="font-mono text-xl sm:text-2xl font-black text-slate-900 mt-2">#{invoice.invoice_number}</p>
               <div className="text-xs text-slate-500 space-y-0.5 pt-1">
-                <p>Invoice Date: <span className="font-medium text-slate-700">{formatDate(invoice.invoice_date)}</span></p>
-                <p>Payment Due: <span className="font-medium text-slate-700">{formatDate(invoice.due_date)}</span></p>
+                <p>Invoice Date: <span className="font-semibold text-slate-700">{formatDate(invoice.invoice_date)}</span></p>
+                <p>Payment Due: <span className="font-semibold text-slate-700">{formatDate(invoice.due_date)}</span></p>
                 {invoice.project?.name && (
-                  <p>Project: <span className="font-medium text-slate-700">{invoice.project.name}</span></p>
+                  <p>Project: <span className="font-semibold text-slate-700">{invoice.project.name}</span></p>
                 )}
                 {invoice.proforma_invoice && (
                   <p>
