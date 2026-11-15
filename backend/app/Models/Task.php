@@ -25,12 +25,20 @@ class Task extends Model
         'completed_at',
     ];
 
-    protected $casts = [
-        'due_date' => 'date',
-        'completed_at' => 'datetime',
-        'estimated_hours' => 'integer',
-        'logged_hours' => 'integer',
-    ];
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'due_date' => 'date',
+            'completed_at' => 'datetime',
+            'estimated_hours' => 'integer',
+            'logged_hours' => 'integer',
+        ];
+    }
 
     public function project(): BelongsTo
     {

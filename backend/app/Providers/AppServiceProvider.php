@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\SystemSetting;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
@@ -22,6 +23,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Enable strict model mode outside of production (prevents lazy loading & unfillable mutations)
+        Model::shouldBeStrict(! $this->app->isProduction());
+
         // Enforce Indian Standard Time (IST - Asia/Kolkata) as universal default
         try {
             $configuredTimezone = config('app.timezone', 'Asia/Kolkata');

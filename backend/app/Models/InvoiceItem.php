@@ -21,11 +21,19 @@ class InvoiceItem extends Model
         'amount',
     ];
 
-    protected $casts = [
-        'quantity' => 'decimal:2',
-        'unit_price' => 'decimal:2',
-        'amount' => 'decimal:2',
-    ];
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'quantity' => 'decimal:2',
+            'unit_price' => 'decimal:2',
+            'amount' => 'decimal:2',
+        ];
+    }
 
     public function invoice(): BelongsTo
     {

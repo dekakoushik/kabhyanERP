@@ -39,18 +39,26 @@ class ProformaInvoice extends Model
         'bank_details',
     ];
 
-    protected $casts = [
-        'invoice_date' => 'date',
-        'due_date' => 'date',
-        'subtotal' => 'decimal:2',
-        'tax_rate' => 'decimal:2',
-        'tax_amount' => 'decimal:2',
-        'round_off' => 'decimal:2',
-        'discount_rate' => 'decimal:2',
-        'discount_amount' => 'decimal:2',
-        'total_amount' => 'decimal:2',
-        'paid_amount' => 'decimal:2',
-    ];
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'invoice_date' => 'date',
+            'due_date' => 'date',
+            'subtotal' => 'decimal:2',
+            'tax_rate' => 'decimal:2',
+            'tax_amount' => 'decimal:2',
+            'round_off' => 'decimal:2',
+            'discount_rate' => 'decimal:2',
+            'discount_amount' => 'decimal:2',
+            'total_amount' => 'decimal:2',
+            'paid_amount' => 'decimal:2',
+        ];
+    }
 
     public function estimate(): BelongsTo
     {

@@ -24,10 +24,18 @@ class Ticket extends Model
         'resolved_at',
     ];
 
-    protected $casts = [
-        'attachments' => 'array',
-        'resolved_at' => 'datetime',
-    ];
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'attachments' => 'array',
+            'resolved_at' => 'datetime',
+        ];
+    }
 
     public function client()
     {

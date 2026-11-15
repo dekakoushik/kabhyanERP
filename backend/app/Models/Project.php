@@ -28,12 +28,20 @@ class Project extends Model
         'progress_percentage',
     ];
 
-    protected $casts = [
-        'budget' => 'decimal:2',
-        'start_date' => 'date',
-        'deadline' => 'date',
-        'progress_percentage' => 'integer',
-    ];
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'budget' => 'decimal:2',
+            'start_date' => 'date',
+            'deadline' => 'date',
+            'progress_percentage' => 'integer',
+        ];
+    }
 
     /**
      * Project Manager relationship.

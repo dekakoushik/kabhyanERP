@@ -31,12 +31,20 @@ class Expense extends Model
         'notes',
     ];
 
-    protected $casts = [
-        'expense_date' => 'date',
-        'amount' => 'decimal:2',
-        'tax_amount' => 'decimal:2',
-        'total_amount' => 'decimal:2',
-    ];
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'expense_date' => 'date',
+            'amount' => 'decimal:2',
+            'tax_amount' => 'decimal:2',
+            'total_amount' => 'decimal:2',
+        ];
+    }
 
     public function category()
     {

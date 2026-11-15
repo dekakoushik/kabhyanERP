@@ -21,11 +21,19 @@ class SystemNotification extends Model
         'read_at',
     ];
 
-    protected $casts = [
-        'data' => 'array',
-        'is_read' => 'boolean',
-        'read_at' => 'datetime',
-    ];
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'data' => 'array',
+            'is_read' => 'boolean',
+            'read_at' => 'datetime',
+        ];
+    }
 
     /**
      * Associated user if targeted.

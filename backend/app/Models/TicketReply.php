@@ -18,10 +18,18 @@ class TicketReply extends Model
         'attachments',
     ];
 
-    protected $casts = [
-        'is_staff_reply' => 'boolean',
-        'attachments' => 'array',
-    ];
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_staff_reply' => 'boolean',
+            'attachments' => 'array',
+        ];
+    }
 
     public function ticket()
     {

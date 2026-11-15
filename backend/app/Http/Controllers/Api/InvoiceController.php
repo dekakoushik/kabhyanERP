@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreInvoiceRequest;
+use App\Http\Requests\RecordPaymentRequest;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
@@ -11,6 +13,7 @@ use App\Models\Estimate;
 use App\Services\DocumentNumberService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class InvoiceController extends Controller
@@ -72,65 +75,69 @@ class InvoiceController extends Controller
      */
     public function convertFromProforma(Request $request, ProformaInvoice $proformaInvoice): JsonResponse
     {
-        // Generate next tax invoice number using central DocumentNumberService
-        $invoiceNumber = DocumentNumberService::getNextInvoiceNumber(true);
+        $invoice = DB::transaction(function () use ($request, $proformaInvoice) {
+            // Generate next tax invoice number using central DocumentNumberService
+            $invoiceNumber = DocumentNumberService::getNextInvoiceNumber(true);
 
-        $invoice = Invoice::create([
-            'invoice_number' => $invoiceNumber,
-            'proforma_invoice_id' => $proformaInvoice->id,
-            'estimate_id' => $proformaInvoice->estimate_id,
-            'project_id' => $proformaInvoice->project_id,
-            'created_by' => $request->user()?->id ?? $proformaInvoice->created_by,
-            'client_name' => $proformaInvoice->client_name,
-            'client_company' => $proformaInvoice->client_company,
-            'client_email' => $proformaInvoice->client_email,
-            'client_phone' => $proformaInvoice->client_phone,
-            'client_address' => $proformaInvoice->client_address,
-            'client_gstin' => $request->input('client_gstin', '19AAECK4829K1ZX'),
-            'invoice_date' => now()->toDateString(),
-            'due_date' => now()->addDays(15)->toDateString(),
-            'status' => 'unpaid',
-            'currency' => $proformaInvoice->currency ?? 'INR',
-            'subtotal' => $proformaInvoice->subtotal,
-            'tax_rate' => $proformaInvoice->tax_rate,
-            'tax_amount' => $proformaInvoice->tax_amount,
-            'round_off' => $proformaInvoice->round_off ?? 0.00,
-            'discount_rate' => $proformaInvoice->discount_rate,
-            'discount_amount' => $proformaInvoice->discount_amount,
-            'total_amount' => $proformaInvoice->total_amount,
-            'paid_amount' => 0.00,
-            'due_amount' => $proformaInvoice->total_amount,
-            'notes' => 'Tax Invoice issued against accepted proforma and advance authorization.',
-            'terms_and_conditions' => "1. All payments must be made in favor of Kabhyan Technologies Private Limited.\n2. In accordance with Section 31 of CGST Act, this is an official Tax Invoice for IT & Software Consultancy Services (SAC 998314).\n3. Any discrepancies must be notified within 7 days of invoice issuance.",
-            'bank_details' => $proformaInvoice->bank_details,
-        ]);
-
-        // Copy proforma items
-        foreach ($proformaInvoice->items as $item) {
-            $invoice->items()->create([
-                'item_name' => $item->item_name,
-                'hsn_sac' => '998314',
-                'description' => $item->description,
-                'quantity' => $item->quantity,
-                'unit' => $item->unit,
-                'unit_price' => $item->unit_price,
-                'amount' => $item->amount,
+            $newInvoice = Invoice::create([
+                'invoice_number' => $invoiceNumber,
+                'proforma_invoice_id' => $proformaInvoice->id,
+                'estimate_id' => $proformaInvoice->estimate_id,
+                'project_id' => $proformaInvoice->project_id,
+                'created_by' => $request->user()?->id ?? $proformaInvoice->created_by,
+                'client_name' => $proformaInvoice->client_name,
+                'client_company' => $proformaInvoice->client_company,
+                'client_email' => $proformaInvoice->client_email,
+                'client_phone' => $proformaInvoice->client_phone,
+                'client_address' => $proformaInvoice->client_address,
+                'client_gstin' => $request->input('client_gstin', '19AAECK4829K1ZX'),
+                'invoice_date' => now()->toDateString(),
+                'due_date' => now()->addDays(15)->toDateString(),
+                'status' => 'unpaid',
+                'currency' => $proformaInvoice->currency ?? 'INR',
+                'subtotal' => $proformaInvoice->subtotal,
+                'tax_rate' => $proformaInvoice->tax_rate,
+                'tax_amount' => $proformaInvoice->tax_amount,
+                'round_off' => $proformaInvoice->round_off ?? 0.00,
+                'discount_rate' => $proformaInvoice->discount_rate,
+                'discount_amount' => $proformaInvoice->discount_amount,
+                'total_amount' => $proformaInvoice->total_amount,
+                'paid_amount' => 0.00,
+                'due_amount' => $proformaInvoice->total_amount,
+                'notes' => 'Tax Invoice issued against accepted proforma and advance authorization.',
+                'terms_and_conditions' => "1. All payments must be made in favor of Kabhyan Technologies Private Limited.\n2. In accordance with Section 31 of CGST Act, this is an official Tax Invoice for IT & Software Consultancy Services (SAC 998314).\n3. Any discrepancies must be notified within 7 days of invoice issuance.",
+                'bank_details' => $proformaInvoice->bank_details,
             ]);
-        }
 
-        // If proforma had paid amount, record as initial payment in invoice
-        if ((float) $proformaInvoice->paid_amount > 0) {
-            $invoice->payments()->create([
-                'recorded_by' => $request->user()->id,
-                'payment_reference' => 'Advance Paid via Proforma ' . $proformaInvoice->proforma_number,
-                'amount' => $proformaInvoice->paid_amount,
-                'payment_date' => now()->toDateString(),
-                'payment_method' => 'bank_transfer',
-                'notes' => 'Settled via proforma invoice advance',
-            ]);
-        }
+            // Copy proforma items
+            foreach ($proformaInvoice->items as $item) {
+                $newInvoice->items()->create([
+                    'item_name' => $item->item_name,
+                    'hsn_sac' => '998314',
+                    'description' => $item->description,
+                    'quantity' => $item->quantity,
+                    'unit' => $item->unit,
+                    'unit_price' => $item->unit_price,
+                    'amount' => $item->amount,
+                ]);
+            }
 
-        $invoice->recalculateTotals();
+            // If proforma had paid amount, record as initial payment in invoice
+            if ((float) $proformaInvoice->paid_amount > 0) {
+                $newInvoice->payments()->create([
+                    'recorded_by' => $request->user()->id,
+                    'payment_reference' => 'Advance Paid via Proforma ' . $proformaInvoice->proforma_number,
+                    'amount' => $proformaInvoice->paid_amount,
+                    'payment_date' => now()->toDateString(),
+                    'payment_method' => 'bank_transfer',
+                    'notes' => 'Settled via proforma invoice advance',
+                ]);
+            }
+
+            $newInvoice->recalculateTotals();
+
+            return $newInvoice;
+        });
 
         return response()->json([
             'message' => 'Tax Invoice successfully created from Proforma Invoice.',
@@ -141,85 +148,60 @@ class InvoiceController extends Controller
     /**
      * Store new standalone Tax Invoice.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreInvoiceRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'invoice_number' => ['nullable', 'string', 'max:50', 'unique:invoices,invoice_number'],
-            'proforma_invoice_id' => ['nullable', 'exists:proforma_invoices,id'],
-            'estimate_id' => ['nullable', 'exists:estimates,id'],
-            'project_id' => ['nullable', 'exists:projects,id'],
-            'client_name' => ['required', 'string', 'max:255'],
-            'client_company' => ['nullable', 'string', 'max:255'],
-            'client_email' => ['nullable', 'email', 'max:255'],
-            'client_phone' => ['nullable', 'string', 'max:50'],
-            'client_address' => ['nullable', 'string'],
-            'client_gstin' => ['nullable', 'string', 'max:30'],
-            'invoice_date' => ['required', 'date'],
-            'due_date' => ['nullable', 'date'],
-            'status' => ['required', Rule::in(['unpaid', 'partially_paid', 'paid', 'overdue', 'cancelled'])],
-            'currency' => ['required', 'string', 'max:10'],
-            'tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'discount_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'round_off' => ['nullable', 'numeric'],
-            'notes' => ['nullable', 'string'],
-            'terms_and_conditions' => ['nullable', 'string'],
-            'bank_details' => ['nullable', 'string'],
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.item_name' => ['required', 'string', 'max:255'],
-            'items.*.hsn_sac' => ['nullable', 'string', 'max:20'],
-            'items.*.description' => ['nullable', 'string'],
-            'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
-            'items.*.unit' => ['nullable', 'string', 'max:50'],
-            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
-        ]);
-
+        $validated = $request->validated();
         $validated['created_by'] = $request->user()->id;
 
-        $invoiceNumber = $validated['invoice_number'] ?? null;
-        if (empty($invoiceNumber)) {
-            $invoiceNumber = DocumentNumberService::getNextInvoiceNumber(true);
-        } else {
-            DocumentNumberService::getNextInvoiceNumber(true);
-        }
+        $invoice = DB::transaction(function () use ($validated) {
+            $invoiceNumber = $validated['invoice_number'] ?? null;
+            if (empty($invoiceNumber)) {
+                $invoiceNumber = DocumentNumberService::getNextInvoiceNumber(true);
+            } else {
+                DocumentNumberService::getNextInvoiceNumber(true);
+            }
 
-        $invoice = Invoice::create([
-            'invoice_number' => $invoiceNumber,
-            'proforma_invoice_id' => $validated['proforma_invoice_id'] ?? null,
-            'estimate_id' => $validated['estimate_id'] ?? null,
-            'project_id' => $validated['project_id'] ?? null,
-            'created_by' => $validated['created_by'],
-            'client_name' => $validated['client_name'],
-            'client_company' => $validated['client_company'] ?? null,
-            'client_email' => $validated['client_email'] ?? null,
-            'client_phone' => $validated['client_phone'] ?? null,
-            'client_address' => $validated['client_address'] ?? null,
-            'client_gstin' => $validated['client_gstin'] ?? null,
-            'invoice_date' => $validated['invoice_date'],
-            'due_date' => $validated['due_date'] ?? null,
-            'status' => $validated['status'],
-            'currency' => $validated['currency'] ?? 'INR',
-            'tax_rate' => $validated['tax_rate'] ?? 18,
-            'discount_rate' => $validated['discount_rate'] ?? 0,
-            'round_off' => $validated['round_off'] ?? 0,
-            'notes' => $validated['notes'] ?? null,
-            'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
-            'bank_details' => $validated['bank_details'] ?? null,
-        ]);
-
-        foreach ($validated['items'] as $item) {
-            $amount = $item['quantity'] * $item['unit_price'];
-            $invoice->items()->create([
-                'item_name' => $item['item_name'],
-                'hsn_sac' => $item['hsn_sac'] ?? '998314',
-                'description' => $item['description'] ?? null,
-                'quantity' => $item['quantity'],
-                'unit' => $item['unit'] ?? 'hours',
-                'unit_price' => $item['unit_price'],
-                'amount' => $amount,
+            $newInvoice = Invoice::create([
+                'invoice_number' => $invoiceNumber,
+                'proforma_invoice_id' => $validated['proforma_invoice_id'] ?? null,
+                'estimate_id' => $validated['estimate_id'] ?? null,
+                'project_id' => $validated['project_id'] ?? null,
+                'created_by' => $validated['created_by'],
+                'client_name' => $validated['client_name'],
+                'client_company' => $validated['client_company'] ?? null,
+                'client_email' => $validated['client_email'] ?? null,
+                'client_phone' => $validated['client_phone'] ?? null,
+                'client_address' => $validated['client_address'] ?? null,
+                'client_gstin' => $validated['client_gstin'] ?? null,
+                'invoice_date' => $validated['invoice_date'],
+                'due_date' => $validated['due_date'] ?? null,
+                'status' => $validated['status'],
+                'currency' => $validated['currency'] ?? 'INR',
+                'tax_rate' => $validated['tax_rate'] ?? 18,
+                'discount_rate' => $validated['discount_rate'] ?? 0,
+                'round_off' => $validated['round_off'] ?? 0,
+                'notes' => $validated['notes'] ?? null,
+                'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
+                'bank_details' => $validated['bank_details'] ?? null,
             ]);
-        }
 
-        $invoice->recalculateTotals();
+            foreach ($validated['items'] as $item) {
+                $amount = $item['quantity'] * $item['unit_price'];
+                $newInvoice->items()->create([
+                    'item_name' => $item['item_name'],
+                    'hsn_sac' => $item['hsn_sac'] ?? '998314',
+                    'description' => $item['description'] ?? null,
+                    'quantity' => $item['quantity'],
+                    'unit' => $item['unit'] ?? 'hours',
+                    'unit_price' => $item['unit_price'],
+                    'amount' => $amount,
+                ]);
+            }
+
+            $newInvoice->recalculateTotals();
+
+            return $newInvoice;
+        });
 
         return response()->json([
             'message' => 'Tax Invoice created successfully',
@@ -277,41 +259,43 @@ class InvoiceController extends Controller
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
         ]);
 
-        $invoice->update([
-            'invoice_number' => $validated['invoice_number'],
-            'project_id' => $validated['project_id'] ?? null,
-            'client_name' => $validated['client_name'],
-            'client_company' => $validated['client_company'] ?? null,
-            'client_email' => $validated['client_email'] ?? null,
-            'client_phone' => $validated['client_phone'] ?? null,
-            'client_address' => $validated['client_address'] ?? null,
-            'client_gstin' => $validated['client_gstin'] ?? null,
-            'invoice_date' => $validated['invoice_date'],
-            'due_date' => $validated['due_date'] ?? null,
-            'currency' => $validated['currency'],
-            'tax_rate' => $validated['tax_rate'] ?? 18,
-            'discount_rate' => $validated['discount_rate'] ?? 0,
-            'round_off' => $validated['round_off'] ?? 0,
-            'notes' => $validated['notes'] ?? null,
-            'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
-            'bank_details' => $validated['bank_details'] ?? null,
-        ]);
-
-        $invoice->items()->delete();
-        foreach ($validated['items'] as $item) {
-            $amount = $item['quantity'] * $item['unit_price'];
-            $invoice->items()->create([
-                'item_name' => $item['item_name'],
-                'hsn_sac' => $item['hsn_sac'] ?? '998314',
-                'description' => $item['description'] ?? null,
-                'quantity' => $item['quantity'],
-                'unit' => $item['unit'] ?? 'hours',
-                'unit_price' => $item['unit_price'],
-                'amount' => $amount,
+        DB::transaction(function () use ($validated, $invoice) {
+            $invoice->update([
+                'invoice_number' => $validated['invoice_number'],
+                'project_id' => $validated['project_id'] ?? null,
+                'client_name' => $validated['client_name'],
+                'client_company' => $validated['client_company'] ?? null,
+                'client_email' => $validated['client_email'] ?? null,
+                'client_phone' => $validated['client_phone'] ?? null,
+                'client_address' => $validated['client_address'] ?? null,
+                'client_gstin' => $validated['client_gstin'] ?? null,
+                'invoice_date' => $validated['invoice_date'],
+                'due_date' => $validated['due_date'] ?? null,
+                'currency' => $validated['currency'],
+                'tax_rate' => $validated['tax_rate'] ?? 18,
+                'discount_rate' => $validated['discount_rate'] ?? 0,
+                'round_off' => $validated['round_off'] ?? 0,
+                'notes' => $validated['notes'] ?? null,
+                'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
+                'bank_details' => $validated['bank_details'] ?? null,
             ]);
-        }
 
-        $invoice->recalculateTotals();
+            $invoice->items()->delete();
+            foreach ($validated['items'] as $item) {
+                $amount = $item['quantity'] * $item['unit_price'];
+                $invoice->items()->create([
+                    'item_name' => $item['item_name'],
+                    'hsn_sac' => $item['hsn_sac'] ?? '998314',
+                    'description' => $item['description'] ?? null,
+                    'quantity' => $item['quantity'],
+                    'unit' => $item['unit'] ?? 'hours',
+                    'unit_price' => $item['unit_price'],
+                    'amount' => $amount,
+                ]);
+            }
+
+            $invoice->recalculateTotals();
+        });
 
         return response()->json([
             'message' => 'Invoice updated successfully',
@@ -322,26 +306,22 @@ class InvoiceController extends Controller
     /**
      * Record payment transaction against invoice.
      */
-    public function recordPayment(Request $request, Invoice $invoice): JsonResponse
+    public function recordPayment(RecordPaymentRequest $request, Invoice $invoice): JsonResponse
     {
-        $validated = $request->validate([
-            'amount' => ['required', 'numeric', 'min:0.01'],
-            'payment_date' => ['required', 'date'],
-            'payment_method' => ['required', Rule::in(['bank_transfer', 'upi', 'cheque', 'card', 'cash', 'other'])],
-            'payment_reference' => ['nullable', 'string', 'max:100'],
-            'notes' => ['nullable', 'string'],
-        ]);
+        $validated = $request->validated();
 
-        $invoice->payments()->create([
-            'recorded_by' => $request->user()->id,
-            'amount' => $validated['amount'],
-            'payment_date' => $validated['payment_date'],
-            'payment_method' => $validated['payment_method'],
-            'payment_reference' => $validated['payment_reference'] ?? null,
-            'notes' => $validated['notes'] ?? null,
-        ]);
+        DB::transaction(function () use ($validated, $request, $invoice) {
+            $invoice->payments()->create([
+                'recorded_by' => $request->user()->id,
+                'amount' => $validated['amount'],
+                'payment_date' => $validated['payment_date'],
+                'payment_method' => $validated['payment_method'],
+                'payment_reference' => $validated['payment_reference'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+            ]);
 
-        $invoice->recalculateTotals();
+            $invoice->recalculateTotals();
+        });
 
         return response()->json([
             'message' => 'Payment recorded successfully',

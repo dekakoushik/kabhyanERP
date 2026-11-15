@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreTaskRequest;
+use App\Http\Requests\UpdateTaskRequest;
 use App\Models\Project;
 use App\Models\Task;
 use Illuminate\Http\JsonResponse;
@@ -61,20 +63,9 @@ class TaskController extends Controller
     /**
      * Create new task.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreTaskRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'project_id' => ['required', 'exists:projects,id'],
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'assigned_to' => ['nullable', 'exists:users,id'],
-            'status' => ['required', Rule::in(['todo', 'in_progress', 'in_review', 'completed', 'blocked'])],
-            'priority' => ['required', Rule::in(['low', 'medium', 'high', 'urgent'])],
-            'estimated_hours' => ['nullable', 'integer', 'min:0'],
-            'logged_hours' => ['nullable', 'integer', 'min:0'],
-            'due_date' => ['nullable', 'date'],
-        ]);
-
+        $validated = $request->validated();
         $validated['created_by'] = $request->user()->id;
 
         if ($validated['status'] === 'completed') {
@@ -105,19 +96,9 @@ class TaskController extends Controller
     /**
      * Update task.
      */
-    public function update(Request $request, Task $task): JsonResponse
+    public function update(UpdateTaskRequest $request, Task $task): JsonResponse
     {
-        $validated = $request->validate([
-            'project_id' => ['required', 'exists:projects,id'],
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'assigned_to' => ['nullable', 'exists:users,id'],
-            'status' => ['required', Rule::in(['todo', 'in_progress', 'in_review', 'completed', 'blocked'])],
-            'priority' => ['required', Rule::in(['low', 'medium', 'high', 'urgent'])],
-            'estimated_hours' => ['nullable', 'integer', 'min:0'],
-            'logged_hours' => ['nullable', 'integer', 'min:0'],
-            'due_date' => ['nullable', 'date'],
-        ]);
+        $validated = $request->validated();
 
         if ($validated['status'] === 'completed' && ! $task->completed_at) {
             $validated['completed_at'] = now();

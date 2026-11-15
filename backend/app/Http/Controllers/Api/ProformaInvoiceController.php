@@ -9,6 +9,7 @@ use App\Models\ProformaInvoiceItem;
 use App\Services\DocumentNumberService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class ProformaInvoiceController extends Controller
@@ -77,52 +78,56 @@ class ProformaInvoiceController extends Controller
             ], 422);
         }
 
-        // Generate next proforma number using central DocumentNumberService
-        $proformaNumber = DocumentNumberService::getNextProformaNumber(true);
+        $proforma = DB::transaction(function () use ($request, $estimate) {
+            // Generate next proforma number using central DocumentNumberService
+            $proformaNumber = DocumentNumberService::getNextProformaNumber(true);
 
-        $defaultBankDetails = "Bank Name: HDFC Bank Limited\nAccount Name: Kabhyan Technologies Private Limited\nAccount Number: 50200084729184\nIFSC Code: HDFC0001234\nBranch: Salt Lake Sector V, Kolkata, West Bengal\nUPI ID: kabhyan@hdfcbank";
+            $defaultBankDetails = "Bank Name: HDFC Bank Limited\nAccount Name: Kabhyan Technologies Private Limited\nAccount Number: 50200084729184\nIFSC Code: HDFC0001234\nBranch: Salt Lake Sector V, Kolkata, West Bengal\nUPI ID: kabhyan@hdfcbank";
 
-        $proforma = ProformaInvoice::create([
-            'proforma_number' => $proformaNumber,
-            'estimate_id' => $estimate->id,
-            'project_id' => $estimate->project_id,
-            'created_by' => $request->user()->id,
-            'client_name' => $estimate->client_name,
-            'client_company' => $estimate->client_company,
-            'client_email' => $estimate->client_email,
-            'client_phone' => $estimate->client_phone,
-            'client_address' => $estimate->client_address,
-            'invoice_date' => now()->toDateString(),
-            'due_date' => now()->addDays(15)->toDateString(),
-            'status' => 'unpaid',
-            'currency' => $estimate->currency ?? 'INR',
-            'subtotal' => $estimate->subtotal,
-            'tax_rate' => $estimate->tax_rate,
-            'tax_amount' => $estimate->tax_amount,
-            'round_off' => $estimate->round_off ?? 0.00,
-            'discount_rate' => $estimate->discount_rate,
-            'discount_amount' => $estimate->discount_amount,
-            'total_amount' => $estimate->total_amount,
-            'paid_amount' => 0.00,
-            'notes' => $estimate->notes ?? 'Proforma invoice generated upon estimate approval for advance mobilization.',
-            'terms_and_conditions' => $estimate->terms_and_conditions ?? "1. This proforma invoice is issued for payment facilitation.\n2. Please mention the Proforma Number in transaction reference.\n3. Goods/Services will be initiated post receipt of agreed mobilization advance.",
-            'bank_details' => $defaultBankDetails,
-        ]);
-
-        // Copy estimate line items
-        foreach ($estimate->items as $item) {
-            $proforma->items()->create([
-                'item_name' => $item->item_name,
-                'description' => $item->description,
-                'quantity' => $item->quantity,
-                'unit' => $item->unit,
-                'unit_price' => $item->unit_price,
-                'amount' => $item->amount,
+            $newProforma = ProformaInvoice::create([
+                'proforma_number' => $proformaNumber,
+                'estimate_id' => $estimate->id,
+                'project_id' => $estimate->project_id,
+                'created_by' => $request->user()->id,
+                'client_name' => $estimate->client_name,
+                'client_company' => $estimate->client_company,
+                'client_email' => $estimate->client_email,
+                'client_phone' => $estimate->client_phone,
+                'client_address' => $estimate->client_address,
+                'invoice_date' => now()->toDateString(),
+                'due_date' => now()->addDays(15)->toDateString(),
+                'status' => 'unpaid',
+                'currency' => $estimate->currency ?? 'INR',
+                'subtotal' => $estimate->subtotal,
+                'tax_rate' => $estimate->tax_rate,
+                'tax_amount' => $estimate->tax_amount,
+                'round_off' => $estimate->round_off ?? 0.00,
+                'discount_rate' => $estimate->discount_rate,
+                'discount_amount' => $estimate->discount_amount,
+                'total_amount' => $estimate->total_amount,
+                'paid_amount' => 0.00,
+                'notes' => $estimate->notes ?? 'Proforma invoice generated upon estimate approval for advance mobilization.',
+                'terms_and_conditions' => $estimate->terms_and_conditions ?? "1. This proforma invoice is issued for payment facilitation.\n2. Please mention the Proforma Number in transaction reference.\n3. Goods/Services will be initiated post receipt of agreed mobilization advance.",
+                'bank_details' => $defaultBankDetails,
             ]);
-        }
 
-        // Update estimate status to invoiced
-        $estimate->update(['status' => 'invoiced']);
+            // Copy estimate line items
+            foreach ($estimate->items as $item) {
+                $newProforma->items()->create([
+                    'item_name' => $item->item_name,
+                    'description' => $item->description,
+                    'quantity' => $item->quantity,
+                    'unit' => $item->unit,
+                    'unit_price' => $item->unit_price,
+                    'amount' => $item->amount,
+                ]);
+            }
+
+            // Update estimate status to invoiced
+            $estimate->update(['status' => 'invoiced']);
+
+            return $newProforma;
+        });
 
         return response()->json([
             'message' => 'Proforma Invoice generated successfully from estimate.',
