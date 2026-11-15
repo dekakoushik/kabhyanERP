@@ -191,16 +191,18 @@
     <!-- Corporate Header & Document Title -->
     <table class="header-table">
         <tr>
-            <td style="width: 60%; vertical-align: top;">
+            <td style="width: 62%; vertical-align: top;">
                 <div class="company-title">{{ $company['name'] }}</div>
                 <div class="company-sub">{{ $company['tagline'] }}</div>
-                <div style="font-size: 7.5pt; color: #475569; line-height: 1.35;">
-                    {{ $company['address'] }}<br/>
-                    Email: <strong>{{ $company['email'] }}</strong> | Web: {{ $company['website'] }}<br/>
-                    GSTIN: <strong style="color: #1e3a8a;">{{ $company['gstin'] }}</strong> | PAN: <strong>{{ $company['pan'] }}</strong> | State Code: <strong>19 (West Bengal)</strong>
+                <div style="font-size: 7.2pt; color: #475569; line-height: 1.35;">
+                    CIN: <strong class="font-mono" style="color: #1e3a8a;">{{ $company['cin'] }}</strong> | State Code: <strong>18 (Assam)</strong><br/>
+                    <strong>Regd. Office:</strong> {{ $company['registered_office'] }}<br/>
+                    <strong>Corp. Office:</strong> {{ $company['corporate_office'] }}<br/>
+                    Phone: <strong>{{ $company['phone'] }}</strong> | Email: <strong>{{ $company['email'] }}</strong> | Web: {{ $company['website'] }}<br/>
+                    GSTIN: <strong style="color: #1e3a8a;">{{ $company['gstin'] }}</strong> | PAN: <strong>{{ $company['pan'] }}</strong>
                 </div>
             </td>
-            <td style="width: 40%; vertical-align: top;" class="text-right">
+            <td style="width: 38%; vertical-align: top;" class="text-right">
                 <div class="doc-title-badge">@yield('doc-title')</div><br/>
                 <div class="doc-badge-original">Original for Recipient</div>
                 <div style="margin-top: 6px; font-size: 8pt; line-height: 1.4;">

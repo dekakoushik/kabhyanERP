@@ -1339,7 +1339,7 @@ function InvoicesContent() {
                     Enterprise IT & Software Engineering Solutions
                   </p>
                   <p className="text-xs text-slate-400">
-                    GSTIN: <strong className="text-slate-700 font-mono">19AABCK9876Q1Z2</strong>
+                    GSTIN: <strong className="text-slate-700 font-mono">18AAGCK2934D1Z2</strong>
                   </p>
                   <p className="text-xs text-slate-400">billing@kabhyan.com • www.kabhyan.com</p>
                 </div>

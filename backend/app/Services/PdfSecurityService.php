@@ -45,12 +45,12 @@ class PdfSecurityService
 
             $dn = [
                 'countryName' => 'IN',
-                'stateOrProvinceName' => 'West Bengal',
-                'localityName' => 'Kolkata',
+                'stateOrProvinceName' => 'Assam',
+                'localityName' => 'Guwahati',
                 'organizationName' => 'Kabhyan Technologies Private Limited',
                 'organizationalUnitName' => 'Enterprise Financial Operations',
                 'commonName' => 'Kabhyan ERP Certified Documents',
-                'emailAddress' => 'finance@kabhyan.com'
+                'emailAddress' => 'contact@kabhyan.com'
             ];
 
             $privkey = openssl_pkey_new(array_merge([
@@ -186,9 +186,9 @@ SVG;
                 if ($certRealPath && $keyRealPath) {
                     $pdf->setSignature('file://' . $certRealPath, 'file://' . $keyRealPath, $this->passphrase, '', 2, [
                         'Name' => 'Kabhyan Technologies Private Limited',
-                        'Location' => 'Kolkata, West Bengal, India',
+                        'Location' => 'Guwahati, Assam, India',
                         'Reason' => 'Tax Invoice Authentication & Digital Certification (PAdES)',
-                        'ContactInfo' => 'finance@kabhyan.com'
+                        'ContactInfo' => 'contact@kabhyan.com'
                     ]);
                 }
             }

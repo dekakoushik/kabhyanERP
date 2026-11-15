@@ -36,7 +36,7 @@ class PdfController extends Controller
         // GST Place of supply and state check
         $clientGstin = $invoice->client_gstin;
         $isInterState = $this->isInterStateSupply($clientGstin, $invoice->client_address);
-        $placeOfSupply = $isInterState ? 'Inter-State (IGST Applicable)' : 'West Bengal (State Code: 19)';
+        $placeOfSupply = $isInterState ? 'Inter-State (IGST Applicable)' : 'Assam (State Code: 18)';
 
         // GST Calculation
         $taxableAmount = (float) $invoice->subtotal - (float) $invoice->discount_amount;
@@ -117,7 +117,7 @@ class PdfController extends Controller
 
         $clientGstin = $proforma->client_gstin;
         $isInterState = $this->isInterStateSupply($clientGstin, $proforma->client_address);
-        $placeOfSupply = $isInterState ? 'Inter-State (IGST Applicable)' : 'West Bengal (State Code: 19)';
+        $placeOfSupply = $isInterState ? 'Inter-State (IGST Applicable)' : 'Assam (State Code: 18)';
 
         $taxableAmount = (float) $proforma->subtotal - (float) $proforma->discount_amount;
         $totalTax = (float) $proforma->tax_amount;
@@ -195,7 +195,7 @@ class PdfController extends Controller
 
         $clientGstin = $estimate->client_gstin;
         $isInterState = $this->isInterStateSupply($clientGstin, $estimate->client_address);
-        $placeOfSupply = $isInterState ? 'Inter-State (IGST Applicable)' : 'West Bengal (State Code: 19)';
+        $placeOfSupply = $isInterState ? 'Inter-State (IGST Applicable)' : 'Assam (State Code: 18)';
 
         $taxableAmount = (float) $estimate->subtotal - (float) $estimate->discount_amount;
         $totalTax = (float) $estimate->tax_amount;
@@ -267,12 +267,20 @@ class PdfController extends Controller
             'name' => SystemSetting::get('company_legal_name', 'Kabhyan Technologies Private Limited'),
             'tagline' => SystemSetting::get('company_legal_tagline', 'Enterprise IT & Software Engineering Solutions'),
             'email' => SystemSetting::get('company_email', 'contact@kabhyan.com'),
-            'phone' => SystemSetting::get('company_phone', '+91 33 2357 1234'),
-            'address' => SystemSetting::get('company_address', 'Technopolis Commercial Complex, 12th Floor, Sector V, Bidhannagar, Kolkata, West Bengal 700091, India'),
+            'phone' => SystemSetting::get('company_phone', '+91 70869 59737'),
+            'registered_office' => SystemSetting::get('company_registered_office', 'Ward No. 9, Rangia-Tamulpur Rd, near Padum Pukhuri Park, Rangia, Assam 781354'),
+            'corporate_office' => SystemSetting::get('company_corporate_office', 'GMCH Road, near Dispur College Road, Kachari Basti, Ganeshguri, Guwahati, Assam 781005'),
+            'address' => SystemSetting::get('company_address', 'GMCH Road, near Dispur College Road, Kachari Basti, Ganeshguri, Guwahati, Assam 781005'),
             'website' => SystemSetting::get('company_website', 'https://www.kabhyan.com'),
-            'gstin' => SystemSetting::get('company_gstin', '19AABCK9876Q1Z2'),
-            'pan' => SystemSetting::get('company_pan', 'AABCK9876Q'),
+            'cin' => SystemSetting::get('company_cin', 'U62012AS2026PTC030422'),
+            'incorporation_date' => SystemSetting::get('company_incorporation_date', 'May 11, 2026'),
+            'company_status' => SystemSetting::get('company_status', 'Active (Non-government private company)'),
+            'authorized_capital' => SystemSetting::get('company_share_capital', '₹100,000'),
+            'gstin' => SystemSetting::get('company_gstin', '18AAGCK2934D1Z2'),
+            'pan' => SystemSetting::get('company_pan', 'AAGCK2934D'),
             'sac_code' => SystemSetting::get('default_sac_code', '998314'),
+            'state_code' => '18',
+            'state_name' => 'Assam',
         ];
     }
 
@@ -286,30 +294,31 @@ class PdfController extends Controller
             'account_name' => SystemSetting::get('bank_account_name', 'Kabhyan Technologies Private Limited'),
             'account_number' => SystemSetting::get('bank_account_number', '50200084729184'),
             'ifsc_code' => SystemSetting::get('bank_ifsc_code', 'HDFC0001234'),
-            'branch' => SystemSetting::get('bank_branch', 'Salt Lake Sector V, Kolkata, West Bengal'),
+            'branch' => SystemSetting::get('bank_branch', 'Ganeshguri, Guwahati, Assam'),
             'upi_id' => SystemSetting::get('bank_upi_id', 'kabhyan.tech@hdfcbank'),
         ];
     }
 
     /**
      * Check if supply is inter-state (IGST) or intra-state (CGST + SGST).
-     * State code 19 is West Bengal.
+     * State code 18 is Assam.
      */
     protected function isInterStateSupply(?string $gstin, ?string $address): bool
     {
+        // Kabhyan Technologies is registered in Assam (State Code: 18)
         if ($gstin && strlen(trim($gstin)) >= 2) {
             $stateCode = substr(trim($gstin), 0, 2);
-            return $stateCode !== '19';
+            return $stateCode !== '18';
         }
 
         if ($address) {
             $lower = strtolower($address);
-            if (str_contains($lower, 'west bengal') || str_contains($lower, 'kolkata') || str_contains($lower, 'wb')) {
+            if (str_contains($lower, 'assam') || str_contains($lower, 'guwahati') || str_contains($lower, 'rangia')) {
                 return false;
             }
         }
 
-        return false;
+        return true;
     }
 
     /**
