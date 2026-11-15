@@ -24,13 +24,13 @@
 @section('content')
 
     <!-- Recipient Client & Project Info Cards -->
-    <table style="width: 100%; border-collapse: collapse; margin-top: 12px; margin-bottom: 14px;">
+    <table style="width: 100%; border-collapse: collapse; margin-top: 6px; margin-bottom: 18px;">
         <tr>
-            <td style="width: 48.5%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px;">
-                <div style="font-size: 7pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 3px;">BILLED TO (CLIENT)</div>
-                <div style="font-size: 10pt; font-weight: bold; color: #0f172a; margin-bottom: 2px;">{{ $proforma->client_name }}</div>
-                <div style="font-size: 8pt; font-weight: 500; color: #475569; margin-bottom: 2px;">{{ $proforma->client_company ?? 'Direct Client' }}</div>
-                <div style="font-size: 7.5pt; color: #64748b; line-height: 1.35;">
+            <td style="width: 48.5%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px;">
+                <div style="font-size: 7.2pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px;">BILLED TO (CLIENT)</div>
+                <div style="font-size: 11pt; font-weight: bold; color: #0f172a; margin-bottom: 3px;">{{ $proforma->client_name }}</div>
+                <div style="font-size: 8.5pt; font-weight: 500; color: #475569; margin-bottom: 3px;">{{ $proforma->client_company ?? 'Direct Client' }}</div>
+                <div style="font-size: 7.8pt; color: #64748b; line-height: 1.4;">
                     {{ $proforma->client_email }}<br/>
                     @if(!empty($proforma->client_phone))
                         {{ $proforma->client_phone }}<br/>
@@ -44,10 +44,10 @@
                 </div>
             </td>
             <td style="width: 3%;"></td>
-            <td style="width: 48.5%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px;">
-                <div style="font-size: 7pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 3px;">PROJECT ENGAGEMENT</div>
-                <div style="font-size: 10pt; font-weight: bold; color: #0f172a; margin-bottom: 3px;">{{ $proforma->project?->name ?? 'Corporate Engagement' }}</div>
-                <div style="font-size: 7.5pt; color: #64748b; line-height: 1.4;">
+            <td style="width: 48.5%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px;">
+                <div style="font-size: 7.2pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px;">PROJECT ENGAGEMENT</div>
+                <div style="font-size: 11pt; font-weight: bold; color: #0f172a; margin-bottom: 4px;">{{ $proforma->project?->name ?? 'Corporate Engagement' }}</div>
+                <div style="font-size: 7.8pt; color: #64748b; line-height: 1.45;">
                     @if(!empty($proforma->project?->code))
                         <span style="color: #7c3aed; font-weight: bold;">Project Code: {{ $proforma->project->code }}</span><br/>
                     @endif
@@ -75,33 +75,33 @@
             @forelse($proforma->items as $item)
             <tr>
                 <td style="text-align: left;">
-                    <div style="font-size: 8pt; font-weight: bold; color: #0f172a;">{{ $item->item_name }}</div>
+                    <div style="font-size: 8.5pt; font-weight: bold; color: #0f172a;">{{ $item->item_name }}</div>
                     @if(!empty($item->description))
-                        <div style="font-size: 7.2pt; color: #64748b; margin-top: 1px; line-height: 1.3;">{{ $item->description }}</div>
+                        <div style="font-size: 7.5pt; color: #64748b; margin-top: 2px; line-height: 1.35;">{{ $item->description }}</div>
                     @endif
                 </td>
-                <td style="text-align: right; color: #334155; font-size: 8pt;">
+                <td style="text-align: right; color: #334155; font-size: 8.5pt;">
                     {{ number_format($item->quantity, 2) }} {{ $item->unit ?? 'hours' }}
                 </td>
-                <td style="text-align: right; color: #334155; font-size: 8pt;">
+                <td style="text-align: right; color: #334155; font-size: 8.5pt;">
                     {{ number_format($item->unit_price, 2) }}
                 </td>
-                <td style="text-align: right; font-weight: bold; color: #0f172a; font-size: 8pt;">
+                <td style="text-align: right; font-weight: bold; color: #0f172a; font-size: 8.5pt;">
                     {{ number_format($item->amount, 2) }}
                 </td>
             </tr>
             @empty
             <tr>
-                <td colspan="4" style="text-align: center; color: #94a3b8; padding: 12px;">No line items specified.</td>
+                <td colspan="4" style="text-align: center; color: #94a3b8; padding: 15px;">No line items specified.</td>
             </tr>
             @endforelse
         </tbody>
     </table>
 
     <!-- Bottom Section: Bank / Terms (Left) & Totals (Right) -->
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; page-break-inside: avoid;">
+    <table style="width: 100%; border-collapse: collapse; margin-top: 6px; margin-bottom: 20px; page-break-inside: avoid;">
         <tr>
-            <td style="width: 52%; vertical-align: top; padding-right: 14px;">
+            <td style="width: 52%; vertical-align: top; padding-right: 16px;">
                 <!-- Bank Details Card -->
                 <div class="note-card">
                     <div class="note-card-title">BANK SETTLEMENT COORDINATES</div>
@@ -164,7 +164,7 @@
                     </tr>
                     @endif
                     <tr>
-                        <td colspan="2" style="border-top: 1.5px solid #cbd5e1; padding-top: 4px; margin-top: 3px;"></td>
+                        <td colspan="2" style="border-top: 1.5px solid #cbd5e1; padding-top: 6px; margin-top: 4px;"></td>
                     </tr>
                     <tr>
                         <td class="grand-total-label">Grand Total:</td>
@@ -174,7 +174,7 @@
                     </tr>
                     @if(!empty($amountInWords))
                     <tr>
-                        <td colspan="2" style="text-align: right; font-size: 7pt; color: #64748b; font-style: italic; padding-top: 2px;">
+                        <td colspan="2" style="text-align: right; font-size: 7.2pt; color: #64748b; font-style: italic; padding-top: 3px;">
                             ({{ $amountInWords }})
                         </td>
                     </tr>

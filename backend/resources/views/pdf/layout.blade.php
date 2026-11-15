@@ -6,7 +6,7 @@
     <style>
         @page {
             size: a4 portrait;
-            margin: 8mm 12mm 8mm 12mm;
+            margin: 16mm 18mm 16mm 18mm;
         }
         * {
             box-sizing: border-box;
@@ -15,10 +15,10 @@
             margin: 0;
             padding: 0;
             background-color: #ffffff;
-            font-family: 'DejaVu Sans', 'Helvetica', 'Arial', sans-serif;
-            font-size: 8pt;
+            font-family: 'DejaVu Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 8.5pt;
             color: #0f172a;
-            line-height: 1.35;
+            line-height: 1.45;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
@@ -33,37 +33,44 @@
         .font-mono { font-family: 'DejaVu Sans Mono', monospace; }
 
         /* Corporate Header */
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-bottom: 1.5px solid #e2e8f0;
+            padding-bottom: 18px;
+            margin-bottom: 20px;
+        }
         .company-legal-name {
-            font-size: 10.5pt;
+            font-size: 11pt;
             font-weight: bold;
             color: #0f172a;
-            margin-top: 2px;
+            margin-top: 3px;
         }
         .company-tagline {
-            font-size: 7.5pt;
+            font-size: 8pt;
             color: #64748b;
             margin-top: 1px;
         }
         .company-contact {
-            font-size: 7.5pt;
+            font-size: 8pt;
             color: #64748b;
             margin-top: 2px;
         }
         .company-statutory {
-            font-size: 6.8pt;
+            font-size: 7.2pt;
             color: #64748b;
-            margin-top: 2px;
-            line-height: 1.3;
+            margin-top: 3px;
+            line-height: 1.35;
         }
 
         /* Badge Pills */
         .badge-estimate {
             background-color: #eff6ff;
             color: #2563eb;
-            font-size: 7.5pt;
+            font-size: 7.8pt;
             font-weight: bold;
             letter-spacing: 0.8px;
-            padding: 3px 10px;
+            padding: 4px 10px;
             border-radius: 4px;
             text-transform: uppercase;
             display: inline-block;
@@ -71,10 +78,10 @@
         .badge-proforma {
             background-color: #f5f3ff;
             color: #7c3aed;
-            font-size: 7.5pt;
+            font-size: 7.8pt;
             font-weight: bold;
             letter-spacing: 0.8px;
-            padding: 3px 10px;
+            padding: 4px 10px;
             border-radius: 4px;
             text-transform: uppercase;
             display: inline-block;
@@ -82,45 +89,47 @@
         .badge-invoice {
             background-color: #ecfdf5;
             color: #059669;
-            font-size: 7.5pt;
+            font-size: 7.8pt;
             font-weight: bold;
             letter-spacing: 0.8px;
-            padding: 3px 10px;
+            padding: 4px 10px;
             border-radius: 4px;
             text-transform: uppercase;
             display: inline-block;
         }
 
         .doc-number {
-            font-size: 19pt;
+            font-size: 21pt;
             font-weight: bold;
             color: #0f172a;
             letter-spacing: -0.5px;
             margin-top: 4px;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
         }
         .doc-meta {
-            font-size: 7.8pt;
+            font-size: 8pt;
             color: #64748b;
-            line-height: 1.4;
+            line-height: 1.45;
         }
 
         /* Items Table */
         .items-table {
-            margin-top: 14px;
-            margin-bottom: 14px;
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 18px;
+            margin-bottom: 20px;
         }
         .items-table th {
-            font-size: 7.2pt;
+            font-size: 7.5pt;
             font-weight: bold;
             color: #64748b;
             text-transform: uppercase;
             letter-spacing: 0.8px;
-            padding: 6px 4px;
+            padding: 8px 6px;
             border-bottom: 1.5px solid #cbd5e1;
         }
         .items-table td {
-            padding: 8px 4px;
+            padding: 12px 6px;
             border-bottom: 1px solid #f1f5f9;
             vertical-align: top;
         }
@@ -129,67 +138,67 @@
         .note-card {
             background-color: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 8px 10px;
-            margin-bottom: 6px;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
         }
         .note-card-title {
-            font-size: 6.8pt;
+            font-size: 7pt;
             font-weight: bold;
             color: #94a3b8;
             text-transform: uppercase;
             letter-spacing: 0.8px;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
         }
         .note-card-body {
-            font-size: 7.2pt;
+            font-size: 7.8pt;
             color: #475569;
-            line-height: 1.35;
+            line-height: 1.4;
         }
 
         /* Totals */
         .totals-table td {
-            padding: 2.5px 0;
-            font-size: 8pt;
+            padding: 4px 0;
+            font-size: 8.5pt;
         }
         .grand-total-label {
-            font-size: 10.5pt;
+            font-size: 11pt;
             font-weight: bold;
             color: #0f172a;
-            padding-top: 4px;
+            padding-top: 6px;
         }
         .grand-total-amount {
-            font-size: 13pt;
+            font-size: 14pt;
             font-weight: bold;
             color: #2563eb;
             text-align: right;
-            padding-top: 4px;
+            padding-top: 6px;
         }
 
         /* Signatures */
         .sign-title {
-            font-size: 8pt;
+            font-size: 8.5pt;
             font-weight: bold;
             color: #0f172a;
         }
         .sign-sub {
-            font-size: 7.2pt;
+            font-size: 7.5pt;
             color: #64748b;
-            margin-top: 2px;
+            margin-top: 3px;
         }
     </style>
 </head>
 <body>
 
     <!-- Header Table: Logo & Company (Left) + Document Badge & Info (Right) -->
-    <table>
+    <table class="header-table">
         <tr>
-            <td style="width: 58%; vertical-align: top;">
+            <td style="width: 58%; vertical-align: top; padding-bottom: 16px;">
                 @if(!empty($logoBase64))
-                    <img src="{{ $logoBase64 }}" style="height: 36px; width: auto; margin-bottom: 3px;"/><br/>
+                    <img src="{{ $logoBase64 }}" style="height: 38px; width: auto; margin-bottom: 4px;"/><br/>
                 @else
-                    <div style="font-size: 15pt; font-weight: bold; color: #2563eb; letter-spacing: -0.5px;">KABHYAN</div>
-                    <div style="font-size: 6pt; font-weight: bold; color: #64748b; letter-spacing: 2px; margin-bottom: 3px;">TECHNOLOGIES</div>
+                    <div style="font-size: 16pt; font-weight: bold; color: #2563eb; letter-spacing: -0.5px;">KABHYAN</div>
+                    <div style="font-size: 6.5pt; font-weight: bold; color: #64748b; letter-spacing: 2px; margin-bottom: 4px;">TECHNOLOGIES</div>
                 @endif
                 <div class="company-legal-name">{{ $company['name'] }}</div>
                 <div class="company-tagline">{{ $company['tagline'] }}</div>
@@ -204,7 +213,7 @@
                     Regd. Office: {{ $company['registered_office'] }}
                 </div>
             </td>
-            <td style="width: 42%; vertical-align: top;" class="text-right">
+            <td style="width: 42%; vertical-align: top; padding-bottom: 16px;" class="text-right">
                 <div style="margin-bottom: 4px;">
                     @yield('badge')
                 </div>
@@ -221,7 +230,7 @@
     @yield('content')
 
     <!-- Signatures & Acceptance Footer -->
-    <table style="width: 100%; border-collapse: collapse; margin-top: 20px; page-break-inside: avoid;">
+    <table style="width: 100%; border-collapse: collapse; margin-top: 36px; page-break-inside: avoid;">
         <tr>
             <td style="width: 50%; vertical-align: top;">
                 <div class="sign-title">Authorized Signatory</div>
