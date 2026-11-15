@@ -4,7 +4,7 @@ namespace App\Services;
 
 use Exception;
 use Illuminate\Support\Facades\Log;
-use \TCPDF;
+use TCPDF;
 
 class PdfSecurityService
 {
