@@ -119,6 +119,7 @@ export interface Estimate {
   notes?: string | null;
   terms_and_conditions?: string | null;
   items?: EstimateItem[];
+  proforma_invoices?: ProformaInvoice[];
   created_at?: string;
   updated_at?: string;
 }

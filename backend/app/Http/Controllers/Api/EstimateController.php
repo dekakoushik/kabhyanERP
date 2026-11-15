@@ -125,7 +125,12 @@ class EstimateController extends Controller
     public function show(Estimate $estimate): JsonResponse
     {
         return response()->json([
-            'estimate' => $estimate->load(['items', 'project:id,name,code', 'creator:id,name,email']),
+            'estimate' => $estimate->load([
+                'items',
+                'project:id,name,code',
+                'creator:id,name,email',
+                'proformaInvoices:id,proforma_number,status,total_amount,estimate_id',
+            ]),
         ]);
     }
 

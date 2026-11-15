@@ -637,9 +637,13 @@ function InvoicesContent() {
                     </td>
                     <td className="py-4 px-6 whitespace-nowrap">
                       {inv.proforma_invoice ? (
-                        <span className="inline-block whitespace-nowrap font-mono text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                        <Link
+                          href={`/dashboard/proforma/${inv.proforma_invoice.proforma_number}`}
+                          title="View Master Proforma Agreement"
+                          className="inline-block whitespace-nowrap font-mono text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200 transition"
+                        >
                           {inv.proforma_invoice.proforma_number}
-                        </span>
+                        </Link>
                       ) : (
                         <span className="text-slate-400 italic">Direct Invoice</span>
                       )}

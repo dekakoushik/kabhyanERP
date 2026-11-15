@@ -169,6 +169,16 @@ function EstimateDetailContent({
               <span>Convert to Proforma Invoice</span>
             </button>
           )}
+
+          {estimate.status === "invoiced" && estimate.proforma_invoices && estimate.proforma_invoices.length > 0 && (
+            <Link
+              href={`/dashboard/proforma/${estimate.proforma_invoices[0].proforma_number}`}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm font-semibold shadow-xs transition cursor-pointer"
+            >
+              <Receipt className="w-4 h-4" />
+              <span>View Proforma ({estimate.proforma_invoices[0].proforma_number})</span>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -410,6 +420,21 @@ function EstimateDetailContent({
                 </button>
                 <p className="text-[11px] text-slate-400 text-center mt-1.5">
                   1-click copy of line items, deliverables & commercial terms.
+                </p>
+              </div>
+            )}
+
+            {estimate.status === "invoiced" && estimate.proforma_invoices && estimate.proforma_invoices.length > 0 && (
+              <div className="pt-2">
+                <Link
+                  href={`/dashboard/proforma/${estimate.proforma_invoices[0].proforma_number}`}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs shadow-xs hover:shadow transition cursor-pointer"
+                >
+                  <Receipt className="w-4 h-4" />
+                  <span>View Proforma ({estimate.proforma_invoices[0].proforma_number})</span>
+                </Link>
+                <p className="text-[11px] text-slate-400 text-center mt-1.5">
+                  Proforma created from this accepted proposal.
                 </p>
               </div>
             )}

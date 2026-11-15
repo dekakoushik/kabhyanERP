@@ -129,7 +129,7 @@ class InvoiceController extends Controller
                     'client_email' => $proformaInvoice->client_email,
                     'client_phone' => $proformaInvoice->client_phone,
                     'client_address' => $proformaInvoice->client_address,
-                    'client_gstin' => $request->input('client_gstin', $proformaInvoice->client?->gstin ?? '19AAECK4829K1ZX'),
+                    'client_gstin' => $request->input('client_gstin', '19AAECK4829K1ZX'),
                     'invoice_date' => $request->input('invoice_date', now()->toDateString()),
                     'due_date' => $request->input('due_date', now()->addDays(15)->toDateString()),
                     'status' => 'unpaid',
@@ -170,7 +170,7 @@ class InvoiceController extends Controller
                     'client_email' => $proformaInvoice->client_email,
                     'client_phone' => $proformaInvoice->client_phone,
                     'client_address' => $proformaInvoice->client_address,
-                    'client_gstin' => $request->input('client_gstin', $proformaInvoice->client?->gstin ?? '19AAECK4829K1ZX'),
+                    'client_gstin' => $request->input('client_gstin', '19AAECK4829K1ZX'),
                     'invoice_date' => $request->input('invoice_date', now()->toDateString()),
                     'due_date' => $request->input('due_date', now()->addDays(15)->toDateString()),
                     'status' => 'unpaid',
@@ -205,12 +205,14 @@ class InvoiceController extends Controller
             // If payment was already received for this milestone or marked as paid
             $shouldRecordPayment = $request->boolean('is_paid', false) || $request->filled('payment_reference');
             if ($shouldRecordPayment) {
+                $rawMethod = $request->input('payment_method', 'bank_transfer');
+                $paymentMethod = in_array($rawMethod, ['bank_transfer', 'upi', 'cheque', 'card', 'cash', 'other']) ? $rawMethod : 'bank_transfer';
                 $newInvoice->payments()->create([
                     'recorded_by' => $request->user()?->id,
                     'payment_reference' => $request->input('payment_reference', 'Settled against Proforma ' . $proformaInvoice->proforma_number),
                     'amount' => $newInvoice->total_amount,
                     'payment_date' => $request->input('payment_date', now()->toDateString()),
-                    'payment_method' => $request->input('payment_method', 'bank_transfer'),
+                    'payment_method' => $paymentMethod,
                     'notes' => $request->input('payment_notes', 'Payment received for milestone against ' . $proformaInvoice->proforma_number),
                 ]);
             }

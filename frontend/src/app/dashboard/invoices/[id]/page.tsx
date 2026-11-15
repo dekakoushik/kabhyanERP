@@ -28,6 +28,7 @@ import {
   ShieldCheck,
   IndianRupee,
   Receipt,
+  ArrowRight,
   X,
 } from "lucide-react";
 
@@ -242,6 +243,17 @@ function InvoiceDetailContent({ invoiceParam }: { invoiceParam: string }) {
                 <p>Payment Due: <span className="font-medium text-slate-700">{formatDate(invoice.due_date)}</span></p>
                 {invoice.project?.name && (
                   <p>Project: <span className="font-medium text-slate-700">{invoice.project.name}</span></p>
+                )}
+                {invoice.proforma_invoice && (
+                  <p>
+                    Proforma Ref:{" "}
+                    <Link
+                      href={`/dashboard/proforma/${invoice.proforma_invoice.proforma_number}`}
+                      className="font-mono font-bold text-purple-600 hover:text-purple-700 hover:underline"
+                    >
+                      {invoice.proforma_invoice.proforma_number}
+                    </Link>
+                  </p>
                 )}
               </div>
             </div>
@@ -470,6 +482,32 @@ function InvoiceDetailContent({ invoiceParam }: { invoiceParam: string }) {
               </button>
             )}
           </div>
+
+          {/* Master Proforma Reference Card */}
+          {invoice.proforma_invoice && (
+            <div className="bg-white rounded-2xl border border-purple-200/90 shadow-xs p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-purple-50 text-purple-700">
+                  <Receipt className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Master Proforma Agreement</h3>
+                  <p className="text-[11px] text-slate-500">Commercial Contract Origin</p>
+                </div>
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                This Tax Invoice discharges GST for a progressive deliverable milestone under Proforma contract{" "}
+                <strong className="font-mono text-purple-700">{invoice.proforma_invoice.proforma_number}</strong>.
+              </p>
+              <Link
+                href={`/dashboard/proforma/${invoice.proforma_invoice.proforma_number}`}
+                className="w-full py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold text-xs transition flex items-center justify-center gap-1.5 border border-purple-200"
+              >
+                <span>View Master Proforma Ledger</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          )}
 
           {/* Payment Receipts History */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 space-y-4">

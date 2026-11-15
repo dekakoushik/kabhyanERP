@@ -24,6 +24,7 @@ class ProformaInvoiceController extends Controller
             'estimate:id,estimate_number',
             'creator:id,name,email',
             'items',
+            'taxInvoices:id,proforma_invoice_id,invoice_number,status,total_amount,subtotal,tax_amount,invoice_date',
         ]);
 
         if ($search = $request->input('search')) {
@@ -106,6 +107,8 @@ class ProformaInvoiceController extends Controller
                 'discount_amount' => $estimate->discount_amount,
                 'total_amount' => $estimate->total_amount,
                 'paid_amount' => 0.00,
+                'invoiced_amount' => 0.00,
+                'remaining_amount' => $estimate->total_amount,
                 'notes' => $estimate->notes ?? 'Proforma invoice generated upon estimate approval for advance mobilization.',
                 'terms_and_conditions' => $estimate->terms_and_conditions ?? "1. This proforma invoice is issued for payment facilitation.\n2. Please mention the Proforma Number in transaction reference.\n3. Goods/Services will be initiated post receipt of agreed mobilization advance.",
                 'bank_details' => $defaultBankDetails,

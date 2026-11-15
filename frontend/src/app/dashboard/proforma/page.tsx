@@ -399,8 +399,10 @@ function ProformaContent() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "paid":
+      case "fully_invoiced":
         return "bg-emerald-50 text-emerald-700 border-emerald-200";
       case "partially_paid":
+      case "partially_invoiced":
         return "bg-blue-50 text-blue-700 border-blue-200";
       case "cancelled":
         return "bg-red-50 text-red-700 border-red-200";
@@ -588,9 +590,18 @@ function ProformaContent() {
                         )}
                       </div>
                     </td>
-                    <td className="py-4 px-6 font-mono font-bold text-slate-900 text-sm whitespace-nowrap tabular-nums">
-                      {pi.currency === "INR" ? "₹ " : `${pi.currency} `}
-                      {Number(pi.total_amount).toLocaleString(pi.currency === "INR" ? "en-IN" : undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <td className="py-4 px-6 whitespace-nowrap">
+                      <div className="font-mono font-bold text-slate-900 text-sm tabular-nums">
+                        {pi.currency === "INR" ? "₹ " : `${pi.currency} `}
+                        {Number(pi.total_amount).toLocaleString(pi.currency === "INR" ? "en-IN" : undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                      {pi.invoiced_amount !== undefined && Number(pi.invoiced_amount) > 0 && (
+                        <div className="text-[10px] text-slate-500 font-mono mt-0.5 space-x-1">
+                          <span className="text-emerald-700 font-semibold">Billed: ₹{Number(pi.invoiced_amount).toLocaleString("en-IN")}</span>
+                          <span>•</span>
+                          <span className="text-purple-700 font-semibold">Rem: ₹{Number(pi.remaining_amount ?? 0).toLocaleString("en-IN")}</span>
+                        </div>
+                      )}
                     </td>
                     <td className="py-4 px-6">
                       <select
@@ -603,24 +614,31 @@ function ProformaContent() {
                         <option value="unpaid">Unpaid</option>
                         <option value="partially_paid">Partially Paid</option>
                         <option value="paid">Paid</option>
+                        <option value="partially_invoiced">Partially Invoiced</option>
+                        <option value="fully_invoiced">Fully Invoiced</option>
                         <option value="cancelled">Cancelled</option>
                       </select>
                     </td>
                     <td className="py-4 px-6 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => handleConvertToInvoice(pi)}
-                          disabled={convertingId === pi.id}
-                          title="Generate Official GST Tax Invoice"
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 font-semibold text-[11px] cursor-pointer disabled:opacity-50"
-                        >
-                          {convertingId === pi.id ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <FileCheck className="w-3.5 h-3.5" />
-                          )}
-                          <span className="hidden sm:inline">Make Tax Invoice</span>
-                        </button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        {pi.remaining_amount !== undefined && Number(pi.remaining_amount) <= 0 ? (
+                          <span
+                            title="100% of this proforma contract has been invoiced"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-emerald-700 bg-emerald-50 border border-emerald-200 font-semibold text-[11px]"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="hidden sm:inline">Fully Invoiced</span>
+                          </span>
+                        ) : (
+                          <Link
+                            href={`/dashboard/invoices/create?proforma_id=${pi.id}`}
+                            title="Generate Milestone Tax Invoice"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 font-semibold text-[11px] cursor-pointer transition shadow-2xs hover:shadow-xs"
+                          >
+                            <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="hidden sm:inline">Make Tax Invoice</span>
+                          </Link>
+                        )}
                         <Link
                           href={`/dashboard/proforma/${pi.proforma_number}`}
                           title="View Full Document Page"
@@ -1093,18 +1111,13 @@ function ProformaContent() {
                 <span>Proforma Document: <strong className="font-mono text-white">{previewInvoice.proforma_number}</strong></span>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleConvertToInvoice(previewInvoice)}
-                  disabled={convertingId === previewInvoice.id}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white cursor-pointer disabled:opacity-50"
+                <Link
+                  href={`/dashboard/invoices/create?proforma_id=${previewInvoice.id}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white cursor-pointer"
                 >
-                  {convertingId === previewInvoice.id ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <FileCheck className="w-3.5 h-3.5" />
-                  )}
-                  <span>Convert to Tax Invoice</span>
-                </button>
+                  <FileCheck className="w-3.5 h-3.5" />
+                  <span>Make Tax Invoice</span>
+                </Link>
                 <button
                   onClick={handlePrint}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white cursor-pointer"
