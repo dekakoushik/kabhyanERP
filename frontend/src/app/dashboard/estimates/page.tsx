@@ -645,13 +645,13 @@ export default function EstimatesPage() {
                           >
                             <Eye className="w-4 h-4" />
                           </Link>
-                          <button
-                            onClick={() => openEditModal(est)}
+                          <Link
+                            href={`/dashboard/estimates/${est.estimate_number}/edit`}
                             title="Edit Estimate"
                             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
                           >
                             <Edit2 className="w-4 h-4" />
-                          </button>
+                          </Link>
                           <button
                             onClick={() => setDeleteConfirm(est)}
                             title="Delete Estimate"
@@ -670,8 +670,8 @@ export default function EstimatesPage() {
         </div>
       </div>
 
-      {/* Modal: Create / Edit Estimate */}
-      {modalOpen && (
+      {/* Modal: Create / Edit Estimate - Deprecated in favor of dedicated page */}
+      {false && modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
           <div className="bg-white w-full max-w-3xl rounded-2xl shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">

@@ -151,6 +151,14 @@ function EstimateDetailContent({
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          <Link
+            href={`/dashboard/estimates/${estimate.estimate_number}/edit`}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold transition cursor-pointer"
+          >
+            <Edit2 className="w-4 h-4 text-slate-500" />
+            <span>Edit</span>
+          </Link>
+
           <button
             onClick={handlePrint}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold transition cursor-pointer"

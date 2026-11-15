@@ -692,13 +692,13 @@ function ProformaContent() {
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </Link>
-                        <button
-                          onClick={() => openEditModal(pi)}
+                        <Link
+                          href={`/dashboard/proforma/${pi.proforma_number}/edit`}
                           title="Edit Proforma"
                           className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
-                        </button>
+                        </Link>
                         <button
                           onClick={() => setDeleteConfirm(pi)}
                           title="Delete Proforma"
@@ -716,8 +716,8 @@ function ProformaContent() {
         )}
       </div>
 
-      {/* Modal: Create / Edit Proforma Invoice */}
-      {modalOpen && (
+      {/* Modal: Create / Edit Proforma Invoice - Deprecated in favor of dedicated page */}
+      {false && modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
           <div className="bg-white w-full max-w-3xl rounded-2xl shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">

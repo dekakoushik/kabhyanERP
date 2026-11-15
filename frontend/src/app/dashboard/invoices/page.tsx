@@ -711,13 +711,13 @@ function InvoicesContent() {
                         >
                           <Eye className="w-4 h-4" />
                         </Link>
-                        <button
-                          onClick={() => openEditModal(inv)}
+                        <Link
+                          href={`/dashboard/invoices/${inv.invoice_number}/edit`}
                           title="Edit Tax Invoice"
                           className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
                         >
                           <Edit2 className="w-4 h-4" />
-                        </button>
+                        </Link>
                         <button
                           onClick={() => setDeleteConfirm(inv)}
                           title="Delete Invoice"
@@ -735,8 +735,8 @@ function InvoicesContent() {
         )}
       </div>
 
-      {/* Modal: Create / Edit Tax Invoice */}
-      {modalOpen && (
+      {/* Modal: Create / Edit Tax Invoice - Deprecated in favor of dedicated page */}
+      {false && modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
           <div className="bg-white w-full max-w-3xl rounded-2xl shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
