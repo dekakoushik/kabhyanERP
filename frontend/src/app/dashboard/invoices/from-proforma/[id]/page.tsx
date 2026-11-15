@@ -5,7 +5,8 @@ import InvoiceCreateForm from "@/components/InvoiceCreateForm";
 import { Loader2 } from "lucide-react";
 
 function InvoiceFromProformaContent({ id }: { id: string }) {
-  return <InvoiceCreateForm proformaIdentifier={id} />;
+  const decodedId = decodeURIComponent(id);
+  return <InvoiceCreateForm proformaIdentifier={decodedId} />;
 }
 
 export default function InvoiceFromProformaPage({

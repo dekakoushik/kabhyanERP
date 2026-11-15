@@ -29,6 +29,9 @@ import {
   Percent,
   X,
   ExternalLink,
+  AlertTriangle,
+  ListPlus,
+  ArrowUpRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -51,6 +54,16 @@ export default function InvoiceCreateForm({
   // Proforma & Milestone Invoicing State
   const [linkedProforma, setLinkedProforma] = useState<ProformaInvoice | null>(null);
   const [loadingProforma, setLoadingProforma] = useState(false);
+
+  // Custom Milestone & Calculation State
+  const [customMode, setCustomMode] = useState<"amount" | "percent">("amount");
+  const [customAmount, setCustomAmount] = useState<string>("");
+  const [customAmountType, setCustomAmountType] = useState<"gross" | "taxable">("gross");
+  const [customPercent, setCustomPercent] = useState<string>("100");
+  const [customTitle, setCustomTitle] = useState<string>("Milestone Deliverable");
+  const [customDesc, setCustomDesc] = useState<string>(
+    "Progressive milestone deliverable. Continuous supply of services under CGST Section 13(2) & 31(5)."
+  );
 
   // Instant Settlement / Payment Receipt State
   const [isPaidReceived, setIsPaidReceived] = useState(false);
@@ -197,6 +210,15 @@ export default function InvoiceCreateForm({
             const taxRate = Number(p.tax_rate ?? 18);
             const taxable = Math.round((targetGross / (1 + taxRate / 100)) * 100) / 100;
 
+            const initialPercent = total > 0 ? Math.round((targetGross / total) * 100) : 100;
+            setCustomAmount(String(Math.round(targetGross)));
+            setCustomPercent(String(initialPercent));
+            setCustomTitle(
+              remaining < total && remaining > 0
+                ? "Milestone Settlement"
+                : "Milestone Deliverable"
+            );
+
             const fullAddress = [
               activeClient.address,
               activeClient.city,
@@ -245,52 +267,7 @@ export default function InvoiceCreateForm({
     initData();
   }, [proformaIdentifier]);
 
-  const applyMilestonePercent = (pct: number, label?: string) => {
-    if (!linkedProforma) return;
-    const contractTotal = Number(linkedProforma.total_amount);
-    const milestoneGross = Math.round((contractTotal * pct) / 100);
-    const taxRate = Number(formData.tax_rate) || 18;
-    const taxable = Math.round((milestoneGross / (1 + taxRate / 100)) * 100) / 100;
 
-    setFormData((prev) => ({
-      ...prev,
-      items: [
-        {
-          item_name: label || `${pct}% Milestone Deliverable against ${linkedProforma.proforma_number}`,
-          description: `Progressive service delivery milestone. Continuous supply of services under CGST Section 31(5).`,
-          quantity: 1,
-          unit: "mile",
-          unit_price: taxable,
-          amount: taxable,
-        },
-      ],
-    }));
-    toast.success(`Applied ${pct}% milestone: Gross ₹${milestoneGross.toLocaleString("en-IN")}`);
-  };
-
-  const applyRemainingBalance = () => {
-    if (!linkedProforma) return;
-    const total = Number(linkedProforma.total_amount);
-    const invoiced = Number(linkedProforma.invoiced_amount ?? 0);
-    const remainingGross = Math.max(0, Number(linkedProforma.remaining_amount ?? (total - invoiced)));
-    const taxRate = Number(formData.tax_rate) || 18;
-    const taxable = Math.round((remainingGross / (1 + taxRate / 100)) * 100) / 100;
-
-    setFormData((prev) => ({
-      ...prev,
-      items: [
-        {
-          item_name: `Remaining Unbilled Balance against ${linkedProforma.proforma_number}`,
-          description: `Final deliverable milestone settlement. CGST Section 13(2) & 31(5) compliance.`,
-          quantity: 1,
-          unit: "mile",
-          unit_price: taxable,
-          amount: taxable,
-        },
-      ],
-    }));
-    toast.success(`Applied remaining balance: Gross ₹${remainingGross.toLocaleString("en-IN")}`);
-  };
 
   // Client Selection Handler
   const handleSelectClient = (client: Client | null) => {
@@ -382,6 +359,168 @@ export default function InvoiceCreateForm({
   const rawTotal = taxableAmount + taxAmount;
   const grandTotal = formData.is_round_off ? Math.round(rawTotal) : rawTotal;
   const roundOffAmount = formData.is_round_off ? Number((grandTotal - rawTotal).toFixed(2)) : 0;
+
+  // Proforma Contract & Milestone Calculations
+  const contractTotal = linkedProforma ? Number(linkedProforma.total_amount) : 0;
+  const invoicedTotal = linkedProforma ? Number(linkedProforma.invoiced_amount ?? 0) : 0;
+  const remainingTotal = linkedProforma
+    ? Number(linkedProforma.remaining_amount ?? Math.max(0, contractTotal - invoicedTotal))
+    : 0;
+  const activeTaxRate = Number(formData.tax_rate) || 18;
+
+  let calcGross = 0;
+  let calcTaxable = 0;
+  let calcGst = 0;
+  let calcEquivalentPct = 0;
+
+  if (customMode === "amount") {
+    const val = parseFloat(customAmount) || 0;
+    if (customAmountType === "gross") {
+      calcGross = val;
+      calcTaxable = Math.round((val / (1 + activeTaxRate / 100)) * 100) / 100;
+      calcGst = Math.round((calcGross - calcTaxable) * 100) / 100;
+    } else {
+      calcTaxable = val;
+      calcGst = Math.round((calcTaxable * (activeTaxRate / 100)) * 100) / 100;
+      calcGross = Math.round((calcTaxable + calcGst) * 100) / 100;
+    }
+    calcEquivalentPct = contractTotal > 0 ? Number(((calcGross / contractTotal) * 100).toFixed(1)) : 0;
+  } else {
+    const pct = parseFloat(customPercent) || 0;
+    calcGross = Math.round((contractTotal * pct) / 100);
+    calcTaxable = Math.round((calcGross / (1 + activeTaxRate / 100)) * 100) / 100;
+    calcGst = Math.round((calcGross - calcTaxable) * 100) / 100;
+    calcEquivalentPct = Number(pct.toFixed(1));
+  }
+
+  const isExceeding = calcGross > remainingTotal + 1;
+
+  const priorPercent = contractTotal > 0 ? Number(((invoicedTotal / contractTotal) * 100).toFixed(1)) : 0;
+  const currentPercent = contractTotal > 0 ? Number(((grandTotal / contractTotal) * 100).toFixed(1)) : 0;
+  const remainingPercent = Math.max(0, Number((100 - priorPercent - currentPercent).toFixed(1)));
+  const activeInvoicedPercent = Number((priorPercent + currentPercent).toFixed(1));
+
+  const handleAmountChange = (valStr: string) => {
+    setCustomAmount(valStr);
+    const val = parseFloat(valStr) || 0;
+    if (contractTotal > 0) {
+      const grossVal = customAmountType === "gross" ? val : val * (1 + activeTaxRate / 100);
+      const pct = (grossVal / contractTotal) * 100;
+      setCustomPercent(pct.toFixed(1));
+    }
+  };
+
+  const handlePercentChange = (valStr: string) => {
+    setCustomPercent(valStr);
+    const pct = parseFloat(valStr) || 0;
+    if (contractTotal > 0) {
+      const grossVal = Math.round((contractTotal * pct) / 100);
+      setCustomAmount(customAmountType === "gross" ? String(grossVal) : String(Math.round(grossVal / (1 + activeTaxRate / 100))));
+    }
+  };
+
+  const handlePresetClick = (pct: number) => {
+    if (!linkedProforma) return;
+    setCustomPercent(String(pct));
+    const grossVal = Math.round((contractTotal * pct) / 100);
+    setCustomAmount(customAmountType === "gross" ? String(grossVal) : String(Math.round(grossVal / (1 + activeTaxRate / 100))));
+    setCustomTitle(`${pct}% Milestone Deliverable`);
+
+    const taxable = Math.round((grossVal / (1 + activeTaxRate / 100)) * 100) / 100;
+    setFormData((prev) => ({
+      ...prev,
+      items: [
+        {
+          item_name: `${pct}% Milestone Deliverable against ${linkedProforma.proforma_number}`,
+          description: `Progressive service delivery milestone. Continuous supply of services under CGST Section 31(5).`,
+          quantity: 1,
+          unit: "mile",
+          unit_price: taxable,
+          amount: taxable,
+        },
+      ],
+      notes: `${pct}% Milestone Tax Invoice issued against accepted Proforma ${linkedProforma.proforma_number}`,
+    }));
+    toast.success(`Applied ${pct}% milestone: Gross ₹${grossVal.toLocaleString("en-IN")}`);
+  };
+
+  const handleFullRemainingClick = () => {
+    if (!linkedProforma) return;
+    const remainingGross = Math.max(0, remainingTotal);
+    setCustomAmount(customAmountType === "gross" ? String(remainingGross) : String(Math.round(remainingGross / (1 + activeTaxRate / 100))));
+    const pct = contractTotal > 0 ? Number(((remainingGross / contractTotal) * 100).toFixed(1)) : 100;
+    setCustomPercent(String(pct));
+    setCustomTitle("Remaining Unbilled Balance");
+
+    const taxable = Math.round((remainingGross / (1 + activeTaxRate / 100)) * 100) / 100;
+    setFormData((prev) => ({
+      ...prev,
+      items: [
+        {
+          item_name: `Remaining Unbilled Balance against ${linkedProforma.proforma_number}`,
+          description: `Final deliverable milestone settlement. CGST Section 13(2) & 31(5) compliance.`,
+          quantity: 1,
+          unit: "mile",
+          unit_price: taxable,
+          amount: taxable,
+        },
+      ],
+      notes: `Final settlement Tax Invoice issued against accepted Proforma ${linkedProforma.proforma_number}`,
+    }));
+    toast.success(`Applied remaining unbilled balance: Gross ₹${remainingGross.toLocaleString("en-IN")}`);
+  };
+
+  const applyCustomMilestone = () => {
+    if (!linkedProforma) return;
+    if (calcTaxable <= 0) {
+      toast.error("Please enter a valid milestone amount or percentage");
+      return;
+    }
+
+    const title = customTitle.trim()
+      ? `${customTitle.trim()} against ${linkedProforma.proforma_number}`
+      : `Milestone Deliverable (${calcEquivalentPct}%) against ${linkedProforma.proforma_number}`;
+
+    setFormData((prev) => ({
+      ...prev,
+      items: [
+        {
+          item_name: title,
+          description: customDesc.trim() || `Progressive milestone deliverable. CGST Section 31(5) compliance.`,
+          quantity: 1,
+          unit: "mile",
+          unit_price: calcTaxable,
+          amount: calcTaxable,
+        },
+      ],
+      notes: `Milestone Tax Invoice (${calcEquivalentPct}%) issued against accepted Proforma ${linkedProforma.proforma_number}`,
+    }));
+
+    toast.success(`Applied Custom Milestone: Gross ₹${calcGross.toLocaleString("en-IN")} (Taxable ₹${calcTaxable.toLocaleString("en-IN")})`);
+  };
+
+  const importOriginalProformaItems = () => {
+    if (!linkedProforma || !linkedProforma.items || linkedProforma.items.length === 0) {
+      toast.error("No itemized deliverables found in the source Proforma.");
+      return;
+    }
+
+    const proformaItems = linkedProforma.items || [];
+    setFormData((prev) => ({
+      ...prev,
+      items: proformaItems.map((it) => ({
+        item_name: it.item_name,
+        description: it.description || "",
+        quantity: Number(it.quantity) || 1,
+        unit: it.unit || "units",
+        unit_price: Number(it.unit_price) || 0,
+        amount: Number(it.amount) || 0,
+      })),
+      notes: `Itemized Tax Invoice issued against Proforma ${linkedProforma.proforma_number}`,
+    }));
+
+    toast.success(`Loaded ${proformaItems.length} item(s) from Proforma ${linkedProforma.proforma_number}`);
+  };
 
   const handleItemChange = (index: number, field: keyof InvoiceItem, value: any) => {
     const updated = [...formData.items];
@@ -476,51 +615,83 @@ export default function InvoiceCreateForm({
     <AdminLayout>
       <form onSubmit={handleSubmit} className="space-y-6 pb-12 font-sans">
         {/* Top Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard/invoices"
-              className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition shadow-xs"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <FileCheck className="w-5 h-5 text-blue-600" />
-                Issue Tax Invoice
-              </h1>
-              <p className="text-xs text-slate-500">
-                Generate an official GST-compliant tax invoice with automatic tax calculations.
-              </p>
+        <div className="space-y-2 pb-4 border-b border-slate-200">
+          {linkedProforma && (
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <Link href="/dashboard" className="hover:text-slate-800 transition">Workspace</Link>
+              <span>/</span>
+              <Link href="/dashboard/proforma" className="hover:text-slate-800 transition">Proforma Invoices</Link>
+              <span>/</span>
+              <Link href={`/dashboard/proforma/${linkedProforma.proforma_number}`} className="hover:text-purple-700 font-mono font-semibold transition">
+                {linkedProforma.proforma_number}
+              </Link>
+              <span>/</span>
+              <span className="text-slate-900 font-bold">Milestone Tax Invoice</span>
             </div>
-          </div>
+          )}
 
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.push("/dashboard/invoices")}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-xs"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save & Issue Invoice
-                </>
-              )}
-            </Button>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Link
+                href={linkedProforma ? `/dashboard/proforma/${linkedProforma.proforma_number}` : "/dashboard/invoices"}
+                className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition shadow-xs"
+                title={linkedProforma ? "Back to Proforma" : "Back to Invoices"}
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Link>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5 flex-wrap">
+                  <span className={`p-2 rounded-xl shadow-2xs ${linkedProforma ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}`}>
+                    <FileCheck className="w-5 h-5" />
+                  </span>
+                  <span>{linkedProforma ? "Generate Milestone Tax Invoice" : "Issue Tax Invoice"}</span>
+                  {linkedProforma && (
+                    <Link
+                      href={`/dashboard/proforma/${linkedProforma.proforma_number}`}
+                      target="_blank"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/80 font-mono text-xs font-bold transition shadow-2xs"
+                      title="View Source Proforma Agreement"
+                    >
+                      <span>{linkedProforma.proforma_number}</span>
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </Link>
+                  )}
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                  {linkedProforma
+                    ? "Converting master proforma contract into progressive milestone tax invoice. Continuous supply of services under CGST Act Sec 13(2) & 31(5)."
+                    : "Generate an official GST-compliant tax invoice with automatic tax calculations."}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.push(linkedProforma ? `/dashboard/proforma/${linkedProforma.proforma_number}` : "/dashboard/invoices")}
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={loading}
+                className={`${linkedProforma ? "bg-purple-600 hover:bg-purple-700" : "bg-blue-600 hover:bg-blue-700"} text-white font-medium shadow-xs`}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    {linkedProforma ? "Save & Issue Milestone Invoice" : "Save & Issue Invoice"}
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -534,90 +705,279 @@ export default function InvoiceCreateForm({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Main Form (8 Columns) */}
           <div className="lg:col-span-8 space-y-6">
-            {/* Proforma Milestone Context Card */}
+            {/* Proforma Milestone & Custom Amount Controller Card */}
             {linkedProforma && (
-              <Card className="border-purple-200 bg-linear-to-br from-purple-50/50 to-white shadow-xs">
-                <CardHeader className="pb-3 border-b border-purple-100 flex flex-row items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-lg bg-purple-100 text-purple-700">
-                      <Sparkles className="w-4 h-4" />
+              <Card className="border-purple-200 bg-linear-to-br from-purple-50/40 via-white to-purple-50/20 shadow-xs overflow-hidden">
+                <CardHeader className="pb-3 border-b border-purple-100/80 bg-purple-50/60 flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-purple-600 text-white shadow-2xs">
+                      <Calculator className="w-4 h-4" />
                     </div>
                     <div>
-                      <CardTitle className="text-sm font-bold text-slate-900">
-                        Milestone Billing against Proforma {linkedProforma.proforma_number}
+                      <CardTitle className="text-sm font-bold text-slate-900 flex items-center gap-2 flex-wrap">
+                        <span>Milestone & Custom Amount Controller</span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200 font-semibold">
+                          Proforma #{linkedProforma.proforma_number}
+                        </span>
                       </CardTitle>
                       <p className="text-[11px] text-slate-500">
-                        Continuous Supply of Services (CGST Sec 13(2) & 31(5))
+                        Set a custom milestone percentage or payment amount to record progressive tax liability as per CGST Section 13(2) & 31(5).
                       </p>
                     </div>
                   </div>
                   <Link
-                    href={`/dashboard/proforma/${linkedProforma.id}`}
+                    href={`/dashboard/proforma/${linkedProforma.proforma_number}`}
                     target="_blank"
-                    className="text-xs font-semibold text-purple-600 hover:text-purple-700 hover:underline flex items-center gap-1"
+                    className="text-xs font-semibold text-purple-700 hover:text-purple-900 bg-white hover:bg-purple-50 border border-purple-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-2xs shrink-0"
                   >
                     <span>View Proforma</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </Link>
                 </CardHeader>
+
                 <CardContent className="pt-4 space-y-4">
+                  {/* 3 Metric Cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                     <div className="p-3 bg-white rounded-xl border border-purple-100 shadow-2xs">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Contract Scope</p>
-                      <p className="text-sm font-bold text-slate-900 mt-0.5">
-                        ₹{Number(linkedProforma.total_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Contract Scope</span>
+                      <p className="text-base font-bold text-slate-900 font-mono mt-0.5">
+                        ₹{contractTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </p>
+                      <span className="text-[10px] text-slate-400">100% Master Scope</span>
                     </div>
                     <div className="p-3 bg-white rounded-xl border border-purple-100 shadow-2xs">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Already Invoiced</p>
-                      <p className="text-sm font-bold text-emerald-600 mt-0.5">
-                        ₹{Number(linkedProforma.invoiced_amount ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Already Invoiced (Realized)</span>
+                      <p className="text-base font-bold text-emerald-600 font-mono mt-0.5">
+                        ₹{invoicedTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </p>
+                      <span className="text-[10px] text-emerald-600 font-medium">
+                        {contractTotal > 0 ? ((invoicedTotal / contractTotal) * 100).toFixed(1) : 0}% Realized
+                      </span>
                     </div>
                     <div className="p-3 bg-white rounded-xl border border-purple-100 shadow-2xs">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Remaining Unbilled</p>
-                      <p className="text-sm font-bold text-purple-700 mt-0.5">
-                        ₹{Number(linkedProforma.remaining_amount ?? (Number(linkedProforma.total_amount) - Number(linkedProforma.invoiced_amount ?? 0))).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Remaining Unbilled Balance</span>
+                      <p className="text-base font-bold text-purple-700 font-mono mt-0.5">
+                        ₹{remainingTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </p>
+                      <span className="text-[10px] text-purple-600 font-medium">
+                        {contractTotal > 0 ? ((remainingTotal / contractTotal) * 100).toFixed(1) : 0}% Pending Realization
+                      </span>
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <p className="text-[11px] font-bold text-slate-700">Quick Milestone Calculation Presets:</p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => applyMilestonePercent(30, `30% Mobilization Advance against ${linkedProforma.proforma_number}`)}
-                        className="px-3 py-1.5 rounded-lg border border-purple-200 bg-purple-50/70 hover:bg-purple-100 text-purple-700 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5"
-                      >
-                        <Percent className="w-3.5 h-3.5" />
-                        <span>30% Advance</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => applyMilestonePercent(40, `40% Mid-Phase Deliverable against ${linkedProforma.proforma_number}`)}
-                        className="px-3 py-1.5 rounded-lg border border-purple-200 bg-purple-50/70 hover:bg-purple-100 text-purple-700 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5"
-                      >
-                        <Percent className="w-3.5 h-3.5" />
-                        <span>40% Milestone</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => applyMilestonePercent(30, `30% Final Settlement against ${linkedProforma.proforma_number}`)}
-                        className="px-3 py-1.5 rounded-lg border border-purple-200 bg-purple-50/70 hover:bg-purple-100 text-purple-700 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5"
-                      >
-                        <Percent className="w-3.5 h-3.5" />
-                        <span>30% Settlement</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={applyRemainingBalance}
-                        className="px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>All Remaining Balance</span>
-                      </button>
+                  {/* Visual Contract Progress Bar */}
+                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200/60">
+                    <div className="flex justify-between items-center text-[11px]">
+                      <span className="font-semibold text-slate-700">Contract Invoicing Progress</span>
+                      <span className="font-mono text-slate-600 font-semibold">
+                        {activeInvoicedPercent}% Billed with this invoice
+                      </span>
                     </div>
+                    <div className="h-2.5 w-full bg-slate-200 rounded-full overflow-hidden flex">
+                      <div
+                        style={{ width: `${Math.min(100, priorPercent)}%` }}
+                        className="bg-emerald-500 transition-all duration-300"
+                        title={`Previously Invoiced: ${priorPercent}%`}
+                      />
+                      <div
+                        style={{ width: `${Math.min(100 - priorPercent, currentPercent)}%` }}
+                        className="bg-purple-600 transition-all duration-300"
+                        title={`This Invoice: ${currentPercent}%`}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1 flex-wrap gap-2">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                        <span>Already Invoiced ({priorPercent}%)</span>
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-purple-600 inline-block" />
+                        <span className="font-semibold text-purple-800">This Tax Invoice ({currentPercent}%)</span>
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-slate-300 inline-block" />
+                        <span>Remaining After ({remainingPercent}%)</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Custom Milestone & Amount Form */}
+                  <div className="p-4 rounded-xl bg-white border border-purple-200 shadow-2xs space-y-3.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold text-slate-800">Milestone Input Mode:</span>
+                        <div className="inline-flex rounded-lg bg-slate-100 p-0.5 border border-slate-200 text-xs">
+                          <button
+                            type="button"
+                            onClick={() => setCustomMode("amount")}
+                            className={`px-3 py-1 rounded-md font-semibold transition cursor-pointer ${
+                              customMode === "amount" ? "bg-white text-purple-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
+                            }`}
+                          >
+                            ₹ Custom Amount
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCustomMode("percent")}
+                            className={`px-3 py-1 rounded-md font-semibold transition cursor-pointer ${
+                              customMode === "percent" ? "bg-white text-purple-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
+                            }`}
+                          >
+                            % Percentage
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Quick Presets */}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Presets:</span>
+                        {[10, 25, 30, 40, 50].map((p) => (
+                          <button
+                            key={p}
+                            type="button"
+                            onClick={() => handlePresetClick(p)}
+                            className="px-2 py-0.5 rounded-md border border-purple-200 bg-purple-50/70 hover:bg-purple-100 text-purple-700 font-semibold text-[11px] transition cursor-pointer"
+                          >
+                            {p}%
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={handleFullRemainingClick}
+                          className="px-2.5 py-0.5 rounded-md border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-[11px] transition cursor-pointer"
+                        >
+                          100% Remaining
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Inputs Row */}
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                      <div className="sm:col-span-5">
+                        <label className="text-xs font-bold text-slate-700 block mb-1">
+                          Milestone Scope / Deliverable Title
+                        </label>
+                        <Input
+                          value={customTitle}
+                          onChange={(e) => setCustomTitle(e.target.value)}
+                          placeholder="e.g. Phase 1: Mobilization & System Engineering"
+                          className="h-9 text-xs"
+                        />
+                      </div>
+
+                      {customMode === "amount" ? (
+                        <div className="sm:col-span-4">
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-xs font-bold text-slate-700">Payment Amount (₹)</label>
+                            <div className="flex items-center gap-1.5 text-[10px]">
+                              <button
+                                type="button"
+                                onClick={() => setCustomAmountType("gross")}
+                                className={`font-semibold cursor-pointer ${customAmountType === "gross" ? "text-purple-700 underline" : "text-slate-400"}`}
+                              >
+                                Incl. GST
+                              </button>
+                              <span className="text-slate-300">|</span>
+                              <button
+                                type="button"
+                                onClick={() => setCustomAmountType("taxable")}
+                                className={`font-semibold cursor-pointer ${customAmountType === "taxable" ? "text-purple-700 underline" : "text-slate-400"}`}
+                              >
+                                Excl. GST
+                              </button>
+                            </div>
+                          </div>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-xs text-slate-400">₹</span>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="any"
+                              value={customAmount}
+                              onChange={(e) => handleAmountChange(e.target.value)}
+                              placeholder="e.g. 50000"
+                              className="h-9 pl-7 font-mono text-xs font-bold text-slate-900"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="sm:col-span-4">
+                          <label className="text-xs font-bold text-slate-700 block mb-1">
+                            Milestone Percentage (%)
+                          </label>
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.01"
+                              value={customPercent}
+                              onChange={(e) => handlePercentChange(e.target.value)}
+                              placeholder="e.g. 30"
+                              className="h-9 pr-7 font-mono text-xs font-bold text-slate-900"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 font-bold text-xs text-slate-400">%</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="sm:col-span-3">
+                        <Button
+                          type="button"
+                          onClick={applyCustomMilestone}
+                          className="w-full h-9 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Apply Milestone</span>
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Live Real-Time Tax & GST Breakdown Preview */}
+                    <div className="pt-2 flex flex-wrap items-center justify-between gap-2 text-xs border-t border-slate-100 bg-slate-50/70 p-2.5 rounded-lg">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="text-slate-500">
+                          Taxable Turnover: <strong className="text-slate-900 font-mono">₹{calcTaxable.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                        </span>
+                        <span className="text-slate-300">•</span>
+                        <span className="text-slate-500">
+                          GST ({activeTaxRate}%): <strong className="text-purple-700 font-mono">+₹{calcGst.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                        </span>
+                        <span className="text-slate-300">•</span>
+                        <span className="text-slate-500">
+                          Gross Total: <strong className="text-emerald-700 font-mono">₹{calcGross.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                        </span>
+                      </div>
+
+                      <div className="text-[11px] font-semibold text-slate-600">
+                        Equivalent: <span className="text-purple-700 font-bold">{calcEquivalentPct}%</span> of Contract
+                      </div>
+                    </div>
+
+                    {/* Exceeding Warning if user enters more than remaining */}
+                    {isExceeding && (
+                      <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>
+                          <strong>Notice:</strong> This milestone gross (₹{calcGross.toLocaleString("en-IN")}) exceeds the remaining proforma balance of ₹{remainingTotal.toLocaleString("en-IN")}.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Switch to full proforma itemized items if required */}
+                  <div className="flex items-center justify-between text-xs pt-1 flex-wrap gap-2">
+                    <span className="text-slate-400 text-[11px]">
+                      Need line-by-line itemization from original Proforma agreement instead?
+                    </span>
+                    <button
+                      type="button"
+                      onClick={importOriginalProformaItems}
+                      className="text-xs font-semibold text-purple-700 hover:text-purple-900 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <ListPlus className="w-3.5 h-3.5" />
+                      <span>Import Original Proforma Line Items</span>
+                    </button>
                   </div>
                 </CardContent>
               </Card>
@@ -884,6 +1244,49 @@ export default function InvoiceCreateForm({
 
           {/* Sticky Summary Card (4 Columns) */}
           <div className="lg:col-span-4 sticky top-20 space-y-4">
+            {/* Proforma Milestone Impact Ledger */}
+            {linkedProforma && (
+              <Card className="border-purple-200 shadow-xs bg-linear-to-br from-purple-50/60 via-white to-purple-50/30 overflow-hidden">
+                <CardHeader className="pb-2.5 border-b border-purple-100 bg-purple-50/50 rounded-t-xl">
+                  <CardTitle className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-purple-900">
+                      <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                      <span>Milestone Impact Ledger</span>
+                    </span>
+                    <span className="font-mono text-[10px] text-purple-700 bg-purple-100/90 border border-purple-200 px-2 py-0.5 rounded-md font-bold">
+                      {linkedProforma.proforma_number}
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-3 space-y-2.5 text-xs">
+                  <div className="flex justify-between items-center text-slate-500">
+                    <span>Total Proforma Scope:</span>
+                    <span className="font-mono font-semibold text-slate-900">
+                      ₹{contractTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-500">
+                    <span>Invoiced Previously:</span>
+                    <span className="font-mono font-semibold text-emerald-600">
+                      ₹{invoicedTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-purple-950 pt-2 border-t border-purple-100">
+                    <span className="font-bold">This Tax Invoice (Gross):</span>
+                    <span className="font-mono font-black text-purple-700 text-sm">
+                      ₹{grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-600 pt-1 border-t border-purple-100">
+                    <span>Remaining Contract Balance:</span>
+                    <span className="font-mono font-bold text-slate-700">
+                      ₹{Math.max(0, remainingTotal - grandTotal).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="border-blue-200/80 shadow-sm">
               <CardHeader className="pb-3 border-b border-slate-100 bg-blue-50/40 rounded-t-xl">
                 <CardTitle className="text-sm font-bold text-slate-900 flex items-center justify-between">
@@ -949,16 +1352,16 @@ export default function InvoiceCreateForm({
                   </span>
                 </div>
 
-                <div className="p-3 rounded-lg bg-blue-600 text-white flex justify-between items-center">
+                <div className={`p-3 rounded-lg text-white flex justify-between items-center ${linkedProforma ? "bg-purple-600" : "bg-blue-600"}`}>
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-blue-100">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-purple-100">
                       Total Invoice Amount
                     </p>
                     <p className="text-xl font-mono font-black mt-0.5">
                       ₹{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </p>
                   </div>
-                  <Sparkles className="w-6 h-6 text-blue-200 opacity-80" />
+                  <Sparkles className="w-6 h-6 text-purple-200 opacity-80" />
                 </div>
               </CardContent>
             </Card>
@@ -967,18 +1370,18 @@ export default function InvoiceCreateForm({
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 font-medium shadow-xs"
+                className={`w-full ${linkedProforma ? "bg-purple-600 hover:bg-purple-700" : "bg-blue-600 hover:bg-blue-700"} text-white py-2.5 font-medium shadow-xs`}
               >
                 {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                Issue Invoice
+                {linkedProforma ? "Save & Issue Milestone Invoice" : "Issue Invoice"}
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push("/dashboard/invoices")}
+                onClick={() => router.push(linkedProforma ? `/dashboard/proforma/${linkedProforma.proforma_number}` : "/dashboard/invoices")}
                 className="w-full"
               >
-                Return to Invoices
+                {linkedProforma ? "Return to Proforma" : "Return to Invoices"}
               </Button>
             </div>
           </div>
@@ -998,10 +1401,10 @@ export default function InvoiceCreateForm({
           <Button
             type="submit"
             disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm px-5 py-2.5 shadow-md flex items-center gap-1.5 cursor-pointer"
+            className={`${linkedProforma ? "bg-purple-600 hover:bg-purple-700" : "bg-blue-600 hover:bg-blue-700"} text-white font-semibold text-xs sm:text-sm px-5 py-2.5 shadow-md flex items-center gap-1.5 cursor-pointer`}
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            <span>Issue Invoice</span>
+            <span>{linkedProforma ? "Issue Milestone Invoice" : "Issue Invoice"}</span>
           </Button>
         </div>
       </form>
