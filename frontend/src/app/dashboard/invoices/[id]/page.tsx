@@ -14,6 +14,7 @@ import {
   FileCheck,
   ArrowLeft,
   Printer,
+  Download,
   CreditCard,
   Edit2,
   Calendar,
@@ -38,6 +39,7 @@ function InvoiceDetailContent({ invoiceParam }: { invoiceParam: string }) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   // Payment Recording Modal
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -100,6 +102,31 @@ function InvoiceDetailContent({ invoiceParam }: { invoiceParam: string }) {
       setPaymentError(err.message || "Failed to record payment.");
     } finally {
       setRecordingPayment(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!invoice) return;
+    try {
+      setDownloadingPdf(true);
+      await api.downloadPdf(
+        `/invoices/${invoice.id}/pdf?download=1`,
+        `Tax-Invoice-${invoice.invoice_number}.pdf`
+      );
+      toast.success("Certified Tax Invoice PDF downloaded!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to download certified PDF.");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  const handleOpenPdf = async () => {
+    if (!invoice) return;
+    try {
+      await api.openPdf(`/invoices/${invoice.id}/pdf`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to open certified PDF.");
     }
   };
 
@@ -195,11 +222,24 @@ function InvoiceDetailContent({ invoiceParam }: { invoiceParam: string }) {
           </Link>
 
           <button
-            onClick={handlePrint}
+            onClick={handleDownloadPdf}
+            disabled={downloadingPdf}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer disabled:opacity-50"
+          >
+            {downloadingPdf ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            <span>Download Certified PDF</span>
+          </button>
+
+          <button
+            onClick={handleOpenPdf}
             className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition cursor-pointer"
           >
             <Printer className="w-4 h-4 text-slate-500" />
-            <span>Print / PDF</span>
+            <span>Print Server PDF</span>
           </button>
 
           {invoice.status !== "paid" && (

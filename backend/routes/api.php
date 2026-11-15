@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\FinancialReportController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PdfController;
 use App\Http\Controllers\Api\ProformaInvoiceController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\SettingController;
@@ -86,15 +87,18 @@ Route::prefix('v1')->group(function () {
             Route::patch('tasks/{task}/status', [TaskController::class, 'updateStatus']);
 
             // Estimate Generation Module
+            Route::get('estimates/{id}/pdf', [PdfController::class, 'downloadEstimate']);
             Route::apiResource('estimates', EstimateController::class);
             Route::patch('estimates/{estimate}/status', [EstimateController::class, 'updateStatus']);
 
             // Proforma Invoice Generation & Conversion
+            Route::get('proforma-invoices/{id}/pdf', [PdfController::class, 'downloadProforma']);
             Route::post('estimates/{estimate}/convert-to-proforma', [ProformaInvoiceController::class, 'convertFromEstimate']);
             Route::apiResource('proforma-invoices', ProformaInvoiceController::class);
             Route::patch('proforma-invoices/{proformaInvoice}/status', [ProformaInvoiceController::class, 'updateStatus']);
 
             // Tax Invoice Module & Flow (From Proforma Invoice)
+            Route::get('invoices/{id}/pdf', [PdfController::class, 'downloadInvoice']);
             Route::post('proforma-invoices/{proformaInvoice}/convert-to-invoice', [InvoiceController::class, 'convertFromProforma']);
             Route::apiResource('invoices', InvoiceController::class);
             Route::patch('invoices/{invoice}/status', [InvoiceController::class, 'updateStatus']);

@@ -13,6 +13,7 @@ import {
   Receipt,
   ArrowLeft,
   Printer,
+  Download,
   FileCheck,
   Edit2,
   Calendar,
@@ -37,6 +38,7 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
   const [error, setError] = useState<string | null>(null);
   const [converting, setConverting] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const fetchProforma = async () => {
     try {
@@ -83,6 +85,31 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
     } catch (err: any) {
       toast.error(err.message || "Failed to convert to Tax Invoice");
       setConverting(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!proforma) return;
+    try {
+      setDownloadingPdf(true);
+      await api.downloadPdf(
+        `/proforma-invoices/${proforma.id}/pdf?download=1`,
+        `Proforma-${proforma.proforma_number}.pdf`
+      );
+      toast.success("Certified Proforma Invoice PDF downloaded!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to download certified PDF.");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  const handleOpenPdf = async () => {
+    if (!proforma) return;
+    try {
+      await api.openPdf(`/proforma-invoices/${proforma.id}/pdf`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to open certified PDF.");
     }
   };
 
@@ -165,11 +192,24 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
           </Link>
 
           <button
-            onClick={handlePrint}
+            onClick={handleDownloadPdf}
+            disabled={downloadingPdf}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer disabled:opacity-50"
+          >
+            {downloadingPdf ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            <span>Download Certified PDF</span>
+          </button>
+
+          <button
+            onClick={handleOpenPdf}
             className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition cursor-pointer"
           >
             <Printer className="w-4 h-4 text-slate-500" />
-            <span>Print / PDF</span>
+            <span>Print Server PDF</span>
           </button>
 
           {proforma.remaining_amount !== undefined && proforma.remaining_amount <= 0 ? (

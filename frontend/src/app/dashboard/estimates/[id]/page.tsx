@@ -13,6 +13,7 @@ import {
   FileText,
   ArrowLeft,
   Printer,
+  Download,
   Receipt,
   Edit2,
   Calendar,
@@ -41,6 +42,7 @@ function EstimateDetailContent({
   const [error, setError] = useState<string | null>(null);
   const [converting, setConverting] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const fetchEstimate = async () => {
     try {
@@ -87,6 +89,31 @@ function EstimateDetailContent({
     } catch (err: any) {
       toast.error(err.message || "Failed to generate Proforma Invoice");
       setConverting(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!estimate) return;
+    try {
+      setDownloadingPdf(true);
+      await api.downloadPdf(
+        `/estimates/${estimate.id}/pdf?download=1`,
+        `Estimate-${estimate.estimate_number}.pdf`
+      );
+      toast.success("Certified Quotation PDF downloaded!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to download certified PDF.");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  const handleOpenPdf = async () => {
+    if (!estimate) return;
+    try {
+      await api.openPdf(`/estimates/${estimate.id}/pdf`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to open certified PDF.");
     }
   };
 
@@ -160,11 +187,24 @@ function EstimateDetailContent({
           </Link>
 
           <button
-            onClick={handlePrint}
+            onClick={handleDownloadPdf}
+            disabled={downloadingPdf}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold shadow-xs transition cursor-pointer disabled:opacity-50"
+          >
+            {downloadingPdf ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            <span>Download Certified PDF</span>
+          </button>
+
+          <button
+            onClick={handleOpenPdf}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold transition cursor-pointer"
           >
             <Printer className="w-4 h-4 text-slate-500" />
-            <span>Print / Export PDF</span>
+            <span>Print Server PDF</span>
           </button>
 
           {estimate.status === "accepted" && (

@@ -570,4 +570,53 @@ export const api = {
 
     return data;
   },
+
+  downloadPdf: async (endpoint: string, filename: string) => {
+    const token = api.getToken();
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+    const url = `${API_BASE}${cleanEndpoint}`;
+
+    const res = await fetch(url, { headers });
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => null);
+      throw new Error(errJson?.message || "Failed to download PDF document.");
+    }
+
+    const blob = await res.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 5000);
+  },
+
+  openPdf: async (endpoint: string) => {
+    const token = api.getToken();
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+    const url = `${API_BASE}${cleanEndpoint}`;
+
+    const res = await fetch(url, { headers });
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => null);
+      throw new Error(errJson?.message || "Failed to load PDF document.");
+    }
+
+    const blob = await res.blob();
+    const fileUrl = window.URL.createObjectURL(blob);
+    window.open(fileUrl, "_blank");
+    setTimeout(() => window.URL.revokeObjectURL(fileUrl), 10000);
+  },
 };
