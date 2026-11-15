@@ -1,4 +1,4 @@
-# Stage 1: Vendor build with Composer
+# Stage 1: Build vendor dependencies with Composer
 FROM composer:2 AS vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
@@ -7,32 +7,32 @@ RUN composer install \
     --no-interaction \
     --prefer-dist \
     --optimize-autoloader \
-    --no-scripts
+    --no-scripts \
+    --ignore-platform-reqs
 
-# Stage 2: Production Runtime with PHP 8.3-FPM + Nginx + Supervisor
-FROM php:8.3-fpm-alpine AS runner
+# Stage 2: Production Runtime with FrankenPHP + Laravel Octane
+FROM dunglas/frankenphp:1-php8.3-alpine AS runner
 
-# Install system dependencies, Nginx, Supervisor, and PostgreSQL PHP extensions
+# Install PostgreSQL client and required PHP extensions
 RUN apk add --no-cache \
-    nginx \
-    supervisor \
     curl \
-    libpng-dev \
-    libzip-dev \
-    zip \
-    unzip \
-    postgresql-dev \
     postgresql-client \
-    oniguruma-dev \
-    libxml2-dev \
-    && docker-php-ext-install pdo_pgsql bcmath mbstring pcntl xml opcache gd
+    && install-php-extensions \
+    pdo_pgsql \
+    bcmath \
+    mbstring \
+    pcntl \
+    opcache \
+    gd \
+    zip \
+    intl
 
-# Configure PHP for production
+# Production PHP Tuning
 RUN { \
         echo 'opcache.memory_consumption=128'; \
         echo 'opcache.interned_strings_buffer=8'; \
         echo 'opcache.max_accelerated_files=10000'; \
-        echo 'opcache.revalidate_freq=2'; \
+        echo 'opcache.revalidate_freq=0'; \
         echo 'opcache.fast_shutdown=1'; \
         echo 'opcache.enable_cli=1'; \
     } > /usr/local/etc/php/conf.d/opcache-recommended.ini
@@ -53,10 +53,7 @@ COPY . /var/www/html
 # Copy vendor dependencies from stage 1
 COPY --from=vendor /app/vendor /var/www/html/vendor
 
-# Copy Nginx, PHP-FPM, and Supervisor configs
-COPY docker/nginx.conf /etc/nginx/http.d/default.conf
-COPY docker/php-fpm-logging.conf /usr/local/etc/php-fpm.d/zz-logging.conf
-COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+# Copy startup script
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 RUN chmod +x /usr/local/bin/entrypoint.sh \
@@ -66,4 +63,3 @@ RUN chmod +x /usr/local/bin/entrypoint.sh \
 EXPOSE 80
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-
