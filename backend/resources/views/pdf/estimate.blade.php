@@ -21,13 +21,13 @@
 @section('content')
 
     <!-- Recipient Client & Project Info Cards -->
-    <table style="width: 100%; border-collapse: collapse; margin-top: 6px; margin-bottom: 18px;">
+    <table style="width: 100%; border-collapse: collapse; margin-top: 4px; margin-bottom: 22px;">
         <tr>
-            <td style="width: 48.5%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px;">
-                <div style="font-size: 7.2pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px;">PREPARED FOR CLIENT</div>
-                <div style="font-size: 11pt; font-weight: bold; color: #0f172a; margin-bottom: 3px;">{{ $estimate->client_name }}</div>
-                <div style="font-size: 8.5pt; font-weight: 500; color: #475569; margin-bottom: 3px;">{{ $estimate->client_company ?? 'Direct Client' }}</div>
-                <div style="font-size: 7.8pt; color: #64748b; line-height: 1.4;">
+            <td style="width: 48.5%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 18px;">
+                <div style="font-size: 7.8pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">PREPARED FOR CLIENT</div>
+                <div style="font-size: 12pt; font-weight: bold; color: #0f172a; margin-bottom: 3px;">{{ $estimate->client_name }}</div>
+                <div style="font-size: 9.5pt; font-weight: 500; color: #475569; margin-bottom: 4px;">{{ $estimate->client_company ?? 'Direct Client' }}</div>
+                <div style="font-size: 8.5pt; color: #64748b; line-height: 1.45;">
                     {{ $estimate->client_email }}<br/>
                     @if(!empty($estimate->client_phone))
                         {{ $estimate->client_phone }}<br/>
@@ -41,10 +41,10 @@
                 </div>
             </td>
             <td style="width: 3%;"></td>
-            <td style="width: 48.5%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px;">
-                <div style="font-size: 7.2pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px;">PROJECT ENGAGEMENT</div>
-                <div style="font-size: 11pt; font-weight: bold; color: #0f172a; margin-bottom: 4px;">{{ $estimate->project?->name ?? 'General IT Deliverables' }}</div>
-                <div style="font-size: 7.8pt; color: #64748b; line-height: 1.45;">
+            <td style="width: 48.5%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 18px;">
+                <div style="font-size: 7.8pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">PROJECT ENGAGEMENT</div>
+                <div style="font-size: 12pt; font-weight: bold; color: #0f172a; margin-bottom: 4px;">{{ $estimate->project?->name ?? 'General IT Deliverables' }}</div>
+                <div style="font-size: 8.5pt; color: #64748b; line-height: 1.5;">
                     @if(!empty($estimate->project?->code))
                         <span style="color: #2563eb; font-weight: bold;">Project Code: {{ $estimate->project->code }}</span><br/>
                     @endif
@@ -59,43 +59,43 @@
     <table class="items-table">
         <thead>
             <tr>
-                <th style="width: 52%; text-align: left;">ITEM DESCRIPTION &amp; SCOPE</th>
+                <th style="width: 50%; text-align: left;">ITEM DESCRIPTION &amp; SCOPE</th>
                 <th style="width: 16%; text-align: right;">QTY / HOURS</th>
-                <th style="width: 16%; text-align: right;">UNIT RATE</th>
-                <th style="width: 16%; text-align: right;">AMOUNT ({{ $estimate->currency ?? 'INR' }})</th>
+                <th style="width: 17%; text-align: right;">UNIT RATE</th>
+                <th style="width: 17%; text-align: right;">AMOUNT ({{ $estimate->currency ?? 'INR' }})</th>
             </tr>
         </thead>
         <tbody>
             @forelse($estimate->items as $item)
             <tr>
                 <td style="text-align: left;">
-                    <div style="font-size: 8.5pt; font-weight: bold; color: #0f172a;">{{ $item->item_name }}</div>
+                    <div style="font-size: 9.5pt; font-weight: bold; color: #0f172a;">{{ $item->item_name }}</div>
                     @if(!empty($item->description))
-                        <div style="font-size: 7.5pt; color: #64748b; margin-top: 2px; line-height: 1.35;">{{ $item->description }}</div>
+                        <div style="font-size: 8.5pt; color: #64748b; margin-top: 3px; line-height: 1.4;">{{ $item->description }}</div>
                     @endif
                 </td>
-                <td style="text-align: right; color: #334155; font-size: 8.5pt;">
+                <td style="text-align: right; color: #334155; font-size: 9.5pt;">
                     {{ number_format($item->quantity, 2) }} {{ $item->unit ?? 'hours' }}
                 </td>
-                <td style="text-align: right; color: #334155; font-size: 8.5pt;">
+                <td style="text-align: right; color: #334155; font-size: 9.5pt;">
                     {{ number_format($item->unit_price, 2) }}
                 </td>
-                <td style="text-align: right; font-weight: bold; color: #0f172a; font-size: 8.5pt;">
+                <td style="text-align: right; font-weight: bold; color: #0f172a; font-size: 9.5pt;">
                     {{ number_format($item->amount, 2) }}
                 </td>
             </tr>
             @empty
             <tr>
-                <td colspan="4" style="text-align: center; color: #94a3b8; padding: 15px;">No line items specified.</td>
+                <td colspan="4" style="text-align: center; color: #94a3b8; padding: 20px;">No line items specified.</td>
             </tr>
             @endforelse
         </tbody>
     </table>
 
     <!-- Bottom Section: Scope Notes / Commercial Terms (Left) & Totals (Right) -->
-    <table style="width: 100%; border-collapse: collapse; margin-top: 6px; margin-bottom: 20px; page-break-inside: avoid;">
+    <table style="width: 100%; border-collapse: collapse; margin-top: 6px; margin-bottom: 24px; page-break-inside: avoid;">
         <tr>
-            <td style="width: 52%; vertical-align: top; padding-right: 16px;">
+            <td style="width: 52%; vertical-align: top; padding-right: 18px;">
                 <!-- Scope Notes Card -->
                 <div class="note-card">
                     <div class="note-card-title">SCOPE NOTES</div>
@@ -139,7 +139,7 @@
                         </td>
                     </tr>
                     <tr>
-                        <td colspan="2" style="border-top: 1.5px solid #cbd5e1; padding-top: 6px; margin-top: 4px;"></td>
+                        <td colspan="2" style="border-top: 2px solid #cbd5e1; padding-top: 8px; margin-top: 4px;"></td>
                     </tr>
                     <tr>
                         <td class="grand-total-label">Grand Total:</td>
@@ -149,7 +149,7 @@
                     </tr>
                     @if(!empty($amountInWords))
                     <tr>
-                        <td colspan="2" style="text-align: right; font-size: 7.2pt; color: #64748b; font-style: italic; padding-top: 3px;">
+                        <td colspan="2" style="text-align: right; font-size: 7.8pt; color: #64748b; font-style: italic; padding-top: 4px;">
                             ({{ $amountInWords }})
                         </td>
                     </tr>
