@@ -25,13 +25,16 @@ class PdfController extends Controller
      */
     public function downloadInvoice(Request $request, $id): Response
     {
-        $invoice = Invoice::with(['items', 'client', 'project'])->findOrFail($id);
+        $invoice = Invoice::with(['items', 'project'])
+            ->where('id', $id)
+            ->orWhere('invoice_number', $id)
+            ->firstOrFail();
 
         $company = $this->getCompanySettings();
         $bank = $this->getBankSettings();
 
         // GST Place of supply and state check
-        $clientGstin = $invoice->client_gstin ?? ($invoice->client->gstin ?? null);
+        $clientGstin = $invoice->client_gstin;
         $isInterState = $this->isInterStateSupply($clientGstin, $invoice->client_address);
         $placeOfSupply = $isInterState ? 'Inter-State (IGST Applicable)' : 'West Bengal (State Code: 19)';
 
@@ -104,12 +107,15 @@ class PdfController extends Controller
      */
     public function downloadProforma(Request $request, $id): Response
     {
-        $proforma = ProformaInvoice::with(['items', 'client', 'project'])->findOrFail($id);
+        $proforma = ProformaInvoice::with(['items', 'project'])
+            ->where('id', $id)
+            ->orWhere('proforma_number', $id)
+            ->firstOrFail();
 
         $company = $this->getCompanySettings();
         $bank = $this->getBankSettings();
 
-        $clientGstin = $proforma->client_gstin ?? ($proforma->client->gstin ?? null);
+        $clientGstin = $proforma->client_gstin;
         $isInterState = $this->isInterStateSupply($clientGstin, $proforma->client_address);
         $placeOfSupply = $isInterState ? 'Inter-State (IGST Applicable)' : 'West Bengal (State Code: 19)';
 
@@ -179,12 +185,15 @@ class PdfController extends Controller
      */
     public function downloadEstimate(Request $request, $id): Response
     {
-        $estimate = Estimate::with(['items', 'client', 'project'])->findOrFail($id);
+        $estimate = Estimate::with(['items', 'project'])
+            ->where('id', $id)
+            ->orWhere('estimate_number', $id)
+            ->firstOrFail();
 
         $company = $this->getCompanySettings();
         $bank = $this->getBankSettings();
 
-        $clientGstin = $estimate->client_gstin ?? ($estimate->client->gstin ?? null);
+        $clientGstin = $estimate->client_gstin;
         $isInterState = $this->isInterStateSupply($clientGstin, $estimate->client_address);
         $placeOfSupply = $isInterState ? 'Inter-State (IGST Applicable)' : 'West Bengal (State Code: 19)';
 

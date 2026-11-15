@@ -27,62 +27,66 @@ class PdfSecurityService
      */
     public function ensureCertificate(): void
     {
-        if (file_exists($this->certPath) && file_exists($this->keyPath) && filesize($this->certPath) > 0) {
-            return;
+        try {
+            if (file_exists($this->certPath) && file_exists($this->keyPath) && filesize($this->certPath) > 0) {
+                return;
+            }
+
+            if (!is_dir($this->certDir)) {
+                @mkdir($this->certDir, 0755, true);
+            }
+
+            $configArgs = [];
+            // Windows fallback for local development if needed
+            $winCnf = 'C:/wamp64/bin/php/php8.3.28/extras/ssl/openssl.cnf';
+            if (file_exists($winCnf)) {
+                $configArgs['config'] = $winCnf;
+            }
+
+            $dn = [
+                'countryName' => 'IN',
+                'stateOrProvinceName' => 'West Bengal',
+                'localityName' => 'Kolkata',
+                'organizationName' => 'Kabhyan Technologies Private Limited',
+                'organizationalUnitName' => 'Enterprise Financial Operations',
+                'commonName' => 'Kabhyan ERP Certified Documents',
+                'emailAddress' => 'finance@kabhyan.com'
+            ];
+
+            $privkey = openssl_pkey_new(array_merge([
+                'private_key_bits' => 2048,
+                'private_key_type' => OPENSSL_KEYTYPE_RSA
+            ], $configArgs));
+
+            if (!$privkey) {
+                Log::warning('OpenSSL failed to generate private key: ' . openssl_error_string());
+                return;
+            }
+
+            $csr = openssl_csr_new($dn, $privkey, array_merge(['digest_alg' => 'sha256'], $configArgs));
+            if (!$csr) {
+                Log::warning('OpenSSL failed to generate CSR: ' . openssl_error_string());
+                return;
+            }
+
+            $x509 = openssl_csr_sign($csr, null, $privkey, 3650, array_merge(['digest_alg' => 'sha256'], $configArgs));
+            if (!$x509) {
+                Log::warning('OpenSSL failed to self-sign certificate: ' . openssl_error_string());
+                return;
+            }
+
+            openssl_x509_export($x509, $certout);
+            openssl_pkey_export($privkey, $pkeyout, $this->passphrase, $configArgs);
+
+            @file_put_contents($this->certPath, $certout);
+            @file_put_contents($this->keyPath, $pkeyout);
+            @chmod($this->certPath, 0640);
+            @chmod($this->keyPath, 0600);
+
+            Log::info('Successfully generated enterprise X.509 certificate for Kabhyan PDF certification.');
+        } catch (\Throwable $e) {
+            Log::warning('X.509 certificate setup notice: ' . $e->getMessage());
         }
-
-        if (!is_dir($this->certDir)) {
-            mkdir($this->certDir, 0755, true);
-        }
-
-        $configArgs = [];
-        // Windows fallback for local development if needed
-        $winCnf = 'C:/wamp64/bin/php/php8.3.28/extras/ssl/openssl.cnf';
-        if (file_exists($winCnf)) {
-            $configArgs['config'] = $winCnf;
-        }
-
-        $dn = [
-            'countryName' => 'IN',
-            'stateOrProvinceName' => 'West Bengal',
-            'localityName' => 'Kolkata',
-            'organizationName' => 'Kabhyan Technologies Private Limited',
-            'organizationalUnitName' => 'Enterprise Financial Operations',
-            'commonName' => 'Kabhyan ERP Certified Documents',
-            'emailAddress' => 'finance@kabhyan.com'
-        ];
-
-        $privkey = openssl_pkey_new(array_merge([
-            'private_key_bits' => 2048,
-            'private_key_type' => OPENSSL_KEYTYPE_RSA
-        ], $configArgs));
-
-        if (!$privkey) {
-            Log::error('OpenSSL failed to generate private key: ' . openssl_error_string());
-            throw new Exception('Failed to generate X.509 private key for PDF signing.');
-        }
-
-        $csr = openssl_csr_new($dn, $privkey, array_merge(['digest_alg' => 'sha256'], $configArgs));
-        if (!$csr) {
-            Log::error('OpenSSL failed to generate CSR: ' . openssl_error_string());
-            throw new Exception('Failed to generate X.509 CSR for PDF signing.');
-        }
-
-        $x509 = openssl_csr_sign($csr, null, $privkey, 3650, array_merge(['digest_alg' => 'sha256'], $configArgs));
-        if (!$x509) {
-            Log::error('OpenSSL failed to self-sign certificate: ' . openssl_error_string());
-            throw new Exception('Failed to self-sign X.509 certificate for PDF signing.');
-        }
-
-        openssl_x509_export($x509, $certout);
-        openssl_pkey_export($privkey, $pkeyout, $this->passphrase, $configArgs);
-
-        file_put_contents($this->certPath, $certout);
-        file_put_contents($this->keyPath, $pkeyout);
-        chmod($this->certPath, 0640);
-        chmod($this->keyPath, 0600);
-
-        Log::info('Successfully generated enterprise X.509 certificate for Kabhyan PDF certification.');
     }
 
     /**
@@ -169,20 +173,27 @@ SVG;
      */
     public function renderCertifiedPdf(string $html, string $docTitle, string $docNumber, array $meta = []): string
     {
-        $this->ensureCertificate();
-
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
 
         // Digital Signature Configuration (ISO 32000 / PAdES standard)
-        $certUri = 'file://' . realpath($this->certPath);
-        $keyUri = 'file://' . realpath($this->keyPath);
+        try {
+            $this->ensureCertificate();
 
-        $pdf->setSignature($certUri, $keyUri, $this->passphrase, '', 2, [
-            'Name' => 'Kabhyan Technologies Private Limited',
-            'Location' => 'Kolkata, West Bengal, India',
-            'Reason' => 'Tax Invoice Authentication & Digital Certification (PAdES)',
-            'ContactInfo' => 'finance@kabhyan.com'
-        ]);
+            if (file_exists($this->certPath) && file_exists($this->keyPath)) {
+                $certRealPath = realpath($this->certPath);
+                $keyRealPath = realpath($this->keyPath);
+                if ($certRealPath && $keyRealPath) {
+                    $pdf->setSignature('file://' . $certRealPath, 'file://' . $keyRealPath, $this->passphrase, '', 2, [
+                        'Name' => 'Kabhyan Technologies Private Limited',
+                        'Location' => 'Kolkata, West Bengal, India',
+                        'Reason' => 'Tax Invoice Authentication & Digital Certification (PAdES)',
+                        'ContactInfo' => 'finance@kabhyan.com'
+                    ]);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('PDF PAdES digital signature skipped: ' . $e->getMessage());
+        }
 
         // Document Metadata
         $pdf->SetCreator('Kabhyan ERP Certified Security Engine');
