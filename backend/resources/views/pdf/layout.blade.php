@@ -175,6 +175,12 @@
             padding-top: 6px;
         }
 
+        /* Status Colors */
+        .status-paid { color: #059669; }
+        .status-overdue { color: #dc2626; }
+        .status-sent, .status-pending { color: #d97706; }
+        .status-draft { color: #64748b; }
+
         /* Signatures */
         .sign-title {
             font-size: 8.5pt;
