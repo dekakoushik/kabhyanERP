@@ -4,7 +4,7 @@ namespace App\Services;
 
 use Exception;
 use Illuminate\Support\Facades\Log;
-use TCPDF;
+use \TCPDF;
 
 class PdfSecurityService
 {
@@ -173,7 +173,8 @@ SVG;
      */
     public function renderCertifiedPdf(string $html, string $docTitle, string $docNumber, array $meta = []): string
     {
-        $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        /** @var \TCPDF $pdf */
+        $pdf = new \TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
 
         // Digital Signature Configuration (ISO 32000 / PAdES standard)
         try {
@@ -207,7 +208,7 @@ SVG;
         $pdf->setPrintFooter(false);
         $pdf->SetMargins(10, 10, 10);
         $pdf->SetAutoPageBreak(true, 12);
-        $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
+        $pdf->setImageScale(defined('PDF_IMAGE_SCALE_RATIO') ? PDF_IMAGE_SCALE_RATIO : 1.25);
 
         $pdf->AddPage();
         $pdf->writeHTML($html, true, false, true, false, '');
