@@ -53,8 +53,9 @@ COPY . /var/www/html
 # Copy vendor dependencies from stage 1
 COPY --from=vendor /app/vendor /var/www/html/vendor
 
-# Copy Nginx and Supervisor configs
+# Copy Nginx, PHP-FPM, and Supervisor configs
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
+COPY docker/php-fpm-logging.conf /usr/local/etc/php-fpm.d/zz-logging.conf
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
