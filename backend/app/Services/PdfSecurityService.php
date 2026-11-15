@@ -208,7 +208,7 @@ SVG;
         $pdf->setPrintFooter(false);
         $pdf->SetMargins(10, 10, 10);
         $pdf->SetAutoPageBreak(true, 12);
-        $pdf->setImageScale(defined('PDF_IMAGE_SCALE_RATIO') ? PDF_IMAGE_SCALE_RATIO : 1.25);
+        $pdf->setImageScale(1.25);
 
         $pdf->AddPage();
         $pdf->writeHTML($html, true, false, true, false, '');
