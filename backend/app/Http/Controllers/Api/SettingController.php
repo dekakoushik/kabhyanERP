@@ -250,7 +250,7 @@ class SettingController extends Controller
     {
         $validated = $request->validate([
             'type' => 'required|in:logo_primary,logo_document,logo_icon,logo_dark',
-            'file' => 'required|file|mimes:png,jpg,jpeg,svg,webp|max:3072',
+            'file' => 'required|file|mimes:png,jpg,jpeg,webp|max:3072',
         ]);
 
         $file = $request->file('file');
