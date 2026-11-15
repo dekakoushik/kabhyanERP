@@ -93,26 +93,26 @@ export default function DocumentItemsTable({
       <DragDropContext onDragEnd={handleDragEnd}>
         {/* 1. DESKTOP & TABLET VIEWPORT TABLE */}
         <div className="hidden sm:block overflow-x-auto">
-          <table className="w-full text-left border-collapse table-fixed">
+          <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-200/90 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500 select-none">
-                <th className="py-3 px-3 w-10 text-center"></th>
-                <th className="py-3 px-3 w-auto min-w-[280px] text-slate-600">ITEM DETAILS</th>
-                <th className="py-3 px-3 w-28 text-right text-slate-600">QUANTITY</th>
-                <th className="py-3 px-3 w-36 text-right text-slate-600">
-                  <span className="inline-flex items-center gap-1.5 justify-end">
+                <th className="py-3 px-2 w-8 text-center"></th>
+                <th className="py-3 px-3 min-w-[260px] text-slate-600">ITEM DETAILS & SCOPE</th>
+                <th className="py-3 px-3 w-28 text-right text-slate-600">QTY / UNIT</th>
+                <th className="py-3 px-3 w-28 text-right text-slate-600">
+                  <span className="inline-flex items-center gap-1 justify-end">
                     <span>RATE ({currencySymbol})</span>
                     <Calculator className="w-3.5 h-3.5 text-slate-400" />
                   </span>
                 </th>
-                <th className="py-3 px-3 w-48 text-slate-600">
+                <th className="py-3 px-3 w-36 text-slate-600">
                   <span className="inline-flex items-center gap-1">
-                    <span>TAX</span>
+                    <span>GST RATE</span>
                     <Info className="w-3.5 h-3.5 text-slate-400" />
                   </span>
                 </th>
-                <th className="py-3 px-4 w-32 text-right text-slate-600">AMOUNT</th>
-                <th className="py-3 px-2 w-12 text-center"></th>
+                <th className="py-3 px-4 w-36 text-right text-slate-600">TAXABLE & GST</th>
+                <th className="py-3 px-2 w-10 text-center"></th>
               </tr>
             </thead>
 
@@ -134,6 +134,8 @@ export default function DocumentItemsTable({
                           ? Number(item.tax_rate)
                           : defaultNumTax;
 
+                      const itemGst = Number(((taxable * currentItemTaxRate) / 100).toFixed(2));
+
                       const draggableKey = `desktop-item-${item.id ?? idx}`;
 
                       return (
@@ -147,7 +149,6 @@ export default function DocumentItemsTable({
                                 ...(snapshot.isDragging
                                   ? {
                                       display: "table",
-                                      tableLayout: "fixed",
                                       width: "100%",
                                       background: "rgba(239, 246, 255, 0.95)",
                                       boxShadow: "0 10px 25px -5px rgba(59, 130, 246, 0.25)",
@@ -163,47 +164,60 @@ export default function DocumentItemsTable({
                               {/* Drag Handle with dragHandleProps attached */}
                               <td
                                 {...draggableProvided.dragHandleProps}
-                                className="py-3.5 px-2 text-center text-slate-300 group-hover:text-blue-600 cursor-grab active:cursor-grabbing select-none"
+                                className="py-3 px-2 text-center text-slate-300 group-hover:text-blue-600 cursor-grab active:cursor-grabbing select-none"
                                 title="Click and drag to reorder item"
                               >
                                 <GripVertical className="w-4 h-4 mx-auto" />
                               </td>
 
                               {/* ITEM DETAILS */}
-                              <td className="py-3.5 px-3 space-y-2">
+                              <td className="py-3 px-3 space-y-1.5 min-w-[260px]">
                                 <input
                                   type="text"
-                                  placeholder="Type or click to select an item."
+                                  placeholder="Deliverable title or milestone name"
                                   value={item.item_name || ""}
                                   onChange={(e) => onItemChange(idx, "item_name", e.target.value)}
                                   required
                                   className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-2xs transition"
                                 />
                                 <textarea
-                                  rows={1}
+                                  rows={item.description && item.description.length > 55 ? 2 : 1}
                                   placeholder="Add milestone description or deliverable scope (optional)..."
                                   value={item.description || ""}
                                   onChange={(e) => onItemChange(idx, "description", e.target.value)}
-                                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-[11px] text-slate-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-2xs resize-none transition"
+                                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-[11px] text-slate-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-2xs leading-relaxed transition resize-y min-h-[34px]"
                                 />
                               </td>
 
-                              {/* QUANTITY */}
-                              <td className="py-3.5 px-3 text-right">
-                                <input
-                                  type="number"
-                                  step="any"
-                                  min="0.01"
-                                  placeholder="1.00"
-                                  value={item.quantity}
-                                  onChange={(e) => onItemChange(idx, "quantity", e.target.value)}
-                                  required
-                                  className="w-full h-9 px-3 text-right font-mono text-xs font-bold text-slate-800 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-2xs transition"
-                                />
+                              {/* QUANTITY & UNIT */}
+                              <td className="py-3 px-3 text-right whitespace-nowrap">
+                                <div className="inline-flex items-center rounded-lg border border-slate-200 bg-white shadow-2xs focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 overflow-hidden">
+                                  <input
+                                    type="number"
+                                    step="any"
+                                    min="0.01"
+                                    placeholder="1"
+                                    value={item.quantity}
+                                    onChange={(e) => onItemChange(idx, "quantity", e.target.value)}
+                                    required
+                                    className="w-14 h-9 px-2 text-right font-mono text-xs font-bold text-slate-800 bg-transparent focus:outline-none"
+                                  />
+                                  <select
+                                    value={item.unit || "mile"}
+                                    onChange={(e) => onItemChange(idx, "unit", e.target.value)}
+                                    className="h-9 px-1 text-[11px] font-semibold text-slate-500 bg-slate-50 border-l border-slate-200 focus:outline-none cursor-pointer"
+                                  >
+                                    <option value="hrs">hrs</option>
+                                    <option value="days">days</option>
+                                    <option value="units">units</option>
+                                    <option value="mile">mile</option>
+                                    <option value="mos">mos</option>
+                                  </select>
+                                </div>
                               </td>
 
                               {/* RATE */}
-                              <td className="py-3.5 px-3 text-right">
+                              <td className="py-3 px-3 text-right whitespace-nowrap">
                                 <input
                                   type="number"
                                   step="any"
@@ -212,12 +226,12 @@ export default function DocumentItemsTable({
                                   value={item.unit_price}
                                   onChange={(e) => onItemChange(idx, "unit_price", e.target.value)}
                                   required
-                                  className="w-full h-9 px-3 text-right font-mono text-xs font-bold text-slate-800 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-2xs transition"
+                                  className="w-28 h-9 px-2.5 text-right font-mono text-xs font-bold text-slate-800 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-2xs transition"
                                 />
                               </td>
 
                               {/* TAX DROPDOWN */}
-                              <td className="py-3.5 px-3">
+                              <td className="py-3 px-3 whitespace-nowrap">
                                 <select
                                   value={currentItemTaxRate}
                                   onChange={(e) => onItemChange(idx, "tax_rate", Number(e.target.value))}
@@ -231,16 +245,23 @@ export default function DocumentItemsTable({
                                 </select>
                               </td>
 
-                              {/* AMOUNT */}
-                              <td className="py-3.5 px-4 text-right font-mono text-xs font-extrabold text-slate-900 select-none">
-                                {taxable.toLocaleString(undefined, {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}
+                              {/* AMOUNT & PER-ITEM GST BREAKDOWN */}
+                              <td className="py-3 px-4 text-right whitespace-nowrap">
+                                <div className="font-mono text-xs font-black text-slate-900 tabular-nums select-none">
+                                  {currencySymbol} {taxable.toLocaleString(undefined, {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}
+                                </div>
+                                {currentItemTaxRate > 0 && (
+                                  <div className="text-[10px] font-mono text-purple-700 font-semibold mt-0.5 select-none">
+                                    +₹{itemGst.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({currentItemTaxRate}% GST)
+                                  </div>
+                                )}
                               </td>
 
                               {/* Actions */}
-                              <td className="py-3.5 px-2 text-center">
+                              <td className="py-3 px-2 text-center whitespace-nowrap">
                                 {items.length > 1 ? (
                                   <button
                                     type="button"
@@ -273,39 +294,64 @@ export default function DocumentItemsTable({
                     item.tax_rate !== undefined && item.tax_rate !== null && item.tax_rate !== ""
                       ? Number(item.tax_rate)
                       : defaultNumTax;
+                  const itemGst = Number(((taxable * currentItemTaxRate) / 100).toFixed(2));
 
                   return (
                     <tr key={idx} className="hover:bg-slate-50/50 transition-colors group align-middle">
-                      <td className="py-3.5 px-2 text-center text-slate-300 select-none">
+                      <td className="py-3 px-2 text-center text-slate-300 select-none">
                         <GripVertical className="w-4 h-4 mx-auto" />
                       </td>
-                      <td className="py-3.5 px-3 space-y-2">
+                      <td className="py-3 px-3 space-y-1.5 min-w-[260px]">
                         <input
                           type="text"
-                          placeholder="Type or click to select an item."
+                          placeholder="Deliverable title or milestone name"
                           value={item.item_name || ""}
                           onChange={(e) => onItemChange(idx, "item_name", e.target.value)}
                           required
                           className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-900 placeholder:text-slate-400 shadow-2xs"
                         />
-                      </td>
-                      <td className="py-3.5 px-3 text-right">
-                        <input
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) => onItemChange(idx, "quantity", e.target.value)}
-                          className="w-full h-9 px-3 text-right font-mono text-xs font-bold text-slate-800 rounded-lg border border-slate-200 bg-white"
+                        <textarea
+                          rows={item.description && item.description.length > 55 ? 2 : 1}
+                          placeholder="Add milestone description or deliverable scope (optional)..."
+                          value={item.description || ""}
+                          onChange={(e) => onItemChange(idx, "description", e.target.value)}
+                          className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-[11px] text-slate-600 placeholder:text-slate-400 shadow-2xs leading-relaxed resize-y min-h-[34px]"
                         />
                       </td>
-                      <td className="py-3.5 px-3 text-right">
+                      <td className="py-3 px-3 text-right whitespace-nowrap">
+                        <div className="inline-flex items-center rounded-lg border border-slate-200 bg-white shadow-2xs overflow-hidden">
+                          <input
+                            type="number"
+                            step="any"
+                            min="0.01"
+                            value={item.quantity}
+                            onChange={(e) => onItemChange(idx, "quantity", e.target.value)}
+                            className="w-14 h-9 px-2 text-right font-mono text-xs font-bold text-slate-800 bg-transparent focus:outline-none"
+                          />
+                          <select
+                            value={item.unit || "mile"}
+                            onChange={(e) => onItemChange(idx, "unit", e.target.value)}
+                            className="h-9 px-1 text-[11px] font-semibold text-slate-500 bg-slate-50 border-l border-slate-200 focus:outline-none cursor-pointer"
+                          >
+                            <option value="hrs">hrs</option>
+                            <option value="days">days</option>
+                            <option value="units">units</option>
+                            <option value="mile">mile</option>
+                            <option value="mos">mos</option>
+                          </select>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 text-right whitespace-nowrap">
                         <input
                           type="number"
+                          step="any"
+                          min="0"
                           value={item.unit_price}
                           onChange={(e) => onItemChange(idx, "unit_price", e.target.value)}
-                          className="w-full h-9 px-3 text-right font-mono text-xs font-bold text-slate-800 rounded-lg border border-slate-200 bg-white"
+                          className="w-28 h-9 px-2.5 text-right font-mono text-xs font-bold text-slate-800 rounded-lg border border-slate-200 bg-white"
                         />
                       </td>
-                      <td className="py-3.5 px-3">
+                      <td className="py-3 px-3 whitespace-nowrap">
                         <select
                           value={currentItemTaxRate}
                           onChange={(e) => onItemChange(idx, "tax_rate", Number(e.target.value))}
@@ -318,10 +364,17 @@ export default function DocumentItemsTable({
                           <option value={0}>0% (Tax Exempt)</option>
                         </select>
                       </td>
-                      <td className="py-3.5 px-4 text-right font-mono text-xs font-extrabold text-slate-900">
-                        {taxable.toFixed(2)}
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                        <div className="font-mono text-xs font-black text-slate-900 select-none">
+                          {currencySymbol} {taxable.toFixed(2)}
+                        </div>
+                        {currentItemTaxRate > 0 && (
+                          <div className="text-[10px] font-mono text-purple-700 font-semibold mt-0.5 select-none">
+                            +₹{itemGst.toFixed(2)} ({currentItemTaxRate}% GST)
+                          </div>
+                        )}
                       </td>
-                      <td className="py-3.5 px-2 text-center">
+                      <td className="py-3 px-2 text-center whitespace-nowrap">
                         {items.length > 1 && (
                           <button
                             type="button"
@@ -514,19 +567,20 @@ export default function DocumentItemsTable({
       </DragDropContext>
 
       {/* Add New Line Footer Bar */}
-      <div className="p-3.5 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between text-xs">
+      <div className="p-3.5 sm:px-5 bg-slate-50/70 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
         <button
           type="button"
           onClick={onAddItem}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline px-2 py-1 rounded-lg transition cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200/80 font-semibold text-xs shadow-2xs transition cursor-pointer self-start sm:self-auto"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>Add Another Line</span>
         </button>
 
-        <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
-          Line amounts represent net taxable subtotal before aggregate deductions.
-        </span>
+        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
+          <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <span>Line amounts represent net taxable turnover. Applicable GST & deductions are computed in the summary.</span>
+        </div>
       </div>
     </div>
   );
