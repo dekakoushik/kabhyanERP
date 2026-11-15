@@ -1,4 +1,4 @@
-# Stage 1: Build vendor dependencies with Composer
+# Stage 1: Vendor build with Composer
 FROM composer:2 AS vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
@@ -10,56 +10,53 @@ RUN composer install \
     --no-scripts \
     --ignore-platform-reqs
 
-# Stage 2: Production Runtime with FrankenPHP + Laravel Octane
-FROM dunglas/frankenphp:1-php8.3-alpine AS runner
+# Stage 2: Official Standard PHP 8.3 Apache Image
+FROM php:8.3-apache AS runner
 
 # Install PostgreSQL client and required PHP extensions
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    libpng-dev \
+    libzip-dev \
+    zip \
+    unzip \
     curl \
     postgresql-client \
-    && install-php-extensions \
-    pdo_pgsql \
-    bcmath \
-    mbstring \
-    pcntl \
-    opcache \
-    gd \
-    zip \
-    intl
+    && docker-php-ext-install pdo_pgsql bcmath pcntl opcache gd zip \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Point Apache DocumentRoot to Laravel's public/ directory
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
+    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+
+# Enable Apache rewrite module for Laravel routing
+RUN a2enmod rewrite
 
 # Production PHP Tuning
-RUN { \
-        echo 'opcache.memory_consumption=128'; \
-        echo 'opcache.interned_strings_buffer=8'; \
-        echo 'opcache.max_accelerated_files=10000'; \
-        echo 'opcache.revalidate_freq=0'; \
-        echo 'opcache.fast_shutdown=1'; \
-        echo 'opcache.enable_cli=1'; \
-    } > /usr/local/etc/php/conf.d/opcache-recommended.ini
-
 RUN { \
         echo 'memory_limit = 512M'; \
         echo 'upload_max_filesize = 64M'; \
         echo 'post_max_size = 64M'; \
-        echo 'max_execution_time = 300'; \
         echo 'expose_php = Off'; \
     } > /usr/local/etc/php/conf.d/custom.ini
 
 WORKDIR /var/www/html
 
-# Copy application source code
+# Copy source code and vendor dependencies
 COPY . /var/www/html
-
-# Copy vendor dependencies from stage 1
 COPY --from=vendor /app/vendor /var/www/html/vendor
 
-# Copy startup script
-COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
-
-RUN chmod +x /usr/local/bin/entrypoint.sh \
-    && chown -R www-data:www-data /var/www/html \
+# Permissions
+RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 EXPOSE 80
 
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+# Inline startup: link storage, run migrations, seed if needed, and start Apache
+CMD php artisan storage:link --force || true && \
+    php artisan migrate --force --isolated || true && \
+    php artisan db:seed --force || true && \
+    php artisan config:cache || true && \
+    php artisan route:cache || true && \
+    apache2-foreground
