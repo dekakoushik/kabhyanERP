@@ -118,15 +118,15 @@ function SettingsOverviewContent() {
       ],
     },
     {
-      title: "Security & Portal",
+      title: "Security & Access",
       href: "/dashboard/settings/security",
       icon: KeyRound,
       color: "bg-rose-50 text-rose-600 border-rose-200",
       description: "Client Access & Sessions",
-      badge: flat["client_portal_enabled"] === "true" ? "Portal Live" : "Portal Disabled",
+      badge: flat["client_portal_enabled"] === "true" ? "API Live" : "API Disabled",
       badgeColor: flat["client_portal_enabled"] === "true" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-600 border-slate-200",
       details: [
-        { label: "Self-Service Portal", val: "/portal" },
+        { label: "Mobile App API", val: "Active" },
         { label: "Session Inactivity", val: `${flat["session_timeout_minutes"] || "120"} mins` },
         { label: "Client Auto-Alerts", val: flat["auto_notify_client_on_reply"] === "true" ? "Enabled" : "Disabled" },
       ],

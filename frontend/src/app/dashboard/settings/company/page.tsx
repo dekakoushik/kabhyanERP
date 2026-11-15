@@ -181,7 +181,7 @@ function CompanySettingsContent() {
     {
       type: "logo_primary",
       title: "Application UI Logo (Horizontal)",
-      description: "Rendered in the ERP sidebar, topbar, client portal header, and login screens.",
+      description: "Rendered in the ERP sidebar, topbar, invoice headers, and login screens.",
       dimensions: "240 x 60 px (Recommended: SVG or Transparent PNG)",
       aspect: "w-48 h-12",
       currentUrl: brandLogos.logo_primary,

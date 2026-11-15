@@ -90,9 +90,9 @@ function SecuritySettingsContent() {
               <KeyRound className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900">Security & Client Portal Access Policies</h2>
+              <h2 className="text-base font-bold text-slate-900">Security & Client Access Policies</h2>
               <p className="text-xs text-slate-500">
-                Self-service customer portal permissions, session timeouts, and auto-notification rules.
+                Mobile application API permissions, session timeouts, and auto-notification rules.
               </p>
             </div>
           </div>
@@ -101,9 +101,9 @@ function SecuritySettingsContent() {
         <div className="space-y-4 text-xs">
           <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
             <div>
-              <p className="font-bold text-slate-900">Enable Client Self-Service Portal (/portal)</p>
+              <p className="font-bold text-slate-900">Enable Client Mobile Application Access</p>
               <p className="text-slate-500 text-[11px] mt-0.5">
-                Allow customers to log in, review project sprints, check invoices, and submit support tickets.
+                Allow customers to connect via the upcoming Kabhyan mobile app to review project sprints, check invoices, and submit support tickets.
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">

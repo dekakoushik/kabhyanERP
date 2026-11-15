@@ -35,7 +35,7 @@ export default function SettingsLayout({
     { label: "GST & Taxation", href: "/dashboard/settings/gst", icon: Receipt },
     { label: "Banking & Wire", href: "/dashboard/settings/banking", icon: Building2 },
     { label: "Localization", href: "/dashboard/settings/localization", icon: Globe },
-    { label: "Security & Portal", href: "/dashboard/settings/security", icon: KeyRound },
+    { label: "Security & Access", href: "/dashboard/settings/security", icon: KeyRound },
     { label: "SMTP Email", href: "/dashboard/settings/email", icon: Mail },
     { label: "System Health", href: "/dashboard/settings/system", icon: Cpu },
   ];

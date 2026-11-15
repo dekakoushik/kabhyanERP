@@ -249,7 +249,7 @@ function ClientsContent() {
               <span className="p-2 bg-blue-100 text-blue-700 rounded-xl">
                 <Building className="w-6 h-6" />
               </span>
-              Client Accounts & Portals
+              Client Directory
             </h1>
             <p className="text-xs text-slate-500 mt-1">
               Manage corporate client accounts, project assignments, and mobile app invitation credentials.
@@ -257,15 +257,6 @@ function ClientsContent() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <Link
-              href="/portal"
-              target="_blank"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs tracking-wide shadow-2xs transition"
-            >
-              <ExternalLink className="w-4 h-4 text-blue-600" />
-              <span>Open Client Portal</span>
-            </Link>
-
             <Link
               href="/dashboard/clients/create"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-xs hover:shadow transition-all cursor-pointer"
@@ -295,10 +286,10 @@ function ClientsContent() {
             <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs flex items-center justify-between">
               <div>
                 <p className="text-2xs font-bold text-emerald-600 uppercase tracking-wider">
-                  Active Portal Logins
+                  Mobile App Accounts
                 </p>
                 <p className="text-2xl font-black text-emerald-700 mt-1">{stats.active_portal_users}</p>
-                <p className="text-2xs text-emerald-600/80 mt-0.5">Enabled self-service access</p>
+                <p className="text-2xs text-emerald-600/80 mt-0.5">Enabled mobile credentials</p>
               </div>
               <div className="p-3 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100">
                 <KeyRound className="w-5 h-5" />
@@ -340,9 +331,9 @@ function ClientsContent() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="bg-slate-50/80 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
             >
-              <option value="">All Portal Statuses</option>
-              <option value="active">Active Portal</option>
-              <option value="inactive">Inactive Portal</option>
+              <option value="">All Access Statuses</option>
+              <option value="active">Active Mobile</option>
+              <option value="inactive">Inactive Mobile</option>
             </select>
           </div>
         </div>
@@ -361,7 +352,7 @@ function ClientsContent() {
               </div>
               <h3 className="text-sm font-bold text-slate-800">No Clients Found</h3>
               <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
-                Add your first client profile to associate projects and grant access to the Client Portal.
+                Add your first client profile to associate projects and generate billing documents.
               </p>
               <div className="mt-4">
                 <Link
@@ -863,7 +854,7 @@ function ClientsContent() {
               <h3 className="text-base font-bold text-slate-900 mb-2">Delete Client Profile</h3>
               <p className="text-xs text-slate-600 mb-6 leading-relaxed">
                 Are you sure you want to remove <strong className="text-slate-900">{deleteConfirm.company_name}</strong>?
-                All associated invoices, tickets, and mobile portal links will be archived.
+                All associated invoices, tickets, and mobile account records will be archived.
               </p>
               <div className="flex items-center justify-end gap-2">
                 <button

@@ -212,16 +212,6 @@ export default function GlobalCommandPalette({
             <span>Settings: PostgreSQL & Server Infrastructure Health</span>
           </CommandItem>
         </CommandGroup>
-
-        <CommandSeparator />
-
-        {/* External Portals */}
-        <CommandGroup heading="External Links">
-          <CommandItem onSelect={() => runCommand(() => window.open("/portal", "_blank"))}>
-            <ExternalLink className="w-4 h-4 mr-2.5 text-slate-400" />
-            <span>Open Client Self-Service Portal</span>
-          </CommandItem>
-        </CommandGroup>
       </CommandList>
     </CommandDialog>
   );

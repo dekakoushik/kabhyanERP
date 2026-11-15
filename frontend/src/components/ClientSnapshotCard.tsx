@@ -116,7 +116,7 @@ export default function ClientSnapshotCard({
                         : "bg-slate-100 text-slate-600 border-slate-200"
                     }`}
                   >
-                    {selectedClient.portal_access_status === "active" ? "Portal Enabled" : "Standard Client"}
+                    {selectedClient.portal_access_status === "active" ? "Mobile Ready" : "Standard Client"}
                   </span>
                 </div>
                 <p className="text-2xs text-slate-500 flex items-center gap-1 font-medium">

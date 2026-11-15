@@ -397,7 +397,7 @@ export default function CreateTicketPage() {
                 Real-Time Client Notification
               </p>
               <p className="text-purple-700/90 leading-relaxed text-[11px]">
-                Upon creation, an email notification with a direct portal ticket tracking link is dispatched to both the client contact and assigned staff member.
+                Upon creation, an email notification with ticket reference details is dispatched to both the client contact and assigned staff member.
               </p>
             </div>
           </div>
