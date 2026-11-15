@@ -368,6 +368,7 @@ export interface Client {
   email: string;
   phone?: string | null;
   gstin?: string | null;
+  tax_number?: string | null;
   pan?: string | null;
   address?: string | null;
   city?: string | null;

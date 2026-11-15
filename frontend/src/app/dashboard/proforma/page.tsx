@@ -631,7 +631,7 @@ function ProformaContent() {
                           </span>
                         ) : (
                           <Link
-                            href={`/dashboard/invoices/create?proforma_id=${pi.id}`}
+                            href={`/dashboard/invoices/from-proforma/${pi.proforma_number}`}
                             title="Generate Milestone Tax Invoice"
                             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 font-semibold text-[11px] cursor-pointer transition shadow-2xs hover:shadow-xs"
                           >
@@ -1112,7 +1112,7 @@ function ProformaContent() {
               </div>
               <div className="flex items-center gap-2">
                 <Link
-                  href={`/dashboard/invoices/create?proforma_id=${previewInvoice.id}`}
+                  href={`/dashboard/invoices/from-proforma/${previewInvoice.proforma_number}`}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white cursor-pointer"
                 >
                   <FileCheck className="w-3.5 h-3.5" />

@@ -171,7 +171,7 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
             </span>
           ) : (
             <Link
-              href={`/dashboard/invoices/create?proforma_id=${proforma.id}`}
+              href={`/dashboard/invoices/from-proforma/${proforma.proforma_number}`}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs hover:shadow transition cursor-pointer"
             >
               <FileCheck className="w-4 h-4" />
@@ -501,7 +501,7 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
               </div>
             ) : (
               <Link
-                href={`/dashboard/invoices/create?proforma_id=${proforma.id}`}
+                href={`/dashboard/invoices/from-proforma/${proforma.proforma_number}`}
                 className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs tracking-wide shadow-xs hover:shadow transition flex items-center justify-center gap-2 cursor-pointer"
               >
                 <FileCheck className="w-4 h-4" />
