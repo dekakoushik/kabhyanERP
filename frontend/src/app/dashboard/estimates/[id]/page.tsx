@@ -100,9 +100,9 @@ function EstimateDetailContent({
         `/estimates/${estimate.id}/pdf?download=1`,
         `Estimate-${estimate.estimate_number}.pdf`
       );
-      toast.success("Certified Quotation PDF downloaded!");
+      toast.success("Estimate PDF downloaded!");
     } catch (err: any) {
-      toast.error(err.message || "Failed to download certified PDF.");
+      toast.error(err.message || "Failed to download PDF.");
     } finally {
       setDownloadingPdf(false);
     }
@@ -187,6 +187,14 @@ function EstimateDetailContent({
           </Link>
 
           <button
+            onClick={handlePrint}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold transition cursor-pointer"
+          >
+            <Printer className="w-4 h-4 text-slate-500" />
+            <span>Print / Save as PDF</span>
+          </button>
+
+          <button
             onClick={handleDownloadPdf}
             disabled={downloadingPdf}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold shadow-xs transition cursor-pointer disabled:opacity-50"
@@ -196,15 +204,7 @@ function EstimateDetailContent({
             ) : (
               <Download className="w-4 h-4" />
             )}
-            <span>Download Certified PDF</span>
-          </button>
-
-          <button
-            onClick={handleOpenPdf}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold transition cursor-pointer"
-          >
-            <Printer className="w-4 h-4 text-slate-500" />
-            <span>Print Server PDF</span>
+            <span>Download PDF</span>
           </button>
 
           {estimate.status === "accepted" && (

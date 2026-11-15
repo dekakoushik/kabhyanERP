@@ -169,46 +169,29 @@ SVG;
     }
 
     /**
-     * Render the Blade HTML and apply the X.509 PAdES digital certificate signature.
+     * Render the Blade HTML to a clean, high-fidelity PDF without intrusive Adobe signatures.
      */
     public function renderCertifiedPdf(string $html, string $docTitle, string $docNumber, array $meta = []): string
     {
         /** @var \TCPDF $pdf */
         $pdf = new \TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
 
-        // Digital Signature Configuration (ISO 32000 / PAdES standard)
-        try {
-            $this->ensureCertificate();
-
-            if (file_exists($this->certPath) && file_exists($this->keyPath)) {
-                $certRealPath = realpath($this->certPath);
-                $keyRealPath = realpath($this->keyPath);
-                if ($certRealPath && $keyRealPath) {
-                    $pdf->setSignature('file://' . $certRealPath, 'file://' . $keyRealPath, $this->passphrase, '', 2, [
-                        'Name' => 'Kabhyan Technologies Private Limited',
-                        'Location' => 'Guwahati, Assam, India',
-                        'Reason' => 'Tax Invoice Authentication & Digital Certification (PAdES)',
-                        'ContactInfo' => 'contact@kabhyan.com'
-                    ]);
-                }
-            }
-        } catch (\Throwable $e) {
-            Log::warning('PDF PAdES digital signature skipped: ' . $e->getMessage());
-        }
-
         // Document Metadata
-        $pdf->SetCreator('Kabhyan ERP Certified Security Engine');
+        $pdf->SetCreator('Kabhyan ERP Enterprise Engine');
         $pdf->SetAuthor('Kabhyan Technologies Private Limited');
         $pdf->SetTitle(sprintf('%s - %s', $docTitle, $docNumber));
-        $pdf->SetSubject($meta['subject'] ?? 'Officially Certified GST Commercial Record');
-        $pdf->SetKeywords(sprintf('Kabhyan, %s, %s, GST, Tax Invoice, PAdES Certified', $docTitle, $docNumber));
+        $pdf->SetSubject($meta['subject'] ?? 'Commercial Record');
+        $pdf->SetKeywords(sprintf('Kabhyan, %s, %s, GST, Invoice', $docTitle, $docNumber));
 
         // Margins & Page setup
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
-        $pdf->SetMargins(10, 10, 10);
+        $pdf->SetMargins(12, 12, 12);
         $pdf->SetAutoPageBreak(true, 12);
         $pdf->setImageScale(1.25);
+
+        // Set font to DejaVu Sans for native UTF-8 and Indian Rupee (₹) symbol support
+        $pdf->SetFont('dejavusans', '', 8.5);
 
         $pdf->AddPage();
         $pdf->writeHTML($html, true, false, true, false, '');

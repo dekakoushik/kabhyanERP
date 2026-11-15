@@ -17,8 +17,8 @@
 @endsection
 
 @section('signature-right')
-    <div class="sign-title">Client Seal & Acceptance</div>
-    <div class="sign-sub">PAdES Digitally Signed & Sealed</div>
+    <div class="sign-title">Client Acceptance Signature</div>
+    <div class="sign-sub">Name & Corporate Seal</div>
 @endsection
 
 @section('content')
@@ -74,22 +74,20 @@
         <tbody>
             @forelse($invoice->items as $item)
             <tr>
-                <td style="text-align: left;">
-                    <div style="font-size: 9pt; font-weight: bold; color: #0f172a;">{{ $item->item_name }}</div>
+                <td style="width: 52%; text-align: left; vertical-align: top;">
+                    <span style="font-size: 8.5pt; font-weight: bold; color: #0f172a;">{{ $item->item_name }}</span>
                     @if(!empty($item->description))
-                        <div style="font-size: 7.5pt; color: #64748b; margin-top: 2px;">{{ $item->description }}</div>
+                        <br/><span style="font-size: 7.5pt; color: #64748b;">{{ $item->description }}</span>
                     @endif
-                    <div style="font-size: 7pt; color: #94a3b8; font-family: monospace; margin-top: 1px;">
-                        SAC: {{ $item->sac_code ?? $company['sac_code'] }}
-                    </div>
+                    <br/><span style="font-size: 7pt; color: #94a3b8; font-family: monospace;">SAC: {{ $item->sac_code ?? $company['sac_code'] }}</span>
                 </td>
-                <td style="text-align: right; color: #334155; font-size: 8.5pt;">
+                <td style="width: 16%; text-align: right; vertical-align: top; color: #334155; font-size: 8.5pt;">
                     {{ number_format($item->quantity, 2) }} {{ $item->unit ?? 'hours' }}
                 </td>
-                <td style="text-align: right; color: #334155; font-size: 8.5pt; font-family: monospace;">
+                <td style="width: 16%; text-align: right; vertical-align: top; color: #334155; font-size: 8.5pt;">
                     {{ number_format($item->unit_price, 2) }}
                 </td>
-                <td style="text-align: right; font-weight: bold; color: #0f172a; font-size: 9pt; font-family: monospace;">
+                <td style="width: 16%; text-align: right; vertical-align: top; font-weight: bold; color: #0f172a; font-size: 8.5pt;">
                     {{ number_format($item->amount, 2) }}
                 </td>
             </tr>

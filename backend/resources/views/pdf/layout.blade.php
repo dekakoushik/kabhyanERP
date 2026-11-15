@@ -8,7 +8,7 @@
             margin: 10mm 12mm 10mm 12mm;
         }
         body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-family: 'DejaVu Sans', sans-serif;
             font-size: 8.5pt;
             color: #0f172a;
             line-height: 1.35;
@@ -287,11 +287,6 @@
             </td>
         </tr>
     </table>
-
-    <!-- Subtle Security Micro-Footer -->
-    <div class="security-footer">
-        KABHYAN SECURE PAdES-CERTIFIED RECORD &bull; ENCRYPTED X.509 DIGITAL CERTIFICATE APPLIED &bull; INTEGRITY KEY: {{ $integrityKey }} &bull; HASH: {{ substr($documentHash, 0, 32) }}...
-    </div>
 
 </body>
 </html>
