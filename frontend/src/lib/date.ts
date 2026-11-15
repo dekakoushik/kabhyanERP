@@ -99,7 +99,10 @@ export interface DueDateStatus {
 /**
  * Smart due-date status evaluation for tasks, invoices, and milestones.
  */
-export function getDueDateStatus(dueDateInput: string | number | Date | null | undefined): DueDateStatus {
+export function getDueDateStatus(
+  dueDateInput: string | number | Date | null | undefined,
+  prefix: string = "Due"
+): DueDateStatus {
   const d = parseDate(dueDateInput);
   if (!d) {
     return {
@@ -155,7 +158,7 @@ export function getDueDateStatus(dueDateInput: string | number | Date | null | u
   }
 
   return {
-    label: `Exp: ${formatDate(d)}`,
+    label: `${prefix}: ${formatDate(d)}`,
     isOverdue: false,
     isDueSoon: false,
     badgeClass: "bg-slate-50 text-slate-600 border-slate-200",
