@@ -55,7 +55,7 @@
                     @endif
                     Currency: <span class="doc-value">{{ $invoice->currency ?? 'INR' }}</span><br/>
                     Place of Supply: <span style="color: #0f172a;">{{ $placeOfSupply }}</span><br/>
-                    Status: <strong style="text-transform: uppercase; color: {{ $invoice->status === 'paid' ? '#059669' : ($invoice->status === 'overdue' ? '#dc2626' : '#d97706') }};">{{ $invoice->status }}</strong>
+                    Status: <strong class="status-{{ $invoice->status === 'paid' ? 'paid' : ($invoice->status === 'overdue' ? 'overdue' : 'pending') }}" style="text-transform: uppercase;">{{ $invoice->status }}</strong>
                 </div>
             </td>
         </tr>

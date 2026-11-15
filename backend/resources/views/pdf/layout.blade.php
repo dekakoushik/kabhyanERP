@@ -32,6 +32,10 @@
         .text-slate-400 { color: #94a3b8; }
         .text-emerald { color: #059669; }
 
+        .status-paid { color: #059669; }
+        .status-overdue { color: #dc2626; }
+        .status-pending { color: #d97706; }
+
         /* Header Elements */
         .company-legal-name {
             font-size: 10.5pt;
