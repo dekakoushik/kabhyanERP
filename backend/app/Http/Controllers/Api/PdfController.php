@@ -317,7 +317,8 @@ class PdfController extends Controller
      */
     protected function amountToWords(float $number): string
     {
-        $decimal = round($number - ($no = floor($number)), 2) * 100;
+        $no = (int) floor($number);
+        $decimal = (int) round(($number - $no) * 100);
         $words = [
             0 => '', 1 => 'One', 2 => 'Two', 3 => 'Three', 4 => 'Four', 5 => 'Five',
             6 => 'Six', 7 => 'Seven', 8 => 'Eight', 9 => 'Nine', 10 => 'Ten',
@@ -326,23 +327,20 @@ class PdfController extends Controller
             20 => 'Twenty', 30 => 'Thirty', 40 => 'Forty', 50 => 'Fifty',
             60 => 'Sixty', 70 => 'Seventy', 80 => 'Eighty', 90 => 'Ninety'
         ];
-        $digits = ['', 'Hundred', 'Thousand', 'Lakh', 'Crore'];
         
-        $numberStr = (string) $no;
-        $len = strlen($numberStr);
         $result = '';
 
-        if ($no == 0) {
+        if ($no === 0) {
             $result = 'Zero';
         } else {
             // Indian numbering format: Crore, Lakh, Thousand, Hundred
-            $crores = floor($no / 10000000);
+            $crores = intdiv($no, 10000000);
             $no %= 10000000;
-            $lakhs = floor($no / 100000);
+            $lakhs = intdiv($no, 100000);
             $no %= 100000;
-            $thousands = floor($no / 1000);
+            $thousands = intdiv($no, 1000);
             $no %= 1000;
-            $hundreds = floor($no / 100);
+            $hundreds = intdiv($no, 100);
             $remaining = $no % 100;
 
             if ($crores > 0) {
@@ -364,7 +362,7 @@ class PdfController extends Controller
 
         $result = 'INR ' . trim($result) . ' Only';
         if ($decimal > 0) {
-            $result .= ' and ' . $this->twoDigitsToWords((int)$decimal, $words) . ' Paise';
+            $result .= ' and ' . $this->twoDigitsToWords($decimal, $words) . ' Paise';
         }
 
         return $result;
