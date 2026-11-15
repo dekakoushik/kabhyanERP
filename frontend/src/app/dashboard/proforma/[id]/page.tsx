@@ -175,7 +175,7 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs hover:shadow transition cursor-pointer"
             >
               <FileCheck className="w-4 h-4" />
-              <span>+ Generate Milestone Tax Invoice</span>
+              <span>+ Create Milestone Invoice</span>
             </Link>
           )}
         </div>
@@ -349,8 +349,8 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
                 <Receipt className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900">Official GST Tax Invoices</h3>
-                <p className="text-[11px] text-slate-500">Legal tax invoices raised against this proforma contract</p>
+                <h3 className="text-sm font-bold text-slate-900">Milestone Tax Invoices</h3>
+                <p className="text-[11px] text-slate-500">Tax invoices issued against this proforma contract</p>
               </div>
             </div>
             {proforma.tax_invoices && proforma.tax_invoices.length > 0 && (
@@ -365,11 +365,11 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-100 text-slate-400 font-semibold uppercase text-[10px] tracking-wider">
-                    <th className="pb-2">Tax Invoice #</th>
+                    <th className="pb-2">Invoice#</th>
                     <th className="pb-2">Date</th>
-                    <th className="pb-2 text-right">Taxable Turnover</th>
+                    <th className="pb-2 text-right">Taxable Amount</th>
                     <th className="pb-2 text-right">GST (18%)</th>
-                    <th className="pb-2 text-right">Gross Total</th>
+                    <th className="pb-2 text-right">Total Amount</th>
                     <th className="pb-2 text-center">Status</th>
                     <th className="pb-2 text-right">Action</th>
                   </tr>
@@ -420,9 +420,9 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
           ) : (
             <div className="py-6 text-center space-y-2 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
               <ShieldCheck className="w-6 h-6 text-slate-400 mx-auto" />
-              <p className="text-xs font-semibold text-slate-700">Zero GST Liability Outstanding</p>
+              <p className="text-xs font-semibold text-slate-700">No Tax Invoices Issued Yet</p>
               <p className="text-[11px] text-slate-500 max-w-md mx-auto">
-                No Tax Invoices have been raised against this proforma yet. As per CGST Section 13(2), GST liability only triggers when milestone Tax Invoices are issued.
+                No milestone tax invoices have been generated against this proforma contract yet.
               </p>
             </div>
           )}
@@ -431,34 +431,34 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
 
         {/* Lifecycle Sidebar */}
         <div className="lg:col-span-4 space-y-6 print:hidden">
-          {/* Milestone Billing & GST Compliance Card */}
+          {/* Milestone Realization Card */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 space-y-4">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-emerald-50 text-emerald-700">
                 <FileCheck className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900">GST Milestone Pipeline</h3>
-                <p className="text-[11px] text-slate-500">CGST Sec 13(2) & 31(5) Compliance</p>
+                <h3 className="text-sm font-bold text-slate-900">Milestone Realization</h3>
+                <p className="text-[11px] text-slate-500">Track milestone invoices and remaining balance</p>
               </div>
             </div>
 
             {/* Financial Progress Breakdown */}
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-500 font-medium">Master Agreement Value:</span>
+                <span className="text-slate-500 font-medium">Proforma Total:</span>
                 <span className="font-bold text-slate-900">
                   ₹{Number(proforma.total_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </span>
               </div>
               <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-500 font-medium">Billed to Date (GST Discharged):</span>
+                <span className="text-slate-500 font-medium">Amount Billed So Far:</span>
                 <span className="font-bold text-emerald-600">
                   ₹{Number(proforma.invoiced_amount ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </span>
               </div>
               <div className="flex justify-between items-center text-xs pt-2 border-t border-slate-200/80">
-                <span className="text-slate-700 font-semibold">Remaining Unbilled Balance:</span>
+                <span className="text-slate-700 font-semibold">Balance Due on Proforma:</span>
                 <span className="font-bold text-purple-700 font-mono">
                   ₹{Number(proforma.remaining_amount ?? (proforma.total_amount - (proforma.invoiced_amount ?? 0))).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </span>

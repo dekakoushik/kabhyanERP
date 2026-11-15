@@ -62,7 +62,7 @@ export default function InvoiceCreateForm({
   const [customPercent, setCustomPercent] = useState<string>("100");
   const [customTitle, setCustomTitle] = useState<string>("Milestone Deliverable");
   const [customDesc, setCustomDesc] = useState<string>(
-    "Progressive milestone deliverable. Continuous supply of services under CGST Section 13(2) & 31(5)."
+    "Milestone deliverable payment against agreed project scope."
   );
 
   // Instant Settlement / Payment Receipt State
@@ -246,7 +246,7 @@ export default function InvoiceCreateForm({
                     remaining < total && remaining > 0
                       ? `Milestone Settlement against Proforma ${p.proforma_number}`
                       : `Milestone Deliverable against Proforma ${p.proforma_number}`,
-                  description: `Progressive deliverable milestone settlement. Continuous supply of services under CGST Section 13(2) & 31(5).`,
+                  description: `Milestone deliverable payment against agreed project scope.`,
                   quantity: 1,
                   unit: "mile",
                   unit_price: taxable,
@@ -432,7 +432,7 @@ export default function InvoiceCreateForm({
       items: [
         {
           item_name: `${pct}% Milestone Deliverable against ${linkedProforma.proforma_number}`,
-          description: `Progressive service delivery milestone. Continuous supply of services under CGST Section 31(5).`,
+          description: `Milestone deliverable payment against agreed project scope.`,
           quantity: 1,
           unit: "mile",
           unit_price: taxable,
@@ -450,15 +450,15 @@ export default function InvoiceCreateForm({
     setCustomAmount(customAmountType === "gross" ? String(remainingGross) : String(Math.round(remainingGross / (1 + activeTaxRate / 100))));
     const pct = contractTotal > 0 ? Number(((remainingGross / contractTotal) * 100).toFixed(1)) : 100;
     setCustomPercent(String(pct));
-    setCustomTitle("Remaining Unbilled Balance");
+    setCustomTitle("Balance Due Deliverable");
 
     const taxable = Math.round((remainingGross / (1 + activeTaxRate / 100)) * 100) / 100;
     setFormData((prev) => ({
       ...prev,
       items: [
         {
-          item_name: `Remaining Unbilled Balance against ${linkedProforma.proforma_number}`,
-          description: `Final deliverable milestone settlement. CGST Section 13(2) & 31(5) compliance.`,
+          item_name: `Balance Due against ${linkedProforma.proforma_number}`,
+          description: `Final deliverable milestone payment against agreed project scope.`,
           quantity: 1,
           unit: "mile",
           unit_price: taxable,
@@ -467,7 +467,7 @@ export default function InvoiceCreateForm({
       ],
       notes: `Final settlement Tax Invoice issued against accepted Proforma ${linkedProforma.proforma_number}`,
     }));
-    toast.success(`Applied remaining unbilled balance: Gross ₹${remainingGross.toLocaleString("en-IN")}`);
+    toast.success(`Applied balance due: Gross ₹${remainingGross.toLocaleString("en-IN")}`);
   };
 
   const applyCustomMilestone = () => {
@@ -486,7 +486,7 @@ export default function InvoiceCreateForm({
       items: [
         {
           item_name: title,
-          description: customDesc.trim() || `Progressive milestone deliverable. CGST Section 31(5) compliance.`,
+          description: customDesc.trim() || `Milestone deliverable payment against agreed project scope.`,
           quantity: 1,
           unit: "mile",
           unit_price: calcTaxable,
@@ -496,7 +496,7 @@ export default function InvoiceCreateForm({
       notes: `Milestone Tax Invoice (${calcEquivalentPct}%) issued against accepted Proforma ${linkedProforma.proforma_number}`,
     }));
 
-    toast.success(`Applied Custom Milestone: Gross ₹${calcGross.toLocaleString("en-IN")} (Taxable ₹${calcTaxable.toLocaleString("en-IN")})`);
+    toast.success(`Applied Milestone: Gross ₹${calcGross.toLocaleString("en-IN")} (Taxable ₹${calcTaxable.toLocaleString("en-IN")})`);
   };
 
   const importOriginalProformaItems = () => {
@@ -626,7 +626,7 @@ export default function InvoiceCreateForm({
                 {linkedProforma.proforma_number}
               </Link>
               <span>/</span>
-              <span className="text-slate-900 font-bold">Milestone Tax Invoice</span>
+              <span className="text-slate-900 font-bold">New Milestone Invoice</span>
             </div>
           )}
 
@@ -644,7 +644,7 @@ export default function InvoiceCreateForm({
                   <span className={`p-2 rounded-xl shadow-2xs ${linkedProforma ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}`}>
                     <FileCheck className="w-5 h-5" />
                   </span>
-                  <span>{linkedProforma ? "Generate Milestone Tax Invoice" : "Issue Tax Invoice"}</span>
+                  <span>{linkedProforma ? "New Milestone Invoice" : "New Tax Invoice"}</span>
                   {linkedProforma && (
                     <Link
                       href={`/dashboard/proforma/${linkedProforma.proforma_number}`}
@@ -659,8 +659,8 @@ export default function InvoiceCreateForm({
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
                   {linkedProforma
-                    ? "Converting master proforma contract into progressive milestone tax invoice. Continuous supply of services under CGST Act Sec 13(2) & 31(5)."
-                    : "Generate an official GST-compliant tax invoice with automatic tax calculations."}
+                    ? `Bill a milestone or partial payment against Proforma ${linkedProforma.proforma_number}.`
+                    : "Generate an official GST-compliant tax invoice with automatic calculations."}
                 </p>
               </div>
             </div>
@@ -682,12 +682,12 @@ export default function InvoiceCreateForm({
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Generating...
+                    Saving...
                   </>
                 ) : (
                   <>
                     <Save className="w-4 h-4 mr-2" />
-                    {linkedProforma ? "Save & Issue Milestone Invoice" : "Save & Issue Invoice"}
+                    Save Invoice
                   </>
                 )}
               </Button>
@@ -715,13 +715,13 @@ export default function InvoiceCreateForm({
                     </div>
                     <div>
                       <CardTitle className="text-sm font-bold text-slate-900 flex items-center gap-2 flex-wrap">
-                        <span>Milestone & Custom Amount Controller</span>
+                        <span>Milestone & Part Payment</span>
                         <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200 font-semibold">
                           Proforma #{linkedProforma.proforma_number}
                         </span>
                       </CardTitle>
                       <p className="text-[11px] text-slate-500">
-                        Set a custom milestone percentage or payment amount to record progressive tax liability as per CGST Section 13(2) & 31(5).
+                        Set a custom milestone percentage or payment amount to record partial billing.
                       </p>
                     </div>
                   </div>
@@ -739,28 +739,28 @@ export default function InvoiceCreateForm({
                   {/* 3 Metric Cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                     <div className="p-3 bg-white rounded-xl border border-purple-100 shadow-2xs">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Contract Scope</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Proforma Total</span>
                       <p className="text-base font-bold text-slate-900 font-mono mt-0.5">
                         ₹{contractTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </p>
-                      <span className="text-[10px] text-slate-400">100% Master Scope</span>
+                      <span className="text-[10px] text-slate-400">100% Scope</span>
                     </div>
                     <div className="p-3 bg-white rounded-xl border border-purple-100 shadow-2xs">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Already Invoiced (Realized)</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Amount Billed</span>
                       <p className="text-base font-bold text-emerald-600 font-mono mt-0.5">
                         ₹{invoicedTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </p>
                       <span className="text-[10px] text-emerald-600 font-medium">
-                        {contractTotal > 0 ? ((invoicedTotal / contractTotal) * 100).toFixed(1) : 0}% Realized
+                        {contractTotal > 0 ? ((invoicedTotal / contractTotal) * 100).toFixed(1) : 0}% Billed
                       </span>
                     </div>
                     <div className="p-3 bg-white rounded-xl border border-purple-100 shadow-2xs">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Remaining Unbilled Balance</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Balance Due</span>
                       <p className="text-base font-bold text-purple-700 font-mono mt-0.5">
                         ₹{remainingTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </p>
                       <span className="text-[10px] text-purple-600 font-medium">
-                        {contractTotal > 0 ? ((remainingTotal / contractTotal) * 100).toFixed(1) : 0}% Pending Realization
+                        {contractTotal > 0 ? ((remainingTotal / contractTotal) * 100).toFixed(1) : 0}% Remaining
                       </span>
                     </div>
                   </div>
@@ -768,7 +768,7 @@ export default function InvoiceCreateForm({
                   {/* Visual Contract Progress Bar */}
                   <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200/60">
                     <div className="flex justify-between items-center text-[11px]">
-                      <span className="font-semibold text-slate-700">Contract Invoicing Progress</span>
+                      <span className="font-semibold text-slate-700">Invoicing Progress</span>
                       <span className="font-mono text-slate-600 font-semibold">
                         {activeInvoicedPercent}% Billed with this invoice
                       </span>
@@ -788,15 +788,15 @@ export default function InvoiceCreateForm({
                     <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1 flex-wrap gap-2">
                       <span className="flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-                        <span>Already Invoiced ({priorPercent}%)</span>
+                        <span>Previously Billed ({priorPercent}%)</span>
                       </span>
                       <span className="flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-purple-600 inline-block" />
-                        <span className="font-semibold text-purple-800">This Tax Invoice ({currentPercent}%)</span>
+                        <span className="font-semibold text-purple-800">This Invoice ({currentPercent}%)</span>
                       </span>
                       <span className="flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-slate-300 inline-block" />
-                        <span>Remaining After ({remainingPercent}%)</span>
+                        <span>Balance Due ({remainingPercent}%)</span>
                       </span>
                     </div>
                   </div>
@@ -805,7 +805,7 @@ export default function InvoiceCreateForm({
                   <div className="p-4 rounded-xl bg-white border border-purple-200 shadow-2xs space-y-3.5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-bold text-slate-800">Milestone Input Mode:</span>
+                        <span className="text-xs font-bold text-slate-800">Calculate by:</span>
                         <div className="inline-flex rounded-lg bg-slate-100 p-0.5 border border-slate-200 text-xs">
                           <button
                             type="button"
@@ -814,7 +814,7 @@ export default function InvoiceCreateForm({
                               customMode === "amount" ? "bg-white text-purple-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
                             }`}
                           >
-                            ₹ Custom Amount
+                            ₹ Amount
                           </button>
                           <button
                             type="button"
@@ -831,14 +831,14 @@ export default function InvoiceCreateForm({
                       {/* Quick Presets */}
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-[10px] font-bold text-slate-400 uppercase">Presets:</span>
-                        {[10, 25, 30, 40, 50].map((p) => (
+                        {[10, 25, 30, 50].map((p) => (
                           <button
                             key={p}
                             type="button"
                             onClick={() => handlePresetClick(p)}
                             className="px-2 py-0.5 rounded-md border border-purple-200 bg-purple-50/70 hover:bg-purple-100 text-purple-700 font-semibold text-[11px] transition cursor-pointer"
                           >
-                            {p}%
+                            {p === 30 ? "30% Deposit" : `${p}%`}
                           </button>
                         ))}
                         <button
@@ -846,7 +846,7 @@ export default function InvoiceCreateForm({
                           onClick={handleFullRemainingClick}
                           className="px-2.5 py-0.5 rounded-md border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-[11px] transition cursor-pointer"
                         >
-                          100% Remaining
+                          Balance Due
                         </button>
                       </div>
                     </div>
@@ -855,7 +855,7 @@ export default function InvoiceCreateForm({
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                       <div className="sm:col-span-5">
                         <label className="text-xs font-bold text-slate-700 block mb-1">
-                          Milestone Scope / Deliverable Title
+                          Milestone Name
                         </label>
                         <Input
                           value={customTitle}
@@ -868,14 +868,14 @@ export default function InvoiceCreateForm({
                       {customMode === "amount" ? (
                         <div className="sm:col-span-4">
                           <div className="flex items-center justify-between mb-1">
-                            <label className="text-xs font-bold text-slate-700">Payment Amount (₹)</label>
+                            <label className="text-xs font-bold text-slate-700">Amount (₹)</label>
                             <div className="flex items-center gap-1.5 text-[10px]">
                               <button
                                 type="button"
                                 onClick={() => setCustomAmountType("gross")}
                                 className={`font-semibold cursor-pointer ${customAmountType === "gross" ? "text-purple-700 underline" : "text-slate-400"}`}
                               >
-                                Incl. GST
+                                Incl. Tax
                               </button>
                               <span className="text-slate-300">|</span>
                               <button
@@ -883,7 +883,7 @@ export default function InvoiceCreateForm({
                                 onClick={() => setCustomAmountType("taxable")}
                                 className={`font-semibold cursor-pointer ${customAmountType === "taxable" ? "text-purple-700 underline" : "text-slate-400"}`}
                               >
-                                Excl. GST
+                                Excl. Tax
                               </button>
                             </div>
                           </div>
@@ -903,7 +903,7 @@ export default function InvoiceCreateForm({
                       ) : (
                         <div className="sm:col-span-4">
                           <label className="text-xs font-bold text-slate-700 block mb-1">
-                            Milestone Percentage (%)
+                            Percentage (%)
                           </label>
                           <div className="relative">
                             <Input
@@ -928,7 +928,7 @@ export default function InvoiceCreateForm({
                           className="w-full h-9 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
                         >
                           <Sparkles className="w-3.5 h-3.5" />
-                          <span>Apply Milestone</span>
+                          <span>Apply to Item Table</span>
                         </Button>
                       </div>
                     </div>
@@ -937,7 +937,7 @@ export default function InvoiceCreateForm({
                     <div className="pt-2 flex flex-wrap items-center justify-between gap-2 text-xs border-t border-slate-100 bg-slate-50/70 p-2.5 rounded-lg">
                       <div className="flex items-center gap-3 flex-wrap">
                         <span className="text-slate-500">
-                          Taxable Turnover: <strong className="text-slate-900 font-mono">₹{calcTaxable.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                          Sub Total: <strong className="text-slate-900 font-mono">₹{calcTaxable.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                         </span>
                         <span className="text-slate-300">•</span>
                         <span className="text-slate-500">
@@ -945,12 +945,12 @@ export default function InvoiceCreateForm({
                         </span>
                         <span className="text-slate-300">•</span>
                         <span className="text-slate-500">
-                          Gross Total: <strong className="text-emerald-700 font-mono">₹{calcGross.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                          Invoice Total: <strong className="text-emerald-700 font-mono">₹{calcGross.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                         </span>
                       </div>
 
                       <div className="text-[11px] font-semibold text-slate-600">
-                        Equivalent: <span className="text-purple-700 font-bold">{calcEquivalentPct}%</span> of Contract
+                        Equivalent: <span className="text-purple-700 font-bold">{calcEquivalentPct}%</span> of Proforma
                       </div>
                     </div>
 
@@ -959,7 +959,7 @@ export default function InvoiceCreateForm({
                       <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
                         <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                         <span>
-                          <strong>Notice:</strong> This milestone gross (₹{calcGross.toLocaleString("en-IN")}) exceeds the remaining proforma balance of ₹{remainingTotal.toLocaleString("en-IN")}.
+                          <strong>Notice:</strong> This milestone amount (₹{calcGross.toLocaleString("en-IN")}) exceeds the remaining balance of ₹{remainingTotal.toLocaleString("en-IN")} on the proforma.
                         </span>
                       </div>
                     )}
@@ -968,7 +968,7 @@ export default function InvoiceCreateForm({
                   {/* Switch to full proforma itemized items if required */}
                   <div className="flex items-center justify-between text-xs pt-1 flex-wrap gap-2">
                     <span className="text-slate-400 text-[11px]">
-                      Need line-by-line itemization from original Proforma agreement instead?
+                      Need line-by-line deliverables from the original Proforma agreement instead?
                     </span>
                     <button
                       type="button"
@@ -988,13 +988,13 @@ export default function InvoiceCreateForm({
               <CardHeader className="pb-3 border-b border-slate-100">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
                   <Receipt className="w-4 h-4 text-blue-600" />
-                  Tax Invoice Details
+                  Invoice Details
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    Invoice Number <span className="text-red-500">*</span>
+                    Invoice# <span className="text-red-500">*</span>
                   </label>
                   <Input
                     value={formData.invoice_number}
@@ -1104,8 +1104,8 @@ export default function InvoiceCreateForm({
               }
               onSelectClient={handleSelectClient}
               onOpenQuickAdd={() => setQuickAddOpen(true)}
-              title="Client & GST Information"
-              subtitle="Select an existing client to auto-populate company, billing, and GST details"
+              title="Bill To"
+              subtitle="Select a customer or add a new one to auto-populate billing and tax details"
               required={true}
             />
 
@@ -1124,7 +1124,7 @@ export default function InvoiceCreateForm({
             {/* 4. Payment Terms & Notes */}
             <Card>
               <CardHeader className="pb-3 border-b border-slate-100">
-                <CardTitle className="text-sm font-semibold">Payment Terms & Instructions</CardTitle>
+                <CardTitle className="text-sm font-semibold">Payment Terms & Notes</CardTitle>
               </CardHeader>
               <CardContent className="pt-4 space-y-4">
                 <div>
@@ -1140,7 +1140,7 @@ export default function InvoiceCreateForm({
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    Notes to Recipient
+                    Customer Notes
                   </label>
                   <textarea
                     rows={2}
@@ -1152,7 +1152,7 @@ export default function InvoiceCreateForm({
               </CardContent>
             </Card>
 
-            {/* 5. Instant Payment Settlement & GST Discharge Receipt */}
+            {/* 5. Instant Payment Settlement & Receipt */}
             <Card className="border-emerald-200/80 bg-linear-to-br from-emerald-50/30 to-white shadow-xs">
               <CardHeader className="pb-3 border-b border-emerald-100 flex flex-row items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1161,10 +1161,10 @@ export default function InvoiceCreateForm({
                   </div>
                   <div>
                     <CardTitle className="text-sm font-bold text-slate-900">
-                      Payment Settlement & Receipt
+                      Payment Received
                     </CardTitle>
                     <p className="text-[11px] text-slate-500">
-                      Auto-generate payment receipt and mark invoice as Paid upon creation
+                      Record payment and generate receipt voucher upon saving
                     </p>
                   </div>
                 </div>
@@ -1184,10 +1184,10 @@ export default function InvoiceCreateForm({
                   />
                   <div>
                     <p className="text-xs font-bold text-slate-900">
-                      Payment has already been received from client for this milestone
+                      I have already received payment for this invoice
                     </p>
                     <p className="text-[11px] text-slate-500 mt-0.5">
-                      Instantly records full payment in the financial ledger, issues a receipt voucher, and marks this Tax Invoice status as PAID.
+                      Records payment in the financial ledger, issues a receipt voucher, and marks this invoice as Paid.
                     </p>
                   </div>
                 </label>
@@ -1209,13 +1209,13 @@ export default function InvoiceCreateForm({
                         <option value="upi">UPI / QR Code</option>
                         <option value="cheque">Cheque</option>
                         <option value="card">Corporate Card</option>
-                        <option value="other">Other Gateway</option>
+                        <option value="cash">Cash</option>
                       </select>
                     </div>
 
                     <div>
                       <label className="text-xs font-semibold text-slate-700 block mb-1">
-                        Bank Reference / UTR Number
+                        Reference / UTR #
                       </label>
                       <Input
                         placeholder="e.g. UTR1938472910"
@@ -1227,7 +1227,7 @@ export default function InvoiceCreateForm({
 
                     <div>
                       <label className="text-xs font-semibold text-slate-700 block mb-1">
-                        Remittance Date
+                        Payment Date
                       </label>
                       <Input
                         type="date"
@@ -1244,14 +1244,14 @@ export default function InvoiceCreateForm({
 
           {/* Sticky Summary Card (4 Columns) */}
           <div className="lg:col-span-4 sticky top-20 space-y-4">
-            {/* Proforma Milestone Impact Ledger */}
+            {/* Proforma Summary */}
             {linkedProforma && (
               <Card className="border-purple-200 shadow-xs bg-linear-to-br from-purple-50/60 via-white to-purple-50/30 overflow-hidden">
                 <CardHeader className="pb-2.5 border-b border-purple-100 bg-purple-50/50 rounded-t-xl">
                   <CardTitle className="text-xs font-bold text-slate-800 flex items-center justify-between">
                     <span className="flex items-center gap-1.5 text-purple-900">
-                      <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                      <span>Milestone Impact Ledger</span>
+                      <Receipt className="w-3.5 h-3.5 text-purple-600" />
+                      <span>Proforma Summary</span>
                     </span>
                     <span className="font-mono text-[10px] text-purple-700 bg-purple-100/90 border border-purple-200 px-2 py-0.5 rounded-md font-bold">
                       {linkedProforma.proforma_number}
@@ -1260,25 +1260,25 @@ export default function InvoiceCreateForm({
                 </CardHeader>
                 <CardContent className="pt-3 space-y-2.5 text-xs">
                   <div className="flex justify-between items-center text-slate-500">
-                    <span>Total Proforma Scope:</span>
+                    <span>Proforma Total:</span>
                     <span className="font-mono font-semibold text-slate-900">
                       ₹{contractTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-slate-500">
-                    <span>Invoiced Previously:</span>
+                    <span>Amount Billed So Far:</span>
                     <span className="font-mono font-semibold text-emerald-600">
                       ₹{invoicedTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-purple-950 pt-2 border-t border-purple-100">
-                    <span className="font-bold">This Tax Invoice (Gross):</span>
+                    <span className="font-bold">This Invoice:</span>
                     <span className="font-mono font-black text-purple-700 text-sm">
                       ₹{grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-slate-600 pt-1 border-t border-purple-100">
-                    <span>Remaining Contract Balance:</span>
+                    <span>Balance Due on Proforma:</span>
                     <span className="font-mono font-bold text-slate-700">
                       ₹{Math.max(0, remainingTotal - grandTotal).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </span>
@@ -1290,7 +1290,7 @@ export default function InvoiceCreateForm({
             <Card className="border-blue-200/80 shadow-sm">
               <CardHeader className="pb-3 border-b border-slate-100 bg-blue-50/40 rounded-t-xl">
                 <CardTitle className="text-sm font-bold text-slate-900 flex items-center justify-between">
-                  <span>Invoice Total & GST</span>
+                  <span>Invoice Summary</span>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-600 text-white uppercase font-bold">
                     {formData.currency}
                   </span>
@@ -1298,7 +1298,7 @@ export default function InvoiceCreateForm({
               </CardHeader>
               <CardContent className="pt-4 space-y-3.5 text-xs">
                 <div className="flex justify-between items-center text-slate-600">
-                  <span>Taxable Subtotal</span>
+                  <span>Sub Total</span>
                   <span className="font-mono font-semibold text-slate-900">
                     ₹{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
@@ -1323,7 +1323,7 @@ export default function InvoiceCreateForm({
 
                 <div className="flex justify-between items-center text-slate-600">
                   <span className="flex items-center gap-1.5">
-                    GST Rate (%)
+                    GST ({formData.tax_rate}%)
                     <input
                       type="number"
                       min="0"
@@ -1355,7 +1355,7 @@ export default function InvoiceCreateForm({
                 <div className={`p-3 rounded-lg text-white flex justify-between items-center ${linkedProforma ? "bg-purple-600" : "bg-blue-600"}`}>
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-purple-100">
-                      Total Invoice Amount
+                      Total ({formData.currency})
                     </p>
                     <p className="text-xl font-mono font-black mt-0.5">
                       ₹{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -1373,7 +1373,7 @@ export default function InvoiceCreateForm({
                 className={`w-full ${linkedProforma ? "bg-purple-600 hover:bg-purple-700" : "bg-blue-600 hover:bg-blue-700"} text-white py-2.5 font-medium shadow-xs`}
               >
                 {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                {linkedProforma ? "Save & Issue Milestone Invoice" : "Issue Invoice"}
+                Save Invoice
               </Button>
               <Button
                 type="button"
@@ -1381,7 +1381,7 @@ export default function InvoiceCreateForm({
                 onClick={() => router.push(linkedProforma ? `/dashboard/proforma/${linkedProforma.proforma_number}` : "/dashboard/invoices")}
                 className="w-full"
               >
-                {linkedProforma ? "Return to Proforma" : "Return to Invoices"}
+                Cancel
               </Button>
             </div>
           </div>
@@ -1404,7 +1404,7 @@ export default function InvoiceCreateForm({
             className={`${linkedProforma ? "bg-purple-600 hover:bg-purple-700" : "bg-blue-600 hover:bg-blue-700"} text-white font-semibold text-xs sm:text-sm px-5 py-2.5 shadow-md flex items-center gap-1.5 cursor-pointer`}
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            <span>{linkedProforma ? "Issue Milestone Invoice" : "Issue Invoice"}</span>
+            <span>Save Invoice</span>
           </Button>
         </div>
       </form>

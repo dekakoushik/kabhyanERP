@@ -491,19 +491,19 @@ function InvoiceDetailContent({ invoiceParam }: { invoiceParam: string }) {
                   <Receipt className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">Master Proforma Agreement</h3>
+                  <h3 className="text-sm font-bold text-slate-900">Linked Proforma</h3>
                   <p className="text-[11px] text-slate-500">Commercial Contract Origin</p>
                 </div>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">
-                This Tax Invoice discharges GST for a progressive deliverable milestone under Proforma contract{" "}
+                This invoice was issued as a milestone payment against accepted Proforma contract{" "}
                 <strong className="font-mono text-purple-700">{invoice.proforma_invoice.proforma_number}</strong>.
               </p>
               <Link
                 href={`/dashboard/proforma/${invoice.proforma_invoice.proforma_number}`}
                 className="w-full py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold text-xs transition flex items-center justify-center gap-1.5 border border-purple-200"
               >
-                <span>View Master Proforma Ledger</span>
+                <span>View Proforma {invoice.proforma_invoice.proforma_number}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>

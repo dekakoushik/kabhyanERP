@@ -97,21 +97,21 @@ export default function DocumentItemsTable({
             <thead>
               <tr className="border-b border-slate-200/90 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500 select-none">
                 <th className="py-3 px-2 w-8 text-center"></th>
-                <th className="py-3 px-3 min-w-[260px] text-slate-600">ITEM DETAILS & SCOPE</th>
-                <th className="py-3 px-3 w-28 text-right text-slate-600">QTY / UNIT</th>
+                <th className="py-3 px-3 min-w-[260px] text-slate-600">Item & Description</th>
+                <th className="py-3 px-3 w-28 text-right text-slate-600">Qty & Unit</th>
                 <th className="py-3 px-3 w-28 text-right text-slate-600">
                   <span className="inline-flex items-center gap-1 justify-end">
-                    <span>RATE ({currencySymbol})</span>
+                    <span>Rate ({currencySymbol})</span>
                     <Calculator className="w-3.5 h-3.5 text-slate-400" />
                   </span>
                 </th>
                 <th className="py-3 px-3 w-36 text-slate-600">
                   <span className="inline-flex items-center gap-1">
-                    <span>GST RATE</span>
+                    <span>Tax Rate</span>
                     <Info className="w-3.5 h-3.5 text-slate-400" />
                   </span>
                 </th>
-                <th className="py-3 px-4 w-36 text-right text-slate-600">TAXABLE & GST</th>
+                <th className="py-3 px-4 w-36 text-right text-slate-600">Amount ({currencySymbol})</th>
                 <th className="py-3 px-2 w-10 text-center"></th>
               </tr>
             </thead>
@@ -579,7 +579,7 @@ export default function DocumentItemsTable({
 
         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
           <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-          <span>Line amounts represent net taxable turnover. Applicable GST & deductions are computed in the summary.</span>
+          <span>Amounts are tax-exclusive. Applicable taxes and discounts are calculated in the invoice summary.</span>
         </div>
       </div>
     </div>

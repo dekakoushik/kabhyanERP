@@ -34,8 +34,8 @@ export default function ClientSnapshotCard({
   selectedClient,
   onSelectClient,
   onOpenQuickAdd,
-  title = "Client & Entity Information",
-  subtitle = "Select an existing client to auto-populate company, billing, and GST details",
+  title = "Bill To",
+  subtitle = "Select a customer or add a new one to auto-populate billing and tax details",
   required = true,
 }: ClientSnapshotCardProps) {
   const fullAddress = selectedClient
