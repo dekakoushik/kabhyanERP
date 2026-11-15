@@ -3,16 +3,16 @@
 @section('title', 'Tax Invoice - ' . $invoice->invoice_number)
 
 @section('badge')
-    <span class="badge-pill-blue">TAX INVOICE</span>
+    <span class="badge-invoice">TAX INVOICE</span>
 @endsection
 
 @section('doc-number', $invoice->invoice_number)
 @section('doc-date', \Carbon\Carbon::parse($invoice->invoice_date)->format('d M Y'))
 
 @section('doc-meta-right')
-    Payment Due: <span class="doc-value">{{ \Carbon\Carbon::parse($invoice->due_date)->format('d M Y') }}</span><br/>
+    Payment Due: <strong style="color: #0f172a;">{{ \Carbon\Carbon::parse($invoice->due_date)->format('d M Y') }}</strong><br/>
     @if($invoice->proformaInvoice)
-        Proforma Ref: <span class="doc-value font-mono" style="color: #2563eb;">{{ $invoice->proformaInvoice->proforma_number }}</span>
+        Proforma Ref: <strong style="color: #059669;">{{ $invoice->proformaInvoice->proforma_number }}</strong>
     @endif
 @endsection
 
@@ -24,13 +24,13 @@
 @section('content')
 
     <!-- Recipient Client & Project Info Cards -->
-    <table>
+    <table style="width: 100%; border-collapse: separate; border-spacing: 14px 0; margin-left: -14px; margin-right: -14px; margin-top: 16px; margin-bottom: 20px;">
         <tr>
-            <td style="width: 48.5%; vertical-align: top;" class="card-box">
-                <div class="card-header-label">BILLED TO (CLIENT)</div>
-                <div class="card-main-title">{{ $invoice->client_name }}</div>
-                <div class="card-sub-title">{{ $invoice->client_company ?? 'Direct Client' }}</div>
-                <div class="card-body-text">
+            <td style="width: 50%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px;">
+                <div style="font-size: 7.5pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 5px;">BILLED TO (CLIENT)</div>
+                <div style="font-size: 11pt; font-weight: bold; color: #0f172a; margin-bottom: 3px;">{{ $invoice->client_name }}</div>
+                <div style="font-size: 8.5pt; font-weight: 500; color: #475569; margin-bottom: 3px;">{{ $invoice->client_company ?? 'Direct Client' }}</div>
+                <div style="font-size: 7.8pt; color: #64748b; line-height: 1.4;">
                     {{ $invoice->client_email }}<br/>
                     @if(!empty($invoice->client_phone))
                         {{ $invoice->client_phone }}<br/>
@@ -39,23 +39,22 @@
                         {{ $invoice->client_address }}<br/>
                     @endif
                     @if(!empty($invoice->client_gstin))
-                        <span style="color: #2563eb; font-weight: bold; font-family: monospace;">GSTIN: {{ $invoice->client_gstin }}</span>
+                        <strong style="color: #059669;">GSTIN: {{ $invoice->client_gstin }}</strong>
                     @else
                         <span style="color: #94a3b8; font-size: 7.5pt;">Unregistered Consumer (B2C)</span>
                     @endif
                 </div>
             </td>
-            <td style="width: 3%;"></td>
-            <td style="width: 48.5%; vertical-align: top;" class="card-box">
-                <div class="card-header-label">PROJECT REFERENCE</div>
-                <div class="card-main-title">{{ $invoice->project?->name ?? 'Corporate Engagement' }}</div>
-                <div class="card-body-text" style="margin-top: 4px;">
+            <td style="width: 50%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px;">
+                <div style="font-size: 7.5pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 5px;">PROJECT REFERENCE</div>
+                <div style="font-size: 11pt; font-weight: bold; color: #0f172a; margin-bottom: 4px;">{{ $invoice->project?->name ?? 'Corporate Engagement' }}</div>
+                <div style="font-size: 7.8pt; color: #64748b; line-height: 1.45;">
                     @if(!empty($invoice->project?->code))
-                        <span style="color: #2563eb; font-weight: bold; font-family: monospace;">Project Code: {{ $invoice->project->code }}</span><br/>
+                        <span style="color: #059669; font-weight: bold;">Project Code: {{ $invoice->project->code }}</span><br/>
                     @endif
-                    Currency: <span class="doc-value">{{ $invoice->currency ?? 'INR' }}</span><br/>
+                    Currency: <strong style="color: #0f172a;">{{ $invoice->currency ?? 'INR' }}</strong><br/>
                     Place of Supply: <span style="color: #0f172a;">{{ $placeOfSupply }}</span><br/>
-                    Status: <strong class="status-{{ $invoice->status === 'paid' ? 'paid' : ($invoice->status === 'overdue' ? 'overdue' : 'pending') }}" style="text-transform: uppercase;">{{ $invoice->status }}</strong>
+                    Status: <strong style="text-transform: uppercase; color: {{ $invoice->status === 'paid' ? '#059669' : ($invoice->status === 'overdue' ? '#dc2626' : '#d97706') }};">{{ $invoice->status }}</strong>
                 </div>
             </td>
         </tr>
@@ -74,20 +73,22 @@
         <tbody>
             @forelse($invoice->items as $item)
             <tr>
-                <td style="width: 52%; text-align: left; vertical-align: top;">
-                    <span style="font-size: 8.5pt; font-weight: bold; color: #0f172a;">{{ $item->item_name }}</span>
+                <td style="text-align: left;">
+                    <div style="font-size: 8.5pt; font-weight: bold; color: #0f172a;">{{ $item->item_name }}</div>
                     @if(!empty($item->description))
-                        <br/><span style="font-size: 7.5pt; color: #64748b;">{{ $item->description }}</span>
+                        <div style="font-size: 7.5pt; color: #64748b; margin-top: 2px; line-height: 1.35;">{{ $item->description }}</div>
                     @endif
-                    <br/><span style="font-size: 7pt; color: #94a3b8; font-family: monospace;">SAC: {{ $item->sac_code ?? $company['sac_code'] }}</span>
+                    <div style="font-size: 7pt; color: #94a3b8; margin-top: 1px;">
+                        SAC: {{ $item->sac_code ?? $company['sac_code'] }}
+                    </div>
                 </td>
-                <td style="width: 16%; text-align: right; vertical-align: top; color: #334155; font-size: 8.5pt;">
+                <td style="text-align: right; color: #334155; font-size: 8.5pt;">
                     {{ number_format($item->quantity, 2) }} {{ $item->unit ?? 'hours' }}
                 </td>
-                <td style="width: 16%; text-align: right; vertical-align: top; color: #334155; font-size: 8.5pt;">
+                <td style="text-align: right; color: #334155; font-size: 8.5pt;">
                     {{ number_format($item->unit_price, 2) }}
                 </td>
-                <td style="width: 16%; text-align: right; vertical-align: top; font-weight: bold; color: #0f172a; font-size: 8.5pt;">
+                <td style="text-align: right; font-weight: bold; color: #0f172a; font-size: 8.5pt;">
                     {{ number_format($item->amount, 2) }}
                 </td>
             </tr>
@@ -100,19 +101,19 @@
     </table>
 
     <!-- Bottom Section: Bank / Terms (Left) & Totals (Right) -->
-    <table>
+    <table style="margin-bottom: 24px;">
         <tr>
-            <td style="width: 52%; vertical-align: top; padding-right: 12px;">
+            <td style="width: 52%; vertical-align: top; padding-right: 14px;">
                 <!-- Bank Coordinates Card -->
                 <div class="note-card">
                     <div class="note-card-title">BANK SETTLEMENT COORDINATES</div>
                     <div class="note-card-body">
                         Bank: <strong>{{ $bank['name'] }}</strong><br/>
                         A/C Name: <strong>{{ $bank['account_name'] }}</strong><br/>
-                        Account Number: <strong class="font-mono" style="color: #0f172a;">{{ $bank['account_number'] }}</strong><br/>
-                        IFSC Code: <strong class="font-mono" style="color: #0f172a;">{{ $bank['ifsc_code'] }}</strong> &bull; Branch: {{ $bank['branch'] }}
+                        Account Number: <strong style="color: #0f172a;">{{ $bank['account_number'] }}</strong><br/>
+                        IFSC Code: <strong style="color: #0f172a;">{{ $bank['ifsc_code'] }}</strong> &bull; Branch: {{ $bank['branch'] }}
                         @if(!empty($bank['upi_id']))
-                            <br/>UPI ID: <strong class="font-mono">{{ $bank['upi_id'] }}</strong>
+                            <br/>UPI ID: <strong>{{ $bank['upi_id'] }}</strong>
                         @endif
                     </div>
                 </div>
@@ -129,7 +130,7 @@
                 <table class="totals-table">
                     <tr>
                         <td style="width: 55%; color: #64748b;">Subtotal:</td>
-                        <td style="width: 45%; text-align: right; font-family: monospace; color: #0f172a;">
+                        <td style="width: 45%; text-align: right; color: #0f172a;">
                             ₹{{ number_format($invoice->subtotal, 2) }}
                         </td>
                     </tr>
@@ -138,7 +139,7 @@
                         <td style="color: #059669;">
                             Discount ({{ number_format((float)$invoice->discount_rate, 2) }}%):
                         </td>
-                        <td style="text-align: right; font-family: monospace; color: #059669;">
+                        <td style="text-align: right; color: #059669;">
                             -₹{{ number_format((float)$invoice->discount_amount, 2) }}
                         </td>
                     </tr>
@@ -146,20 +147,20 @@
                     @if($isInterState)
                     <tr>
                         <td style="color: #64748b;">IGST (18.00%):</td>
-                        <td style="text-align: right; font-family: monospace; color: #0f172a;">
+                        <td style="text-align: right; color: #0f172a;">
                             ₹{{ number_format($igstAmount, 2) }}
                         </td>
                     </tr>
                     @else
                     <tr>
                         <td style="color: #64748b;">CGST (9.00%):</td>
-                        <td style="text-align: right; font-family: monospace; color: #0f172a;">
+                        <td style="text-align: right; color: #0f172a;">
                             ₹{{ number_format($cgstAmount, 2) }}
                         </td>
                     </tr>
                     <tr>
                         <td style="color: #64748b;">SGST (9.00%):</td>
-                        <td style="text-align: right; font-family: monospace; color: #0f172a;">
+                        <td style="text-align: right; color: #0f172a;">
                             ₹{{ number_format($sgstAmount, 2) }}
                         </td>
                     </tr>
@@ -169,20 +170,20 @@
                     </tr>
                     <tr>
                         <td class="grand-total-label">Grand Total:</td>
-                        <td class="grand-total-amount text-right font-mono">
+                        <td class="grand-total-amount" style="color: #059669;">
                             ₹{{ number_format($invoice->total_amount, 2) }}
                         </td>
                     </tr>
                     @if((float)$invoice->paid_amount > 0)
                     <tr>
                         <td style="color: #059669; font-size: 8pt;">Paid Amount:</td>
-                        <td style="text-align: right; font-family: monospace; color: #059669; font-size: 8pt;">
+                        <td style="text-align: right; color: #059669; font-size: 8pt;">
                             -₹{{ number_format((float)$invoice->paid_amount, 2) }}
                         </td>
                     </tr>
                     <tr>
                         <td style="color: #dc2626; font-weight: bold; font-size: 8.5pt;">Balance Due:</td>
-                        <td style="text-align: right; font-family: monospace; color: #dc2626; font-weight: bold; font-size: 8.5pt;">
+                        <td style="text-align: right; color: #dc2626; font-weight: bold; font-size: 8.5pt;">
                             ₹{{ number_format((float)$invoice->due_amount, 2) }}
                         </td>
                     </tr>

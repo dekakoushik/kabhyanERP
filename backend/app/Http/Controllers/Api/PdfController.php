@@ -32,7 +32,7 @@ class PdfController extends Controller
 
         $company = $this->getCompanySettings();
         $bank = $this->getBankSettings();
-        $logoPath = $this->getLogoPath();
+        $logoBase64 = $this->getLogoBase64();
 
         // GST Place of supply and state check
         $clientGstin = $invoice->client_gstin;
@@ -73,7 +73,7 @@ class PdfController extends Controller
             'invoice' => $invoice,
             'company' => $company,
             'bank' => $bank,
-            'logoPath' => $logoPath,
+            'logoBase64' => $logoBase64,
             'isInterState' => $isInterState,
             'placeOfSupply' => $placeOfSupply,
             'cgstAmount' => $cgstAmount,
@@ -116,7 +116,7 @@ class PdfController extends Controller
 
         $company = $this->getCompanySettings();
         $bank = $this->getBankSettings();
-        $logoPath = $this->getLogoPath();
+        $logoBase64 = $this->getLogoBase64();
 
         $clientGstin = $proforma->client_gstin;
         $isInterState = $this->isInterStateSupply($clientGstin, $proforma->client_address);
@@ -153,7 +153,7 @@ class PdfController extends Controller
             'proforma' => $proforma,
             'company' => $company,
             'bank' => $bank,
-            'logoPath' => $logoPath,
+            'logoBase64' => $logoBase64,
             'isInterState' => $isInterState,
             'placeOfSupply' => $placeOfSupply,
             'cgstAmount' => $cgstAmount,
@@ -196,7 +196,7 @@ class PdfController extends Controller
 
         $company = $this->getCompanySettings();
         $bank = $this->getBankSettings();
-        $logoPath = $this->getLogoPath();
+        $logoBase64 = $this->getLogoBase64();
 
         $clientGstin = $estimate->client_gstin;
         $isInterState = $this->isInterStateSupply($clientGstin, $estimate->client_address);
@@ -233,7 +233,7 @@ class PdfController extends Controller
             'estimate' => $estimate,
             'company' => $company,
             'bank' => $bank,
-            'logoPath' => $logoPath,
+            'logoBase64' => $logoBase64,
             'isInterState' => $isInterState,
             'placeOfSupply' => $placeOfSupply,
             'cgstAmount' => $cgstAmount,
@@ -265,18 +265,20 @@ class PdfController extends Controller
     }
 
     /**
-     * Get path or base64 data for the corporate logo.
+     * Get base64 data for the corporate logo.
      */
-    protected function getLogoPath(): ?string
+    protected function getLogoBase64(): ?string
     {
         $logo = public_path('kabhyan-logo.png');
-        if (file_exists($logo)) {
-            return $logo;
+        if (!file_exists($logo)) {
+            $logo = public_path('logo.png');
         }
 
-        $altLogo = public_path('logo.png');
-        if (file_exists($altLogo)) {
-            return $altLogo;
+        if (file_exists($logo)) {
+            $data = file_get_contents($logo);
+            if ($data !== false) {
+                return 'data:image/png;base64,' . base64_encode($data);
+            }
         }
 
         return null;

@@ -9,7 +9,6 @@ import Image from "next/image";
 import { formatDate, getDueDateStatus, formatRelativeTime } from "@/lib/date";
 import { useBrand } from "@/context/BrandContext";
 import { toast } from "sonner";
-import { exportElementToPdf } from "@/lib/pdfExporter";
 import {
   FileText,
   ArrowLeft,
@@ -97,17 +96,11 @@ function EstimateDetailContent({
     if (!estimate) return;
     try {
       setDownloadingPdf(true);
-      const sheet = document.getElementById("printable-sheet");
-      if (sheet) {
-        await exportElementToPdf(sheet, `Estimate-${estimate.estimate_number}.pdf`);
-        toast.success("Estimate PDF downloaded!");
-      } else {
-        await api.downloadPdf(
-          `/estimates/${estimate.id}/pdf?download=1`,
-          `Estimate-${estimate.estimate_number}.pdf`
-        );
-        toast.success("Estimate PDF downloaded!");
-      }
+      await api.downloadPdf(
+        `/estimates/${estimate.id}/pdf?download=1`,
+        `Estimate-${estimate.estimate_number}.pdf`
+      );
+      toast.success("Estimate PDF downloaded!");
     } catch (err: any) {
       toast.error(err.message || "Failed to download PDF.");
     } finally {

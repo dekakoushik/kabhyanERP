@@ -10,7 +10,6 @@ import { formatDate, getDueDateStatus, formatRelativeTime } from "@/lib/date";
 import { calculateGSTSplit, numberToIndianWords, getStateName, extractStateCode } from "@/lib/gst";
 import { useBrand } from "@/context/BrandContext";
 import { toast } from "sonner";
-import { exportElementToPdf } from "@/lib/pdfExporter";
 import {
   FileCheck,
   ArrowLeft,
@@ -110,17 +109,11 @@ function InvoiceDetailContent({ invoiceParam }: { invoiceParam: string }) {
     if (!invoice) return;
     try {
       setDownloadingPdf(true);
-      const sheet = document.getElementById("printable-sheet");
-      if (sheet) {
-        await exportElementToPdf(sheet, `Tax-Invoice-${invoice.invoice_number}.pdf`);
-        toast.success("Tax Invoice PDF downloaded!");
-      } else {
-        await api.downloadPdf(
-          `/invoices/${invoice.id}/pdf?download=1`,
-          `Tax-Invoice-${invoice.invoice_number}.pdf`
-        );
-        toast.success("Tax Invoice PDF downloaded!");
-      }
+      await api.downloadPdf(
+        `/invoices/${invoice.id}/pdf?download=1`,
+        `Tax-Invoice-${invoice.invoice_number}.pdf`
+      );
+      toast.success("Tax Invoice PDF downloaded!");
     } catch (err: any) {
       toast.error(err.message || "Failed to download PDF.");
     } finally {

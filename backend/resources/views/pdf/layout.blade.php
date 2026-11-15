@@ -5,14 +5,20 @@
     <title>@yield('title')</title>
     <style>
         @page {
-            margin: 10mm 12mm 10mm 12mm;
+            size: a4 portrait;
+            margin: 12mm 15mm 12mm 15mm;
+        }
+        * {
+            box-sizing: border-box;
         }
         body {
-            font-family: 'DejaVu Sans', sans-serif;
+            font-family: 'DejaVu Sans', 'Helvetica', 'Arial', sans-serif;
             font-size: 8.5pt;
             color: #0f172a;
-            line-height: 1.35;
+            line-height: 1.4;
             background-color: #ffffff;
+            margin: 0;
+            padding: 0;
         }
         table {
             width: 100%;
@@ -21,27 +27,15 @@
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         .text-left { text-align: left; }
-        .bold { font-weight: bold; }
-        .font-mono { font-family: 'Courier', monospace; }
+        .font-bold { font-weight: bold; }
+        .font-mono { font-family: 'DejaVu Sans Mono', monospace; }
 
-        /* Colors */
-        .text-primary-blue { color: #2563eb; }
-        .text-slate-900 { color: #0f172a; }
-        .text-slate-700 { color: #334155; }
-        .text-slate-500 { color: #64748b; }
-        .text-slate-400 { color: #94a3b8; }
-        .text-emerald { color: #059669; }
-
-        .status-paid { color: #059669; }
-        .status-overdue { color: #dc2626; }
-        .status-pending { color: #d97706; }
-
-        /* Header Elements */
+        /* Corporate Header */
         .company-legal-name {
-            font-size: 10.5pt;
+            font-size: 11pt;
             font-weight: bold;
             color: #0f172a;
-            margin-top: 4px;
+            margin-top: 3px;
         }
         .company-tagline {
             font-size: 8pt;
@@ -55,132 +49,95 @@
         }
         .company-statutory {
             font-size: 7pt;
-            color: #475569;
+            color: #64748b;
             margin-top: 2px;
-            line-height: 1.3;
+            line-height: 1.35;
         }
 
-        /* Top Right Badge Pills */
-        .badge-pill-blue {
+        /* Badge Pills */
+        .badge-estimate {
             background-color: #eff6ff;
             color: #2563eb;
             font-size: 7.5pt;
             font-weight: bold;
             letter-spacing: 0.8px;
             padding: 4px 10px;
+            border-radius: 4px;
             text-transform: uppercase;
-            border-radius: 9999px;
             display: inline-block;
         }
-        .badge-pill-purple {
+        .badge-proforma {
             background-color: #f5f3ff;
             color: #7c3aed;
             font-size: 7.5pt;
             font-weight: bold;
             letter-spacing: 0.8px;
             padding: 4px 10px;
+            border-radius: 4px;
             text-transform: uppercase;
-            border-radius: 9999px;
             display: inline-block;
         }
-        .badge-pill-green {
+        .badge-invoice {
             background-color: #ecfdf5;
             color: #059669;
             font-size: 7.5pt;
             font-weight: bold;
             letter-spacing: 0.8px;
             padding: 4px 10px;
+            border-radius: 4px;
             text-transform: uppercase;
-            border-radius: 9999px;
             display: inline-block;
         }
 
         .doc-number {
-            font-size: 18pt;
+            font-size: 20pt;
             font-weight: bold;
             color: #0f172a;
-            margin-top: 3px;
-            margin-bottom: 2px;
             letter-spacing: -0.5px;
+            margin-top: 4px;
+            margin-bottom: 2px;
         }
         .doc-meta {
             font-size: 8pt;
             color: #64748b;
             line-height: 1.45;
         }
-        .doc-value {
-            color: #0f172a;
-            font-weight: bold;
-        }
-
-        /* Modern Information Cards */
-        .card-box {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 10px 12px;
-        }
-        .card-header-label {
-            font-size: 7pt;
-            font-weight: bold;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-bottom: 4px;
-        }
-        .card-main-title {
-            font-size: 10.5pt;
-            font-weight: bold;
-            color: #0f172a;
-            margin-bottom: 2px;
-        }
-        .card-sub-title {
-            font-size: 8.5pt;
-            font-weight: 500;
-            color: #334155;
-            margin-bottom: 2px;
-        }
-        .card-body-text {
-            font-size: 8pt;
-            color: #64748b;
-            line-height: 1.4;
-        }
 
         /* Items Table */
         .items-table {
-            margin-top: 14px;
-            margin-bottom: 14px;
+            margin-top: 16px;
+            margin-bottom: 18px;
         }
         .items-table th {
             font-size: 7.5pt;
             font-weight: bold;
             color: #64748b;
             text-transform: uppercase;
-            letter-spacing: 0.6px;
-            padding: 7px 4px;
+            letter-spacing: 0.8px;
+            padding: 8px 4px;
             border-bottom: 1.5px solid #e2e8f0;
         }
         .items-table td {
-            padding: 8px 4px;
+            padding: 11px 4px;
             border-bottom: 1px solid #f1f5f9;
             vertical-align: top;
         }
 
-        /* Notes Card */
+        /* Bottom Section Notes Cards */
         .note-card {
             background-color: #f8fafc;
             border: 1px solid #f1f5f9;
-            border-radius: 6px;
-            padding: 8px 10px;
-            margin-bottom: 6px;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
         }
         .note-card-title {
             font-size: 7pt;
             font-weight: bold;
-            color: #64748b;
+            color: #94a3b8;
             text-transform: uppercase;
             letter-spacing: 0.8px;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
         }
         .note-card-body {
             font-size: 7.5pt;
@@ -197,14 +154,17 @@
             font-size: 11pt;
             font-weight: bold;
             color: #0f172a;
+            padding-top: 4px;
         }
         .grand-total-amount {
             font-size: 13.5pt;
             font-weight: bold;
             color: #2563eb;
+            text-align: right;
+            padding-top: 4px;
         }
 
-        /* Footer Signatures */
+        /* Signatures */
         .sign-title {
             font-size: 8.5pt;
             font-weight: bold;
@@ -215,16 +175,6 @@
             color: #64748b;
             margin-top: 2px;
         }
-
-        /* Security Micro-Footer */
-        .security-footer {
-            font-size: 4.5pt;
-            color: #94a3b8;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            margin-top: 14px;
-            text-align: center;
-        }
     </style>
 </head>
 <body>
@@ -232,11 +182,11 @@
     <!-- Header Table: Logo & Company (Left) + Document Badge & Info (Right) -->
     <table>
         <tr>
-            <td style="width: 55%; vertical-align: top;">
-                @if(!empty($logoPath) && file_exists($logoPath))
-                    <img src="{{ $logoPath }}" height="36" style="margin-bottom: 4px;"/><br/>
+            <td style="width: 58%; vertical-align: top;">
+                @if(!empty($logoBase64))
+                    <img src="{{ $logoBase64 }}" style="height: 38px; width: auto; margin-bottom: 4px;"/><br/>
                 @else
-                    <div style="font-size: 15pt; font-weight: bold; color: #2563eb; letter-spacing: -0.5px;">KABHYAN</div>
+                    <div style="font-size: 16pt; font-weight: bold; color: #2563eb; letter-spacing: -0.5px;">KABHYAN</div>
                     <div style="font-size: 6.5pt; font-weight: bold; color: #64748b; letter-spacing: 2px; margin-bottom: 4px;">TECHNOLOGIES</div>
                 @endif
                 <div class="company-legal-name">{{ $company['name'] }}</div>
@@ -248,35 +198,28 @@
                     @endif
                 </div>
                 <div class="company-statutory">
-                    GSTIN: <strong>{{ $company['gstin'] }}</strong> &bull; CIN: <strong>{{ $company['cin'] }}</strong> &bull; State Code: <strong>{{ $company['state_code'] ?? '18' }} ({{ $company['state_name'] ?? 'Assam' }})</strong><br/>
+                    GSTIN: <strong style="color: #334155;">{{ $company['gstin'] }}</strong> &bull; CIN: <strong style="color: #334155;">{{ $company['cin'] }}</strong> &bull; State: <strong>18 (Assam)</strong><br/>
                     Regd. Office: {{ $company['registered_office'] }}
                 </div>
             </td>
-            <td style="width: 45%; vertical-align: top;" class="text-right">
-                <!-- Pill Badge -->
+            <td style="width: 42%; vertical-align: top;" class="text-right">
                 <div style="margin-bottom: 4px;">
                     @yield('badge')
                 </div>
-                <!-- Document Number -->
                 <div class="doc-number">#@yield('doc-number')</div>
-                <!-- Document Dates -->
                 <div class="doc-meta">
-                    Date: <span class="doc-value">@yield('doc-date')</span><br/>
+                    Date: <strong style="color: #0f172a;">@yield('doc-date')</strong><br/>
                     @yield('doc-meta-right')
                 </div>
             </td>
         </tr>
     </table>
 
-    <div style="height: 12px;"></div>
-
     <!-- Main Dynamic Content (Cards, Items Table, Totals & Notes) -->
     @yield('content')
 
-    <div style="height: 14px;"></div>
-
     <!-- Signatures & Acceptance Footer -->
-    <table>
+    <table style="margin-top: 24px;">
         <tr>
             <td style="width: 50%; vertical-align: top;">
                 <div class="sign-title">Authorized Signatory</div>

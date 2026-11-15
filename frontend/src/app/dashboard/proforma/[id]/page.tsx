@@ -9,7 +9,6 @@ import Image from "next/image";
 import { formatDate, getDueDateStatus, formatRelativeTime } from "@/lib/date";
 import { useBrand } from "@/context/BrandContext";
 import { toast } from "sonner";
-import { exportElementToPdf } from "@/lib/pdfExporter";
 import {
   Receipt,
   ArrowLeft,
@@ -93,17 +92,11 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
     if (!proforma) return;
     try {
       setDownloadingPdf(true);
-      const sheet = document.getElementById("printable-sheet");
-      if (sheet) {
-        await exportElementToPdf(sheet, `Proforma-${proforma.proforma_number}.pdf`);
-        toast.success("Proforma Invoice PDF downloaded!");
-      } else {
-        await api.downloadPdf(
-          `/proforma-invoices/${proforma.id}/pdf?download=1`,
-          `Proforma-${proforma.proforma_number}.pdf`
-        );
-        toast.success("Proforma Invoice PDF downloaded!");
-      }
+      await api.downloadPdf(
+        `/proforma-invoices/${proforma.id}/pdf?download=1`,
+        `Proforma-${proforma.proforma_number}.pdf`
+      );
+      toast.success("Proforma Invoice PDF downloaded!");
     } catch (err: any) {
       toast.error(err.message || "Failed to download PDF.");
     } finally {

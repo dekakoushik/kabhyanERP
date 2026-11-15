@@ -3,14 +3,14 @@
 @section('title', 'Commercial Estimate - ' . $estimate->estimate_number)
 
 @section('badge')
-    <span class="badge-pill-blue">COMMERCIAL ESTIMATE</span>
+    <span class="badge-estimate">COMMERCIAL ESTIMATE</span>
 @endsection
 
 @section('doc-number', $estimate->estimate_number)
 @section('doc-date', \Carbon\Carbon::parse($estimate->estimate_date)->format('d M Y'))
 
 @section('doc-meta-right')
-    Valid Until: <span class="doc-value">{{ \Carbon\Carbon::parse($estimate->expiry_date)->format('d M Y') }}</span>
+    Valid Until: <strong style="color: #0f172a;">{{ \Carbon\Carbon::parse($estimate->expiry_date)->format('d M Y') }}</strong>
 @endsection
 
 @section('signature-right')
@@ -21,13 +21,13 @@
 @section('content')
 
     <!-- Recipient Client & Project Info Cards -->
-    <table>
+    <table style="width: 100%; border-collapse: separate; border-spacing: 14px 0; margin-left: -14px; margin-right: -14px; margin-top: 16px; margin-bottom: 20px;">
         <tr>
-            <td style="width: 48.5%; vertical-align: top;" class="card-box">
-                <div class="card-header-label">PREPARED FOR CLIENT</div>
-                <div class="card-main-title">{{ $estimate->client_name }}</div>
-                <div class="card-sub-title">{{ $estimate->client_company ?? 'Direct Client' }}</div>
-                <div class="card-body-text">
+            <td style="width: 50%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px;">
+                <div style="font-size: 7.5pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 5px;">PREPARED FOR CLIENT</div>
+                <div style="font-size: 11pt; font-weight: bold; color: #0f172a; margin-bottom: 3px;">{{ $estimate->client_name }}</div>
+                <div style="font-size: 8.5pt; font-weight: 500; color: #475569; margin-bottom: 3px;">{{ $estimate->client_company ?? 'Direct Client' }}</div>
+                <div style="font-size: 7.8pt; color: #64748b; line-height: 1.4;">
                     {{ $estimate->client_email }}<br/>
                     @if(!empty($estimate->client_phone))
                         {{ $estimate->client_phone }}<br/>
@@ -36,19 +36,18 @@
                         {{ $estimate->client_address }}<br/>
                     @endif
                     @if(!empty($estimate->client_gstin))
-                        <span style="color: #2563eb; font-weight: bold; font-family: monospace;">GSTIN: {{ $estimate->client_gstin }}</span>
+                        <strong style="color: #2563eb;">GSTIN: {{ $estimate->client_gstin }}</strong>
                     @endif
                 </div>
             </td>
-            <td style="width: 3%;"></td>
-            <td style="width: 48.5%; vertical-align: top;" class="card-box">
-                <div class="card-header-label">PROJECT ENGAGEMENT</div>
-                <div class="card-main-title">{{ $estimate->project?->name ?? 'Enterprise IT & Software Engineering' }}</div>
-                <div class="card-body-text" style="margin-top: 4px;">
+            <td style="width: 50%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px;">
+                <div style="font-size: 7.5pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 5px;">PROJECT ENGAGEMENT</div>
+                <div style="font-size: 11pt; font-weight: bold; color: #0f172a; margin-bottom: 4px;">{{ $estimate->project?->name ?? 'General IT Deliverables' }}</div>
+                <div style="font-size: 7.8pt; color: #64748b; line-height: 1.45;">
                     @if(!empty($estimate->project?->code))
-                        <span style="color: #2563eb; font-weight: bold; font-family: monospace;">Project Code: {{ $estimate->project->code }}</span><br/>
+                        <span style="color: #2563eb; font-weight: bold;">Project Code: {{ $estimate->project->code }}</span><br/>
                     @endif
-                    Currency: <span class="doc-value">{{ $estimate->currency ?? 'INR' }}</span><br/>
+                    Currency: <strong style="color: #0f172a;">{{ $estimate->currency ?? 'INR' }}</strong><br/>
                     Place of Supply: <span style="color: #0f172a;">{{ $placeOfSupply }}</span>
                 </div>
             </td>
@@ -68,19 +67,19 @@
         <tbody>
             @forelse($estimate->items as $item)
             <tr>
-                <td style="width: 52%; text-align: left; vertical-align: top;">
-                    <span style="font-size: 8.5pt; font-weight: bold; color: #0f172a;">{{ $item->item_name }}</span>
+                <td style="text-align: left;">
+                    <div style="font-size: 8.5pt; font-weight: bold; color: #0f172a;">{{ $item->item_name }}</div>
                     @if(!empty($item->description))
-                        <br/><span style="font-size: 7.5pt; color: #64748b;">{{ $item->description }}</span>
+                        <div style="font-size: 7.5pt; color: #64748b; margin-top: 2px; line-height: 1.35;">{{ $item->description }}</div>
                     @endif
                 </td>
-                <td style="width: 16%; text-align: right; vertical-align: top; color: #334155; font-size: 8.5pt;">
+                <td style="text-align: right; color: #334155; font-size: 8.5pt;">
                     {{ number_format($item->quantity, 2) }} {{ $item->unit ?? 'hours' }}
                 </td>
-                <td style="width: 16%; text-align: right; vertical-align: top; color: #334155; font-size: 8.5pt;">
+                <td style="text-align: right; color: #334155; font-size: 8.5pt;">
                     {{ number_format($item->unit_price, 2) }}
                 </td>
-                <td style="width: 16%; text-align: right; vertical-align: top; font-weight: bold; color: #0f172a; font-size: 8.5pt;">
+                <td style="text-align: right; font-weight: bold; color: #0f172a; font-size: 8.5pt;">
                     {{ number_format($item->amount, 2) }}
                 </td>
             </tr>
@@ -93,9 +92,9 @@
     </table>
 
     <!-- Bottom Section: Scope Notes / Commercial Terms (Left) & Totals (Right) -->
-    <table>
+    <table style="margin-bottom: 24px;">
         <tr>
-            <td style="width: 52%; vertical-align: top; padding-right: 12px;">
+            <td style="width: 52%; vertical-align: top; padding-right: 14px;">
                 <!-- Scope Notes Card -->
                 <div class="note-card">
                     <div class="note-card-title">SCOPE NOTES</div>
@@ -116,7 +115,7 @@
                 <table class="totals-table">
                     <tr>
                         <td style="width: 55%; color: #64748b;">Subtotal:</td>
-                        <td style="width: 45%; text-align: right; font-family: monospace; color: #0f172a;">
+                        <td style="width: 45%; text-align: right; color: #0f172a;">
                             ₹{{ number_format($estimate->subtotal, 2) }}
                         </td>
                     </tr>
@@ -125,7 +124,7 @@
                         <td style="color: #059669;">
                             Discount ({{ number_format((float)$estimate->discount_rate, 2) }}%):
                         </td>
-                        <td style="text-align: right; font-family: monospace; color: #059669;">
+                        <td style="text-align: right; color: #059669;">
                             -₹{{ number_format((float)$estimate->discount_amount, 2) }}
                         </td>
                     </tr>
@@ -134,7 +133,7 @@
                         <td style="color: #64748b;">
                             GST / Tax ({{ number_format((float)($estimate->tax_rate ?? 18), 2) }}%):
                         </td>
-                        <td style="text-align: right; font-family: monospace; color: #0f172a;">
+                        <td style="text-align: right; color: #0f172a;">
                             ₹{{ number_format($estimate->tax_amount, 2) }}
                         </td>
                     </tr>
@@ -143,7 +142,7 @@
                     </tr>
                     <tr>
                         <td class="grand-total-label">Grand Total:</td>
-                        <td class="grand-total-amount text-right font-mono">
+                        <td class="grand-total-amount">
                             ₹{{ number_format($estimate->total_amount, 2) }}
                         </td>
                     </tr>

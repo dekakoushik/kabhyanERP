@@ -169,10 +169,22 @@ SVG;
     }
 
     /**
-     * Render the Blade HTML to a clean, high-fidelity PDF without intrusive Adobe signatures.
+     * Render the Blade HTML to a clean, high-fidelity PDF matching print preview.
      */
     public function renderCertifiedPdf(string $html, string $docTitle, string $docNumber, array $meta = []): string
     {
+        if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)
+                ->setPaper('a4', 'portrait')
+                ->setOptions([
+                    'isHtml5ParserEnabled' => true,
+                    'isRemoteEnabled' => true,
+                    'defaultFont' => 'DejaVu Sans',
+                    'dpi' => 150,
+                ]);
+            return $pdf->output();
+        }
+
         /** @var \TCPDF $pdf */
         $pdf = new \TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
 
@@ -180,8 +192,6 @@ SVG;
         $pdf->SetCreator('Kabhyan ERP Enterprise Engine');
         $pdf->SetAuthor('Kabhyan Technologies Private Limited');
         $pdf->SetTitle(sprintf('%s - %s', $docTitle, $docNumber));
-        $pdf->SetSubject($meta['subject'] ?? 'Commercial Record');
-        $pdf->SetKeywords(sprintf('Kabhyan, %s, %s, GST, Invoice', $docTitle, $docNumber));
 
         // Margins & Page setup
         $pdf->setPrintHeader(false);
@@ -189,8 +199,6 @@ SVG;
         $pdf->SetMargins(12, 12, 12);
         $pdf->SetAutoPageBreak(true, 12);
         $pdf->setImageScale(1.25);
-
-        // Set font to DejaVu Sans for native UTF-8 and Indian Rupee (₹) symbol support
         $pdf->SetFont('dejavusans', '', 8.5);
 
         $pdf->AddPage();
