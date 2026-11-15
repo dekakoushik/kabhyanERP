@@ -164,21 +164,29 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
             <span>Print / PDF</span>
           </button>
 
-          <button
-            onClick={handleConvertToTaxInvoice}
-            disabled={converting}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs hover:shadow transition cursor-pointer disabled:opacity-50"
-          >
-            {converting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileCheck className="w-4 h-4" />}
-            <span>Convert to Official Tax Invoice</span>
-          </button>
+          {proforma.remaining_amount !== undefined && proforma.remaining_amount <= 0 ? (
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>Fully Invoiced (100%)</span>
+            </span>
+          ) : (
+            <Link
+              href={`/dashboard/invoices/create?proforma_id=${proforma.id}`}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs hover:shadow transition cursor-pointer"
+            >
+              <FileCheck className="w-4 h-4" />
+              <span>+ Generate Milestone Tax Invoice</span>
+            </Link>
+          )}
         </div>
       </div>
 
       {/* Main Grid: Document Sheet (Left) + Lifecycle Sidebar (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Printable A4 Document Sheet */}
-        <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-xs p-8 sm:p-12 print:p-0 print:border-none print:shadow-none space-y-8">
+        {/* Left Column (8 cols): Sheet + Tax Invoices */}
+        <div className="lg:col-span-8 space-y-6">
+          {/* Printable A4 Document Sheet */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-8 sm:p-12 print:p-0 print:border-none print:shadow-none space-y-8">
           {/* Header with Kabhyan Logo */}
           <div className="flex justify-between items-start pb-8 border-b border-slate-100">
             <div className="space-y-2">
@@ -333,32 +341,173 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
           )}
         </div>
 
+        {/* Linked GST Tax Invoices (Discharged Liabilities) */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 print:hidden space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-emerald-50 text-emerald-700">
+                <Receipt className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Official GST Tax Invoices</h3>
+                <p className="text-[11px] text-slate-500">Legal tax invoices raised against this proforma contract</p>
+              </div>
+            </div>
+            {proforma.tax_invoices && proforma.tax_invoices.length > 0 && (
+              <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full">
+                {proforma.tax_invoices.length} {proforma.tax_invoices.length === 1 ? "Invoice" : "Invoices"}
+              </span>
+            )}
+          </div>
+
+          {proforma.tax_invoices && proforma.tax_invoices.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-100 text-slate-400 font-semibold uppercase text-[10px] tracking-wider">
+                    <th className="pb-2">Tax Invoice #</th>
+                    <th className="pb-2">Date</th>
+                    <th className="pb-2 text-right">Taxable Turnover</th>
+                    <th className="pb-2 text-right">GST (18%)</th>
+                    <th className="pb-2 text-right">Gross Total</th>
+                    <th className="pb-2 text-center">Status</th>
+                    <th className="pb-2 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {proforma.tax_invoices.map((inv) => (
+                    <tr key={inv.id} className="hover:bg-slate-50/70 transition">
+                      <td className="py-3 font-mono font-bold text-emerald-700">
+                        {inv.invoice_number}
+                      </td>
+                      <td className="py-3 text-slate-600">{formatDate(inv.invoice_date)}</td>
+                      <td className="py-3 text-right font-medium text-slate-700">
+                        ₹{Number(inv.subtotal).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-3 text-right font-medium text-emerald-600">
+                        +₹{Number(inv.tax_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-3 text-right font-bold text-slate-900">
+                        ₹{Number(inv.total_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-3 text-center">
+                        <span
+                          className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                            inv.status === "paid"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : inv.status === "partially_paid"
+                              ? "bg-blue-50 text-blue-700 border-blue-200"
+                              : "bg-amber-50 text-amber-700 border-amber-200"
+                          }`}
+                        >
+                          {inv.status.replace("_", " ")}
+                        </span>
+                      </td>
+                      <td className="py-3 text-right">
+                        <Link
+                          href={`/dashboard/invoices/${inv.invoice_number}`}
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-600 hover:text-purple-700 hover:underline"
+                        >
+                          <span>View</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="py-6 text-center space-y-2 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+              <ShieldCheck className="w-6 h-6 text-slate-400 mx-auto" />
+              <p className="text-xs font-semibold text-slate-700">Zero GST Liability Outstanding</p>
+              <p className="text-[11px] text-slate-500 max-w-md mx-auto">
+                No Tax Invoices have been raised against this proforma yet. As per CGST Section 13(2), GST liability only triggers when milestone Tax Invoices are issued.
+              </p>
+            </div>
+          )}
+        </div>
+        </div>
+
         {/* Lifecycle Sidebar */}
         <div className="lg:col-span-4 space-y-6 print:hidden">
-          {/* Conversion to Tax Invoice Card */}
+          {/* Milestone Billing & GST Compliance Card */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 space-y-4">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-emerald-50 text-emerald-700">
                 <FileCheck className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900">Tax Invoice Pipeline</h3>
-                <p className="text-[11px] text-slate-500">Generate legal GST Tax Invoice</p>
+                <h3 className="text-sm font-bold text-slate-900">GST Milestone Pipeline</h3>
+                <p className="text-[11px] text-slate-500">CGST Sec 13(2) & 31(5) Compliance</p>
               </div>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Once advance or full settlement is confirmed from the client, convert this proforma into an official GST Tax Invoice with automatic tax numbering and ledger sync.
+            {/* Financial Progress Breakdown */}
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-500 font-medium">Master Agreement Value:</span>
+                <span className="font-bold text-slate-900">
+                  ₹{Number(proforma.total_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-500 font-medium">Billed to Date (GST Discharged):</span>
+                <span className="font-bold text-emerald-600">
+                  ₹{Number(proforma.invoiced_amount ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-xs pt-2 border-t border-slate-200/80">
+                <span className="text-slate-700 font-semibold">Remaining Unbilled Balance:</span>
+                <span className="font-bold text-purple-700 font-mono">
+                  ₹{Number(proforma.remaining_amount ?? (proforma.total_amount - (proforma.invoiced_amount ?? 0))).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="space-y-1 pt-1">
+                <div className="flex justify-between text-[10px] text-slate-400 font-semibold">
+                  <span>Invoicing Progress</span>
+                  <span>
+                    {Math.min(
+                      100,
+                      Math.round(((proforma.invoiced_amount ?? 0) / (proforma.total_amount || 1)) * 100)
+                    )}
+                    %
+                  </span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        Math.round(((proforma.invoiced_amount ?? 0) / (proforma.total_amount || 1)) * 100)
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              When client payment or milestone completion is verified, raise a milestone Tax Invoice for that specific portion. This prevents premature GST liability on unreceived funds.
             </p>
 
-            <button
-              onClick={handleConvertToTaxInvoice}
-              disabled={converting}
-              className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs tracking-wide shadow-xs hover:shadow transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              {converting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileCheck className="w-4 h-4" />}
-              <span>Convert to Official Tax Invoice</span>
-            </button>
+            {proforma.remaining_amount !== undefined && proforma.remaining_amount <= 0 ? (
+              <div className="w-full py-2.5 rounded-xl bg-slate-100 text-slate-500 font-semibold text-xs tracking-wide flex items-center justify-center gap-2 border border-slate-200">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>Fully Invoiced (100% Settled)</span>
+              </div>
+            ) : (
+              <Link
+                href={`/dashboard/invoices/create?proforma_id=${proforma.id}`}
+                className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs tracking-wide shadow-xs hover:shadow transition flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <FileCheck className="w-4 h-4" />
+                <span>+ Generate Milestone Tax Invoice</span>
+              </Link>
+            )}
           </div>
 
           {/* Status Lifecycle Stepper */}

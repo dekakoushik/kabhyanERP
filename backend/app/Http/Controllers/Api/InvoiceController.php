@@ -71,70 +71,152 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Convert a Proforma Invoice directly into a Final Tax Invoice.
+     * Convert a Proforma Invoice directly into a Final or Progressive Milestone Tax Invoice.
+     * Complies with Section 13(2) and Section 31(5) of the CGST Act 2017.
      */
     public function convertFromProforma(Request $request, ProformaInvoice $proformaInvoice): JsonResponse
     {
-        $invoice = DB::transaction(function () use ($request, $proformaInvoice) {
-            // Generate next tax invoice number using central DocumentNumberService
+        $milestoneType = $request->input('milestone_type', 'full');
+        $isMilestone = in_array($milestoneType, ['percentage', 'amount']) || $request->filled('milestone_percentage') || $request->filled('milestone_amount');
+
+        $invoice = DB::transaction(function () use ($request, $proformaInvoice, $milestoneType, $isMilestone) {
             $invoiceNumber = DocumentNumberService::getNextInvoiceNumber(true);
+            $taxRate = (float) ($proformaInvoice->tax_rate ?? 18.00);
+            $totalScope = (float) $proformaInvoice->total_amount;
+            $alreadyInvoiced = (float) $proformaInvoice->taxInvoices()->where('status', '!=', 'cancelled')->sum('total_amount');
+            $remainingScope = max(0, $totalScope - $alreadyInvoiced);
 
-            $newInvoice = Invoice::create([
-                'invoice_number' => $invoiceNumber,
-                'proforma_invoice_id' => $proformaInvoice->id,
-                'estimate_id' => $proformaInvoice->estimate_id,
-                'project_id' => $proformaInvoice->project_id,
-                'created_by' => $request->user()?->id ?? $proformaInvoice->created_by,
-                'client_name' => $proformaInvoice->client_name,
-                'client_company' => $proformaInvoice->client_company,
-                'client_email' => $proformaInvoice->client_email,
-                'client_phone' => $proformaInvoice->client_phone,
-                'client_address' => $proformaInvoice->client_address,
-                'client_gstin' => $request->input('client_gstin', '19AAECK4829K1ZX'),
-                'invoice_date' => now()->toDateString(),
-                'due_date' => now()->addDays(15)->toDateString(),
-                'status' => 'unpaid',
-                'currency' => $proformaInvoice->currency ?? 'INR',
-                'subtotal' => $proformaInvoice->subtotal,
-                'tax_rate' => $proformaInvoice->tax_rate,
-                'tax_amount' => $proformaInvoice->tax_amount,
-                'round_off' => $proformaInvoice->round_off ?? 0.00,
-                'discount_rate' => $proformaInvoice->discount_rate,
-                'discount_amount' => $proformaInvoice->discount_amount,
-                'total_amount' => $proformaInvoice->total_amount,
-                'paid_amount' => 0.00,
-                'due_amount' => $proformaInvoice->total_amount,
-                'notes' => 'Tax Invoice issued against accepted proforma and advance authorization.',
-                'terms_and_conditions' => "1. All payments must be made in favor of Kabhyan Technologies Private Limited.\n2. In accordance with Section 31 of CGST Act, this is an official Tax Invoice for IT & Software Consultancy Services (SAC 998314).\n3. Any discrepancies must be notified within 7 days of invoice issuance.",
-                'bank_details' => $proformaInvoice->bank_details,
-            ]);
+            $milestoneGross = $totalScope;
+            $milestoneTitle = $request->input('milestone_title');
 
-            // Copy proforma items
-            foreach ($proformaInvoice->items as $item) {
-                $newInvoice->items()->create([
-                    'item_name' => $item->item_name,
-                    'hsn_sac' => '998314',
-                    'description' => $item->description,
-                    'quantity' => $item->quantity,
-                    'unit' => $item->unit,
-                    'unit_price' => $item->unit_price,
-                    'amount' => $item->amount,
-                ]);
+            if ($milestoneType === 'percentage' || $request->filled('milestone_percentage')) {
+                $pct = (float) $request->input('milestone_percentage', $request->input('percentage', 100));
+                $milestoneGross = round(($totalScope * $pct) / 100, 2);
+                if (empty($milestoneTitle)) {
+                    $milestoneTitle = "Milestone ({$pct}%) against Proforma {$proformaInvoice->proforma_number}";
+                }
+            } elseif ($milestoneType === 'amount' || $request->filled('milestone_amount')) {
+                $milestoneGross = (float) $request->input('milestone_amount', $request->input('amount', $totalScope));
+                if (empty($milestoneTitle)) {
+                    $milestoneTitle = "Progressive Milestone Payment against Proforma {$proformaInvoice->proforma_number}";
+                }
+            } elseif ($alreadyInvoiced > 0 && $remainingScope > 0) {
+                // Balance invoice for an already partially invoiced proforma
+                $milestoneGross = $remainingScope;
+                if (empty($milestoneTitle)) {
+                    $milestoneTitle = "Final Balance Settlement against Proforma {$proformaInvoice->proforma_number}";
+                }
             }
 
-            // If proforma had paid amount, record as initial payment in invoice
-            if ((float) $proformaInvoice->paid_amount > 0) {
+            // Cap milestone gross at remaining unbilled balance if already partially invoiced
+            if ($alreadyInvoiced > 0 && $milestoneGross > $remainingScope) {
+                $milestoneGross = $remainingScope;
+            }
+
+            if ($isMilestone || ($alreadyInvoiced > 0 && $remainingScope > 0)) {
+                // Reverse GST extraction: Gross = Taxable * (1 + taxRate/100)
+                $milestoneTaxable = round($milestoneGross / (1 + ($taxRate / 100)), 2);
+                $milestoneTax = round($milestoneGross - $milestoneTaxable, 2);
+
+                $newInvoice = Invoice::create([
+                    'invoice_number' => $invoiceNumber,
+                    'proforma_invoice_id' => $proformaInvoice->id,
+                    'estimate_id' => $proformaInvoice->estimate_id,
+                    'project_id' => $proformaInvoice->project_id,
+                    'created_by' => $request->user()?->id ?? $proformaInvoice->created_by,
+                    'client_name' => $proformaInvoice->client_name,
+                    'client_company' => $proformaInvoice->client_company,
+                    'client_email' => $proformaInvoice->client_email,
+                    'client_phone' => $proformaInvoice->client_phone,
+                    'client_address' => $proformaInvoice->client_address,
+                    'client_gstin' => $request->input('client_gstin', $proformaInvoice->client?->gstin ?? '19AAECK4829K1ZX'),
+                    'invoice_date' => $request->input('invoice_date', now()->toDateString()),
+                    'due_date' => $request->input('due_date', now()->addDays(15)->toDateString()),
+                    'status' => 'unpaid',
+                    'currency' => $proformaInvoice->currency ?? 'INR',
+                    'subtotal' => $milestoneTaxable,
+                    'tax_rate' => $taxRate,
+                    'tax_amount' => $milestoneTax,
+                    'round_off' => 0.00,
+                    'discount_rate' => 0.00,
+                    'discount_amount' => 0.00,
+                    'total_amount' => $milestoneGross,
+                    'paid_amount' => 0.00,
+                    'due_amount' => $milestoneGross,
+                    'notes' => "Tax Invoice issued for {$milestoneTitle}. Master Proforma: {$proformaInvoice->proforma_number} (Contract Value: ₹" . number_format($totalScope, 2) . ").",
+                    'terms_and_conditions' => "1. All payments must be made in favor of Kabhyan Technologies Private Limited.\n2. In accordance with Section 31 of CGST Act, this is an official Tax Invoice for IT & Software Consultancy Services (SAC 998314).\n3. Any discrepancies must be notified within 7 days of invoice issuance.",
+                    'bank_details' => $proformaInvoice->bank_details,
+                ]);
+
+                $newInvoice->items()->create([
+                    'item_name' => $milestoneTitle,
+                    'hsn_sac' => '998314',
+                    'description' => "Progressive deliverable payment against Proforma Invoice {$proformaInvoice->proforma_number}. Scope: IT & Software Engineering Services for " . ($proformaInvoice->project?->name ?? 'Enterprise Project'),
+                    'quantity' => 1.00,
+                    'unit' => 'milestone',
+                    'unit_price' => $milestoneTaxable,
+                    'amount' => $milestoneTaxable,
+                ]);
+            } else {
+                // Full initial conversion copying all items
+                $newInvoice = Invoice::create([
+                    'invoice_number' => $invoiceNumber,
+                    'proforma_invoice_id' => $proformaInvoice->id,
+                    'estimate_id' => $proformaInvoice->estimate_id,
+                    'project_id' => $proformaInvoice->project_id,
+                    'created_by' => $request->user()?->id ?? $proformaInvoice->created_by,
+                    'client_name' => $proformaInvoice->client_name,
+                    'client_company' => $proformaInvoice->client_company,
+                    'client_email' => $proformaInvoice->client_email,
+                    'client_phone' => $proformaInvoice->client_phone,
+                    'client_address' => $proformaInvoice->client_address,
+                    'client_gstin' => $request->input('client_gstin', $proformaInvoice->client?->gstin ?? '19AAECK4829K1ZX'),
+                    'invoice_date' => $request->input('invoice_date', now()->toDateString()),
+                    'due_date' => $request->input('due_date', now()->addDays(15)->toDateString()),
+                    'status' => 'unpaid',
+                    'currency' => $proformaInvoice->currency ?? 'INR',
+                    'subtotal' => $proformaInvoice->subtotal,
+                    'tax_rate' => $taxRate,
+                    'tax_amount' => $proformaInvoice->tax_amount,
+                    'round_off' => $proformaInvoice->round_off ?? 0.00,
+                    'discount_rate' => $proformaInvoice->discount_rate,
+                    'discount_amount' => $proformaInvoice->discount_amount,
+                    'total_amount' => $proformaInvoice->total_amount,
+                    'paid_amount' => 0.00,
+                    'due_amount' => $proformaInvoice->total_amount,
+                    'notes' => 'Tax Invoice issued against accepted proforma ' . $proformaInvoice->proforma_number,
+                    'terms_and_conditions' => "1. All payments must be made in favor of Kabhyan Technologies Private Limited.\n2. In accordance with Section 31 of CGST Act, this is an official Tax Invoice for IT & Software Consultancy Services (SAC 998314).\n3. Any discrepancies must be notified within 7 days of invoice issuance.",
+                    'bank_details' => $proformaInvoice->bank_details,
+                ]);
+
+                foreach ($proformaInvoice->items as $item) {
+                    $newInvoice->items()->create([
+                        'item_name' => $item->item_name,
+                        'hsn_sac' => '998314',
+                        'description' => $item->description,
+                        'quantity' => $item->quantity,
+                        'unit' => $item->unit,
+                        'unit_price' => $item->unit_price,
+                        'amount' => $item->amount,
+                    ]);
+                }
+            }
+
+            // If payment was already received for this milestone or marked as paid
+            $shouldRecordPayment = $request->boolean('is_paid', false) || $request->filled('payment_reference');
+            if ($shouldRecordPayment) {
                 $newInvoice->payments()->create([
-                    'recorded_by' => $request->user()->id,
-                    'payment_reference' => 'Advance Paid via Proforma ' . $proformaInvoice->proforma_number,
-                    'amount' => $proformaInvoice->paid_amount,
-                    'payment_date' => now()->toDateString(),
-                    'payment_method' => 'bank_transfer',
-                    'notes' => 'Settled via proforma invoice advance',
+                    'recorded_by' => $request->user()?->id,
+                    'payment_reference' => $request->input('payment_reference', 'Settled against Proforma ' . $proformaInvoice->proforma_number),
+                    'amount' => $newInvoice->total_amount,
+                    'payment_date' => $request->input('payment_date', now()->toDateString()),
+                    'payment_method' => $request->input('payment_method', 'bank_transfer'),
+                    'notes' => $request->input('payment_notes', 'Payment received for milestone against ' . $proformaInvoice->proforma_number),
                 ]);
             }
 
             $newInvoice->recalculateTotals();
+            $proformaInvoice->syncInvoicedTotals();
 
             return $newInvoice;
         });
@@ -199,6 +281,18 @@ class InvoiceController extends Controller
             }
 
             $newInvoice->recalculateTotals();
+
+            if (($validated['status'] ?? 'unpaid') === 'paid' || !empty($validated['payment_reference'])) {
+                $newInvoice->payments()->create([
+                    'recorded_by' => $validated['created_by'],
+                    'payment_reference' => $validated['payment_reference'] ?? 'Full settlement recorded at issuance',
+                    'amount' => $newInvoice->total_amount,
+                    'payment_date' => $validated['payment_date'] ?? $newInvoice->invoice_date,
+                    'payment_method' => $validated['payment_method'] ?? 'bank_transfer',
+                    'notes' => $validated['payment_notes'] ?? 'Settled milestone against Proforma',
+                ]);
+                $newInvoice->recalculateTotals();
+            }
 
             return $newInvoice;
         });

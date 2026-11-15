@@ -42,6 +42,21 @@ class Invoice extends Model
         'bank_details',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(function (Invoice $invoice) {
+            if ($invoice->proforma_invoice_id) {
+                $invoice->proformaInvoice?->syncInvoicedTotals();
+            }
+        });
+
+        static::deleted(function (Invoice $invoice) {
+            if ($invoice->proforma_invoice_id) {
+                $invoice->proformaInvoice?->syncInvoicedTotals();
+            }
+        });
+    }
+
     /**
      * Get the attributes that should be cast.
      *

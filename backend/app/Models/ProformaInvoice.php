@@ -34,6 +34,8 @@ class ProformaInvoice extends Model
         'discount_amount',
         'total_amount',
         'paid_amount',
+        'invoiced_amount',
+        'remaining_amount',
         'notes',
         'terms_and_conditions',
         'bank_details',
@@ -57,6 +59,8 @@ class ProformaInvoice extends Model
             'discount_amount' => 'decimal:2',
             'total_amount' => 'decimal:2',
             'paid_amount' => 'decimal:2',
+            'invoiced_amount' => 'decimal:2',
+            'remaining_amount' => 'decimal:2',
         ];
     }
 
@@ -78,6 +82,36 @@ class ProformaInvoice extends Model
     public function items(): HasMany
     {
         return $this->hasMany(ProformaInvoiceItem::class);
+    }
+
+    public function taxInvoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class, 'proforma_invoice_id');
+    }
+
+    /**
+     * Synchronize and recalculate progressive billing progress against linked Tax Invoices.
+     */
+    public function syncInvoicedTotals(): void
+    {
+        $invoicedTotal = (float) $this->taxInvoices()->where('status', '!=', 'cancelled')->sum('total_amount');
+        $total = (float) $this->total_amount;
+        $remaining = max(0, $total - $invoicedTotal);
+
+        $status = $this->status;
+        if ($invoicedTotal <= 0) {
+            $status = in_array($this->status, ['draft', 'cancelled']) ? $this->status : 'unpaid';
+        } elseif ($remaining <= 0.01) {
+            $status = 'fully_invoiced';
+        } else {
+            $status = 'partially_invoiced';
+        }
+
+        $this->updateQuietly([
+            'invoiced_amount' => $invoicedTotal,
+            'remaining_amount' => $remaining,
+            'status' => $status,
+        ]);
     }
 
     /**
@@ -105,12 +139,16 @@ class ProformaInvoice extends Model
         $roundOff = (float) ($this->round_off ?? 0);
         $total = $taxableAmount + $taxAmount + $roundOff;
 
+        $invoicedAmount = (float) ($this->invoiced_amount ?? 0);
+        $remainingAmount = max(0, $total - $invoicedAmount);
+
         $this->update([
             'subtotal' => $subtotal,
             'discount_amount' => $discountAmount,
             'tax_amount' => $taxAmount,
             'round_off' => $roundOff,
             'total_amount' => $total,
+            'remaining_amount' => $remainingAmount,
         ]);
     }
 }

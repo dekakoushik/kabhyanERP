@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
-import { api, Client, InvoiceItem, Project } from "@/lib/api";
+import { api, Client, InvoiceItem, Project, ProformaInvoice } from "@/lib/api";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import ClientCombobox from "@/components/ClientCombobox";
 import ClientSnapshotCard from "@/components/ClientSnapshotCard";
 import DocumentItemsTable from "@/components/DocumentItemsTable";
@@ -25,6 +25,8 @@ import {
   Sparkles,
   Receipt,
   ShieldCheck,
+  CheckCircle2,
+  Percent,
   X,
   ExternalLink,
 } from "lucide-react";
@@ -32,13 +34,26 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-export default function CreateInvoicePage() {
+function CreateInvoiceContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const proformaId = searchParams.get("proforma_id");
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Proforma & Milestone Invoicing State
+  const [linkedProforma, setLinkedProforma] = useState<ProformaInvoice | null>(null);
+  const [loadingProforma, setLoadingProforma] = useState(false);
+
+  // Instant Settlement / Payment Receipt State
+  const [isPaidReceived, setIsPaidReceived] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("bank_transfer");
+  const [paymentReference, setPaymentReference] = useState("");
+  const [paymentDate, setPaymentDate] = useState("");
 
   // Quick Add Client Modal State
   const [quickAddOpen, setQuickAddOpen] = useState(false);
@@ -134,6 +149,108 @@ export default function CreateInvoicePage() {
     };
     initData();
   }, []);
+
+  useEffect(() => {
+    if (!proformaId) return;
+
+    const loadProforma = async () => {
+      try {
+        setLoadingProforma(true);
+        const res = await api.request(`/proforma-invoices/${proformaId}`);
+        if (res?.proforma_invoice) {
+          const p = res.proforma_invoice as ProformaInvoice;
+          setLinkedProforma(p);
+
+          const total = Number(p.total_amount);
+          const invoiced = Number(p.invoiced_amount ?? 0);
+          const remaining = Number(p.remaining_amount ?? Math.max(0, total - invoiced));
+          const targetGross = remaining > 0 ? remaining : total;
+          const taxRate = Number(p.tax_rate ?? 18);
+          const taxable = Math.round((targetGross / (1 + taxRate / 100)) * 100) / 100;
+
+          setFormData((prev) => ({
+            ...prev,
+            client_name: p.client_name,
+            client_company: p.client_company || "",
+            client_email: p.client_email || "",
+            client_phone: p.client_phone || "",
+            client_address: p.client_address || "",
+            client_gstin: p.client_gstin || "19AAECK4829K1ZX",
+            project_id: p.project_id ? String(p.project_id) : prev.project_id,
+            tax_rate: String(taxRate),
+            notes: `Milestone Tax Invoice issued against accepted Proforma ${p.proforma_number}`,
+            items: [
+              {
+                item_name:
+                  remaining < total && remaining > 0
+                    ? `Milestone Settlement against Proforma ${p.proforma_number}`
+                    : `Milestone Deliverable against Proforma ${p.proforma_number}`,
+                description: `Progressive deliverable milestone settlement. Continuous supply of services under CGST Section 13(2) & 31(5).`,
+                quantity: 1,
+                unit: "mile",
+                unit_price: taxable,
+                amount: taxable,
+              },
+            ],
+          }));
+        }
+      } catch (err: any) {
+        console.error("Failed to load proforma invoice:", err);
+        toast.error("Could not load proforma invoice details");
+      } finally {
+        setLoadingProforma(false);
+      }
+    };
+
+    loadProforma();
+  }, [proformaId]);
+
+  const applyMilestonePercent = (pct: number, label?: string) => {
+    if (!linkedProforma) return;
+    const contractTotal = Number(linkedProforma.total_amount);
+    const milestoneGross = Math.round((contractTotal * pct) / 100);
+    const taxRate = Number(formData.tax_rate) || 18;
+    const taxable = Math.round((milestoneGross / (1 + taxRate / 100)) * 100) / 100;
+
+    setFormData((prev) => ({
+      ...prev,
+      items: [
+        {
+          item_name: label || `${pct}% Milestone Deliverable against ${linkedProforma.proforma_number}`,
+          description: `Progressive service delivery milestone. Continuous supply of services under CGST Section 31(5).`,
+          quantity: 1,
+          unit: "mile",
+          unit_price: taxable,
+          amount: taxable,
+        },
+      ],
+    }));
+    toast.success(`Applied ${pct}% milestone: Gross ₹${milestoneGross.toLocaleString("en-IN")}`);
+  };
+
+  const applyRemainingBalance = () => {
+    if (!linkedProforma) return;
+    const total = Number(linkedProforma.total_amount);
+    const invoiced = Number(linkedProforma.invoiced_amount ?? 0);
+    const remainingGross = Math.max(0, Number(linkedProforma.remaining_amount ?? (total - invoiced)));
+    const taxRate = Number(formData.tax_rate) || 18;
+    const taxable = Math.round((remainingGross / (1 + taxRate / 100)) * 100) / 100;
+
+    setFormData((prev) => ({
+      ...prev,
+      items: [
+        {
+          item_name: `Remaining Unbilled Balance against ${linkedProforma.proforma_number}`,
+          description: `Final deliverable milestone settlement. CGST Section 13(2) & 31(5) compliance.`,
+          quantity: 1,
+          unit: "mile",
+          unit_price: taxable,
+          amount: taxable,
+        },
+      ],
+    }));
+    toast.success(`Applied remaining balance: Gross ₹${remainingGross.toLocaleString("en-IN")}`);
+  };
 
   // Client Selection Handler
   const handleSelectClient = (client: Client | null) => {
@@ -288,15 +405,26 @@ export default function CreateInvoicePage() {
         method: "POST",
         body: JSON.stringify({
           ...formData,
+          proforma_invoice_id: linkedProforma ? linkedProforma.id : undefined,
+          status: isPaidReceived ? "paid" : formData.status,
           subtotal,
           discount_amount: discountAmount,
           tax_amount: taxAmount,
           round_off: roundOffAmount,
           total: grandTotal,
+          payment_method: isPaidReceived ? paymentMethod : undefined,
+          payment_reference: isPaidReceived ? (paymentReference || "Settled on issuance") : undefined,
+          payment_date: isPaidReceived ? (paymentDate || formData.invoice_date) : undefined,
         }),
       });
 
-      router.push("/dashboard/invoices");
+      if (linkedProforma) {
+        toast.success(`Milestone Tax Invoice created against ${linkedProforma.proforma_number}`);
+        router.push(`/dashboard/proforma/${linkedProforma.id}`);
+      } else {
+        toast.success("Tax Invoice created successfully");
+        router.push("/dashboard/invoices");
+      }
     } catch (err: any) {
       setFormError(err.message || "Failed to create invoice");
     } finally {
@@ -366,6 +494,95 @@ export default function CreateInvoicePage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Main Form (8 Columns) */}
           <div className="lg:col-span-8 space-y-6">
+            {/* Proforma Milestone Context Card */}
+            {linkedProforma && (
+              <Card className="border-purple-200 bg-linear-to-br from-purple-50/50 to-white shadow-xs">
+                <CardHeader className="pb-3 border-b border-purple-100 flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-purple-100 text-purple-700">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-sm font-bold text-slate-900">
+                        Milestone Billing against Proforma {linkedProforma.proforma_number}
+                      </CardTitle>
+                      <p className="text-[11px] text-slate-500">
+                        Continuous Supply of Services (CGST Sec 13(2) & 31(5))
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    href={`/dashboard/proforma/${linkedProforma.id}`}
+                    target="_blank"
+                    className="text-xs font-semibold text-purple-600 hover:text-purple-700 hover:underline flex items-center gap-1"
+                  >
+                    <span>View Proforma</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </Link>
+                </CardHeader>
+                <CardContent className="pt-4 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div className="p-3 bg-white rounded-xl border border-purple-100 shadow-2xs">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Contract Scope</p>
+                      <p className="text-sm font-bold text-slate-900 mt-0.5">
+                        ₹{Number(linkedProforma.total_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-white rounded-xl border border-purple-100 shadow-2xs">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Already Invoiced</p>
+                      <p className="text-sm font-bold text-emerald-600 mt-0.5">
+                        ₹{Number(linkedProforma.invoiced_amount ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-white rounded-xl border border-purple-100 shadow-2xs">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Remaining Unbilled</p>
+                      <p className="text-sm font-bold text-purple-700 mt-0.5">
+                        ₹{Number(linkedProforma.remaining_amount ?? (Number(linkedProforma.total_amount) - Number(linkedProforma.invoiced_amount ?? 0))).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <p className="text-[11px] font-bold text-slate-700">Quick Milestone Calculation Presets:</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => applyMilestonePercent(30, `30% Mobilization Advance against ${linkedProforma.proforma_number}`)}
+                        className="px-3 py-1.5 rounded-lg border border-purple-200 bg-purple-50/70 hover:bg-purple-100 text-purple-700 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Percent className="w-3.5 h-3.5" />
+                        <span>30% Advance</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyMilestonePercent(40, `40% Mid-Phase Deliverable against ${linkedProforma.proforma_number}`)}
+                        className="px-3 py-1.5 rounded-lg border border-purple-200 bg-purple-50/70 hover:bg-purple-100 text-purple-700 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Percent className="w-3.5 h-3.5" />
+                        <span>40% Milestone</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyMilestonePercent(30, `30% Final Settlement against ${linkedProforma.proforma_number}`)}
+                        className="px-3 py-1.5 rounded-lg border border-purple-200 bg-purple-50/70 hover:bg-purple-100 text-purple-700 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Percent className="w-3.5 h-3.5" />
+                        <span>30% Settlement</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={applyRemainingBalance}
+                        className="px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>All Remaining Balance</span>
+                      </button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* 1. Identification Card */}
             <Card>
               <CardHeader className="pb-3 border-b border-slate-100">
@@ -516,6 +733,95 @@ export default function CreateInvoicePage() {
                     className="w-full rounded-md border border-slate-200 bg-white p-2.5 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* 5. Instant Payment Settlement & GST Discharge Receipt */}
+            <Card className="border-emerald-200/80 bg-linear-to-br from-emerald-50/30 to-white shadow-xs">
+              <CardHeader className="pb-3 border-b border-emerald-100 flex flex-row items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-emerald-100 text-emerald-800">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-sm font-bold text-slate-900">
+                      Payment Settlement & Receipt
+                    </CardTitle>
+                    <p className="text-[11px] text-slate-500">
+                      Auto-generate payment receipt and mark invoice as Paid upon creation
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-4 space-y-4">
+                <label className="flex items-start gap-3 p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isPaidReceived}
+                    onChange={(e) => {
+                      setIsPaidReceived(e.target.checked);
+                      if (e.target.checked && !paymentDate) {
+                        setPaymentDate(formData.invoice_date || new Date().toISOString().split("T")[0]);
+                      }
+                    }}
+                    className="w-4 h-4 rounded text-emerald-600 border-slate-300 mt-0.5"
+                  />
+                  <div>
+                    <p className="text-xs font-bold text-slate-900">
+                      Payment has already been received from client for this milestone
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Instantly records full payment in the financial ledger, issues a receipt voucher, and marks this Tax Invoice status as PAID.
+                    </p>
+                  </div>
+                </label>
+
+                {isPaidReceived && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-2">
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">
+                        Payment Mode <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={paymentMethod}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      >
+                        <option value="bank_transfer">Bank Transfer (IMPS / Direct)</option>
+                        <option value="neft">NEFT Transfer</option>
+                        <option value="rtgs">RTGS Transfer</option>
+                        <option value="upi">UPI / QR Code</option>
+                        <option value="cheque">Cheque</option>
+                        <option value="card">Corporate Card</option>
+                        <option value="other">Other Gateway</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">
+                        Bank Reference / UTR Number
+                      </label>
+                      <Input
+                        placeholder="e.g. UTR1938472910"
+                        value={paymentReference}
+                        onChange={(e) => setPaymentReference(e.target.value)}
+                        className="h-9 text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">
+                        Remittance Date
+                      </label>
+                      <Input
+                        type="date"
+                        value={paymentDate || formData.invoice_date}
+                        onChange={(e) => setPaymentDate(e.target.value)}
+                        className="h-9 text-xs"
+                      />
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -815,6 +1121,21 @@ export default function CreateInvoicePage() {
         }}
       />
     </AdminLayout>
+  );
+}
+
+export default function CreateInvoicePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="py-24 flex flex-col items-center justify-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <p className="text-xs font-semibold text-slate-500">Loading invoice form...</p>
+        </div>
+      }
+    >
+      <CreateInvoiceContent />
+    </Suspense>
   );
 }
 

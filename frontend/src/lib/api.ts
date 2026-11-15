@@ -155,12 +155,13 @@ export interface ProformaInvoice {
   creator?: User | null;
   client_name: string;
   client_company?: string | null;
+  client_gstin?: string | null;
   client_email?: string | null;
   client_phone?: string | null;
   client_address?: string | null;
   invoice_date: string;
   due_date?: string | null;
-  status: "unpaid" | "partially_paid" | "paid" | "cancelled";
+  status: "unpaid" | "partially_paid" | "paid" | "partially_invoiced" | "fully_invoiced" | "cancelled";
   currency: string;
   subtotal: number;
   tax_rate: number;
@@ -170,10 +171,13 @@ export interface ProformaInvoice {
   discount_amount: number;
   total_amount: number;
   paid_amount: number;
+  invoiced_amount?: number;
+  remaining_amount?: number;
   notes?: string | null;
   terms_and_conditions?: string | null;
   bank_details?: string | null;
   items?: ProformaInvoiceItem[];
+  tax_invoices?: Invoice[];
   created_at?: string;
   updated_at?: string;
 }

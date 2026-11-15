@@ -225,12 +225,15 @@ class ProformaInvoiceController extends Controller
      */
     public function show(ProformaInvoice $proformaInvoice): JsonResponse
     {
+        $proformaInvoice->syncInvoicedTotals();
+
         return response()->json([
-            'proforma_invoice' => $proformaInvoice->load([
+            'proforma_invoice' => $proformaInvoice->fresh()->load([
                 'items',
                 'project:id,name,code',
                 'estimate:id,estimate_number',
                 'creator:id,name,email',
+                'taxInvoices.payments.recorder:id,name',
             ]),
         ]);
     }
