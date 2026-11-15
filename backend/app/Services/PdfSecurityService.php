@@ -170,9 +170,11 @@ SVG;
 
     /**
      * Render the Blade HTML to a clean, high-fidelity PDF matching print preview.
+     * Strictly formatted to Standard A4 (210mm x 297mm) at 96 DPI.
      */
     public function renderCertifiedPdf(string $html, string $docTitle, string $docNumber, array $meta = []): string
     {
+        // 1. Primary engine: Dompdf with exact Standard A4 geometry & 96 DPI
         if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)
                 ->setPaper('a4', 'portrait')
@@ -180,9 +182,26 @@ SVG;
                     'isHtml5ParserEnabled' => true,
                     'isRemoteEnabled' => true,
                     'defaultFont' => 'DejaVu Sans',
-                    'dpi' => 150,
+                    'dpi' => 96,
+                    'isFontSubsettingEnabled' => true,
                 ]);
             return $pdf->output();
+        }
+
+        // 2. Direct Dompdf fallback if facade is not registered in current lifecycle
+        if (class_exists(\Dompdf\Dompdf::class)) {
+            $options = new \Dompdf\Options();
+            $options->set('isHtml5ParserEnabled', true);
+            $options->set('isRemoteEnabled', true);
+            $options->set('defaultFont', 'DejaVu Sans');
+            $options->set('dpi', 96);
+            $options->set('isFontSubsettingEnabled', true);
+
+            $dompdf = new \Dompdf\Dompdf($options);
+            $dompdf->loadHtml($html, 'UTF-8');
+            $dompdf->setPaper('a4', 'portrait');
+            $dompdf->render();
+            return $dompdf->output();
         }
 
         /** @var \TCPDF $pdf */
@@ -193,13 +212,13 @@ SVG;
         $pdf->SetAuthor('Kabhyan Technologies Private Limited');
         $pdf->SetTitle(sprintf('%s - %s', $docTitle, $docNumber));
 
-        // Margins & Page setup
+        // Margins & Page setup - Strictly A4
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
-        $pdf->SetMargins(12, 12, 12);
-        $pdf->SetAutoPageBreak(true, 12);
-        $pdf->setImageScale(1.25);
-        $pdf->SetFont('dejavusans', '', 8.5);
+        $pdf->SetMargins(10, 10, 10);
+        $pdf->SetAutoPageBreak(true, 10);
+        $pdf->setImageScale(1.0);
+        $pdf->SetFont('dejavusans', '', 8);
 
         $pdf->AddPage();
         $pdf->writeHTML($html, true, false, true, false, '');

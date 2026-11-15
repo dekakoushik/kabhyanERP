@@ -24,13 +24,13 @@
 @section('content')
 
     <!-- Recipient Client & Project Info Cards -->
-    <table style="width: 100%; border-collapse: separate; border-spacing: 14px 0; margin-left: -14px; margin-right: -14px; margin-top: 16px; margin-bottom: 20px;">
+    <table style="width: 100%; border-collapse: collapse; margin-top: 12px; margin-bottom: 14px;">
         <tr>
-            <td style="width: 50%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px;">
-                <div style="font-size: 7.5pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 5px;">BILLED TO (CLIENT)</div>
-                <div style="font-size: 11pt; font-weight: bold; color: #0f172a; margin-bottom: 3px;">{{ $proforma->client_name }}</div>
-                <div style="font-size: 8.5pt; font-weight: 500; color: #475569; margin-bottom: 3px;">{{ $proforma->client_company ?? 'Direct Client' }}</div>
-                <div style="font-size: 7.8pt; color: #64748b; line-height: 1.4;">
+            <td style="width: 48.5%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px;">
+                <div style="font-size: 7pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 3px;">BILLED TO (CLIENT)</div>
+                <div style="font-size: 10pt; font-weight: bold; color: #0f172a; margin-bottom: 2px;">{{ $proforma->client_name }}</div>
+                <div style="font-size: 8pt; font-weight: 500; color: #475569; margin-bottom: 2px;">{{ $proforma->client_company ?? 'Direct Client' }}</div>
+                <div style="font-size: 7.5pt; color: #64748b; line-height: 1.35;">
                     {{ $proforma->client_email }}<br/>
                     @if(!empty($proforma->client_phone))
                         {{ $proforma->client_phone }}<br/>
@@ -43,10 +43,11 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 50%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px;">
-                <div style="font-size: 7.5pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 5px;">PROJECT ENGAGEMENT</div>
-                <div style="font-size: 11pt; font-weight: bold; color: #0f172a; margin-bottom: 4px;">{{ $proforma->project?->name ?? 'Corporate Engagement' }}</div>
-                <div style="font-size: 7.8pt; color: #64748b; line-height: 1.45;">
+            <td style="width: 3%;"></td>
+            <td style="width: 48.5%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px;">
+                <div style="font-size: 7pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 3px;">PROJECT ENGAGEMENT</div>
+                <div style="font-size: 10pt; font-weight: bold; color: #0f172a; margin-bottom: 3px;">{{ $proforma->project?->name ?? 'Corporate Engagement' }}</div>
+                <div style="font-size: 7.5pt; color: #64748b; line-height: 1.4;">
                     @if(!empty($proforma->project?->code))
                         <span style="color: #7c3aed; font-weight: bold;">Project Code: {{ $proforma->project->code }}</span><br/>
                     @endif
@@ -64,7 +65,7 @@
     <table class="items-table">
         <thead>
             <tr>
-                <th style="width: 52%; text-align: left;">ITEM DESCRIPTION & SCOPE</th>
+                <th style="width: 52%; text-align: left;">ITEM DESCRIPTION &amp; SCOPE</th>
                 <th style="width: 16%; text-align: right;">QTY / HOURS</th>
                 <th style="width: 16%; text-align: right;">UNIT RATE</th>
                 <th style="width: 16%; text-align: right;">AMOUNT ({{ $proforma->currency ?? 'INR' }})</th>
@@ -74,31 +75,31 @@
             @forelse($proforma->items as $item)
             <tr>
                 <td style="text-align: left;">
-                    <div style="font-size: 8.5pt; font-weight: bold; color: #0f172a;">{{ $item->item_name }}</div>
+                    <div style="font-size: 8pt; font-weight: bold; color: #0f172a;">{{ $item->item_name }}</div>
                     @if(!empty($item->description))
-                        <div style="font-size: 7.5pt; color: #64748b; margin-top: 2px; line-height: 1.35;">{{ $item->description }}</div>
+                        <div style="font-size: 7.2pt; color: #64748b; margin-top: 1px; line-height: 1.3;">{{ $item->description }}</div>
                     @endif
                 </td>
-                <td style="text-align: right; color: #334155; font-size: 8.5pt;">
+                <td style="text-align: right; color: #334155; font-size: 8pt;">
                     {{ number_format($item->quantity, 2) }} {{ $item->unit ?? 'hours' }}
                 </td>
-                <td style="text-align: right; color: #334155; font-size: 8.5pt;">
+                <td style="text-align: right; color: #334155; font-size: 8pt;">
                     {{ number_format($item->unit_price, 2) }}
                 </td>
-                <td style="text-align: right; font-weight: bold; color: #0f172a; font-size: 8.5pt;">
+                <td style="text-align: right; font-weight: bold; color: #0f172a; font-size: 8pt;">
                     {{ number_format($item->amount, 2) }}
                 </td>
             </tr>
             @empty
             <tr>
-                <td colspan="4" style="text-align: center; color: #94a3b8; padding: 15px;">No line items specified.</td>
+                <td colspan="4" style="text-align: center; color: #94a3b8; padding: 12px;">No line items specified.</td>
             </tr>
             @endforelse
         </tbody>
     </table>
 
     <!-- Bottom Section: Bank / Terms (Left) & Totals (Right) -->
-    <table style="margin-bottom: 24px;">
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; page-break-inside: avoid;">
         <tr>
             <td style="width: 52%; vertical-align: top; padding-right: 14px;">
                 <!-- Bank Details Card -->
@@ -117,7 +118,7 @@
 
                 <!-- Commercial Terms Card -->
                 <div class="note-card">
-                    <div class="note-card-title">COMMERCIAL TERMS & NOTES</div>
+                    <div class="note-card-title">COMMERCIAL TERMS &amp; NOTES</div>
                     <div class="note-card-body">
                         {{ $proforma->terms_and_conditions ?: 'This Proforma Invoice serves as an advance demand notice for milestone initiation. Valid for 30 days.' }}
                     </div>
@@ -128,7 +129,7 @@
                     <tr>
                         <td style="width: 55%; color: #64748b;">Subtotal:</td>
                         <td style="width: 45%; text-align: right; color: #0f172a;">
-                            ₹{{ number_format($proforma->subtotal, 2) }}
+                            &#8377;{{ number_format($proforma->subtotal, 2) }}
                         </td>
                     </tr>
                     @if((float)$proforma->discount_amount > 0)
@@ -137,7 +138,7 @@
                             Discount ({{ number_format((float)$proforma->discount_rate, 2) }}%):
                         </td>
                         <td style="text-align: right; color: #059669;">
-                            -₹{{ number_format((float)$proforma->discount_amount, 2) }}
+                            -&#8377;{{ number_format((float)$proforma->discount_amount, 2) }}
                         </td>
                     </tr>
                     @endif
@@ -145,35 +146,35 @@
                     <tr>
                         <td style="color: #64748b;">IGST (18.00%):</td>
                         <td style="text-align: right; color: #0f172a;">
-                            ₹{{ number_format($igstAmount, 2) }}
+                            &#8377;{{ number_format($igstAmount, 2) }}
                         </td>
                     </tr>
                     @else
                     <tr>
                         <td style="color: #64748b;">CGST (9.00%):</td>
                         <td style="text-align: right; color: #0f172a;">
-                            ₹{{ number_format($cgstAmount, 2) }}
+                            &#8377;{{ number_format($cgstAmount, 2) }}
                         </td>
                     </tr>
                     <tr>
                         <td style="color: #64748b;">SGST (9.00%):</td>
                         <td style="text-align: right; color: #0f172a;">
-                            ₹{{ number_format($sgstAmount, 2) }}
+                            &#8377;{{ number_format($sgstAmount, 2) }}
                         </td>
                     </tr>
                     @endif
                     <tr>
-                        <td colspan="2" style="border-top: 1.5px solid #e2e8f0; padding-top: 6px; margin-top: 4px;"></td>
+                        <td colspan="2" style="border-top: 1.5px solid #cbd5e1; padding-top: 4px; margin-top: 3px;"></td>
                     </tr>
                     <tr>
                         <td class="grand-total-label">Grand Total:</td>
-                        <td class="grand-total-amount" style="color: #7c3aed;">
-                            ₹{{ number_format($proforma->total_amount, 2) }}
+                        <td class="grand-total-amount">
+                            &#8377;{{ number_format($proforma->total_amount, 2) }}
                         </td>
                     </tr>
                     @if(!empty($amountInWords))
                     <tr>
-                        <td colspan="2" style="padding-top: 3px; font-size: 7.2pt; color: #64748b; font-style: italic;">
+                        <td colspan="2" style="text-align: right; font-size: 7pt; color: #64748b; font-style: italic; padding-top: 2px;">
                             ({{ $amountInWords }})
                         </td>
                     </tr>
