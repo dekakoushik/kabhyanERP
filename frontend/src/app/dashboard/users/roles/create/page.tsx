@@ -21,10 +21,10 @@ import { toast } from "sonner";
 
 const PRESET_TEMPLATES = [
   {
-    name: "Billing & Finance Specialist",
-    slug: "billing-finance-specialist",
+    name: "Finance & Invoicing",
+    slug: "finance-invoicing",
     color: "emerald",
-    description: "Full control over invoices, estimates, proformas, accounting ledgers, and expense claims.",
+    description: "Manage invoices, estimates, accounting ledgers, and expenses.",
     permissions: [
       "estimates.view", "estimates.create", "estimates.edit", "estimates.delete", "estimates.send",
       "proforma.view", "proforma.create", "proforma.edit", "proforma.delete", "proforma.send",
@@ -35,10 +35,10 @@ const PRESET_TEMPLATES = [
     ],
   },
   {
-    name: "Technical Engineering Lead",
-    slug: "technical-engineering-lead",
+    name: "Technical Lead",
+    slug: "technical-lead",
     color: "indigo",
-    description: "Architectural delivery, project portfolios, engineering task kanbans, and support escalations.",
+    description: "Manage projects, task boards, and handle client support tickets.",
     permissions: [
       "projects.view", "projects.create", "projects.edit", "projects.assign_members",
       "tasks.view", "tasks.create", "tasks.edit", "tasks.delete", "tasks.change_status",
@@ -47,10 +47,10 @@ const PRESET_TEMPLATES = [
     ],
   },
   {
-    name: "Client Relations Lead",
-    slug: "client-relations-lead",
+    name: "Client Specialist",
+    slug: "client-specialist",
     color: "purple",
-    description: "Direct client onboarding, portal invitations, estimate preparation, and support handling.",
+    description: "Manage client profiles, issue quotations, and support requests.",
     permissions: [
       "clients.view", "clients.create", "clients.edit", "clients.manage_portal",
       "estimates.view", "estimates.create", "estimates.edit", "estimates.send",
@@ -60,10 +60,10 @@ const PRESET_TEMPLATES = [
     ],
   },
   {
-    name: "Internal Compliance Auditor",
-    slug: "internal-compliance-auditor",
+    name: "Compliance Auditor",
+    slug: "compliance-auditor",
     color: "amber",
-    description: "Read-only audit visibility across invoices, accounting records, staff directory, and project logs.",
+    description: "View-only access to inspect financial records, projects, and logs.",
     permissions: [
       "estimates.view", "proforma.view", "invoices.view", "accounts.view", "accounts.export",
       "expenses.view", "clients.view", "projects.view", "tasks.view", "tickets.view",
@@ -204,18 +204,18 @@ export default function CreateCustomRolePage() {
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
               <Link href="/dashboard" className="hover:text-slate-800 transition">Workspace</Link>
               <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              <Link href="/dashboard/users" className="hover:text-slate-800 transition">Team & Staff</Link>
+              <Link href="/dashboard/users" className="hover:text-slate-800 transition">Team</Link>
               <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
               <Link href="/dashboard/users/roles" className="hover:text-slate-800 transition">Roles</Link>
               <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              <span className="font-semibold text-slate-800">Create Custom Role</span>
+              <span className="font-semibold text-slate-800">New Role</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
               <ShieldPlus className="w-6 h-6 text-blue-600" />
-              Create Custom Role
+              Create New Role
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Define a new internal staff role with granular, modular permission boundaries.
+              Choose a name, pick a preset or start from scratch, and select permissions.
             </p>
           </div>
 
@@ -233,7 +233,7 @@ export default function CreateCustomRolePage() {
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition disabled:opacity-50"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Save Custom Role
+              Save Role
             </button>
           </div>
         </div>
@@ -242,7 +242,7 @@ export default function CreateCustomRolePage() {
         <div className="space-y-2">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
             <Sparkles className="w-4 h-4 text-amber-500" />
-            Quick Preset Role Templates
+            Role Templates
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
             {PRESET_TEMPLATES.map((tmpl) => (
@@ -268,7 +268,7 @@ export default function CreateCustomRolePage() {
         <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
           <h2 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-2">
             <Shield className="w-4 h-4 text-blue-600" />
-            Role Metadata & Identity
+            Role Details
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -281,20 +281,20 @@ export default function CreateCustomRolePage() {
                 required
                 value={name}
                 onChange={(e) => handleNameChange(e.target.value)}
-                placeholder="e.g. Billing & Finance Specialist"
+                placeholder="e.g. Project Coordinator"
                 className="w-full h-9 rounded-xl border border-slate-200 px-3 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                System Identifier Slug
+                Role Identifier (Slug)
               </label>
               <input
                 type="text"
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
-                placeholder="e.g. billing-finance-specialist"
+                placeholder="e.g. project-coordinator"
                 className="w-full h-9 rounded-xl border border-slate-200 px-3 text-xs font-mono bg-slate-50 focus:ring-1 focus:ring-blue-500 focus:outline-none"
               />
             </div>
@@ -303,7 +303,7 @@ export default function CreateCustomRolePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Badge Color Accent
+                Badge Color
               </label>
               <div className="flex items-center gap-2 pt-1">
                 {COLOR_OPTIONS.map((c) => (
@@ -324,13 +324,13 @@ export default function CreateCustomRolePage() {
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Role Scope & Responsibilities
+                Description
               </label>
               <input
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Briefly describe the operational duties for this role..."
+                placeholder="What is this role responsible for?"
                 className="w-full h-9 rounded-xl border border-slate-200 px-3 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
               />
             </div>
@@ -343,10 +343,10 @@ export default function CreateCustomRolePage() {
             <div>
               <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-blue-600" />
-                Modular Permissions Matrix ({selectedPermissions.size} / {allPermissions.length} selected)
+                Permissions ({selectedPermissions.size} of {allPermissions.length} selected)
               </h2>
               <p className="text-xs text-slate-500">
-                Grant or restrict authority across the 12 platform modules.
+                Select what people with this role can do in each area.
               </p>
             </div>
 

@@ -163,18 +163,18 @@ export default function StaffCreatePage() {
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
               <Link href="/dashboard" className="hover:text-slate-800 transition">Workspace</Link>
               <span>/</span>
-              <Link href="/dashboard/users" className="hover:text-slate-800 transition">Team & Staff</Link>
+              <Link href="/dashboard/users" className="hover:text-slate-800 transition">Team</Link>
               <span>/</span>
-              <span className="text-blue-600 font-bold">Onboard Staff Member</span>
+              <span className="text-blue-600 font-bold">Add Member</span>
             </div>
             <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2.5">
               <span className="p-2 bg-blue-100 text-blue-700 rounded-xl">
                 <UserPlus className="w-5 h-5" />
               </span>
-              Onboard New Staff Member
+              Add Team Member
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Register corporate internal staff, assign custom modular roles, and dispatch onboarding credentials.
+              Set up a profile, assign a role, and generate their login details.
             </p>
           </div>
 
@@ -193,7 +193,7 @@ export default function StaffCreatePage() {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-xs transition disabled:opacity-50 cursor-pointer"
             >
               {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-              <span>{loading ? "Onboarding..." : "Confirm & Onboard Staff"}</span>
+              <span>{loading ? "Saving..." : "Save Member"}</span>
             </button>
           </div>
         </div>
@@ -207,13 +207,13 @@ export default function StaffCreatePage() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column (2 Cols): Personal & Professional Coordinates */}
+          {/* Left Column (2 Cols): Personal & Professional Details */}
           <div className="lg:col-span-2 space-y-6">
             {/* Card 1: Personal & Identification */}
             <div className="p-6 bg-white border border-slate-200/80 rounded-2xl shadow-xs space-y-4">
               <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                 <User className="w-4 h-4 text-blue-600" />
-                Personal Information & Employee Code
+                Basic Information
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -421,9 +421,9 @@ export default function StaffCreatePage() {
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500 bg-white"
                 >
-                  <option value="active">Active (Full Portal Access)</option>
-                  <option value="inactive">Inactive (Pending Induction)</option>
-                  <option value="suspended">Suspended (Access Revoked)</option>
+                  <option value="active">Active (Full Access)</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="suspended">Suspended</option>
                 </select>
               </div>
             </div>
@@ -432,7 +432,7 @@ export default function StaffCreatePage() {
             <div className="p-6 bg-white border border-slate-200/80 rounded-2xl shadow-xs space-y-4">
               <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                 <KeyRound className="w-4 h-4 text-blue-600" />
-                Temporary Access Password
+                Temporary Password
               </h2>
 
               <div>
@@ -446,7 +446,7 @@ export default function StaffCreatePage() {
                     className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
                   >
                     <Sparkles className="w-3 h-3 text-amber-500" />
-                    <span>Generate Strong</span>
+                    <span>Generate Password</span>
                   </button>
                 </div>
 
@@ -468,7 +468,7 @@ export default function StaffCreatePage() {
                   </button>
                 </div>
                 <p className="text-[10px] text-slate-400 mt-1">
-                  The staff member will be sent an automated welcome email with these login credentials.
+                  Share this temporary password with the team member. They can change it after logging in.
                 </p>
               </div>
             </div>

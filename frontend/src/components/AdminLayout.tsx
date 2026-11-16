@@ -148,12 +148,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       title: "Administration",
       items: [
         {
-          name: "Team & Staff",
+          name: "Team",
           icon: Users,
           roles: ["superadmin", "admin", "hr"],
           children: [
-            { name: "Staff Directory", href: "/dashboard/users", icon: Users },
-            { name: "+ Onboard Staff", href: "/dashboard/users/create", icon: UserPlus, roles: ["superadmin", "admin"] },
+            { name: "All Members", href: "/dashboard/users", icon: Users },
+            { name: "Add Member", href: "/dashboard/users/create", icon: UserPlus, roles: ["superadmin", "admin"] },
             { name: "Roles & Permissions", href: "/dashboard/users/roles", icon: ShieldCheck, roles: ["superadmin", "admin"] },
             { name: "Departments", href: "/dashboard/users/departments", icon: Building },
           ],
@@ -239,7 +239,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       if (section === "projects") sectionLabel = "Projects";
       if (section === "tasks") sectionLabel = "Tasks";
       if (section === "tickets") sectionLabel = "Support Tickets";
-      if (section === "users") sectionLabel = "Team & Staff";
+      if (section === "users") sectionLabel = "Team";
       if (section === "settings") sectionLabel = "Settings";
 
       const sectionHref = `/dashboard/${section}`;
@@ -250,7 +250,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       if (segments.length >= 3) {
         const sub = segments[2];
         let subLabel = sub.charAt(0).toUpperCase() + sub.slice(1);
-        if (sub === "create") subLabel = "New Record";
+        if (section === "users" && sub === "create") subLabel = "Add Member";
+        else if (sub === "create") subLabel = "New Record";
         if (sub === "roles") subLabel = "Roles & Permissions";
         if (sub === "departments") subLabel = "Departments";
         if (sub === "numbering") subLabel = "Document Numbering";

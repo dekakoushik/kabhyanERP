@@ -108,14 +108,14 @@ export default function StaffDossierPage({
           <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
             <AlertCircle className="w-6 h-6" />
           </div>
-          <h2 className="text-lg font-bold text-slate-900">Staff Profile Unavailable</h2>
-          <p className="text-xs text-slate-500">{error || "Could not retrieve employee records."}</p>
+          <h2 className="text-lg font-bold text-slate-900">Member Profile Not Found</h2>
+          <p className="text-xs text-slate-500">{error || "Could not locate this team member's record."}</p>
           <Link
             href="/dashboard/users"
             className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Return to Staff Directory</span>
+            <span>Back to Team</span>
           </Link>
         </div>
       </AdminLayout>
@@ -131,13 +131,13 @@ export default function StaffDossierPage({
             <Link
               href="/dashboard/users"
               className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition"
-              title="Return to Staff Directory"
+              title="Back to Team"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
             <div>
               <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 mb-0.5">
-                <span>Team & Staff</span>
+                <span>Team</span>
                 <span>/</span>
                 <span className="font-mono text-slate-700">{user.employee_code || `ID-${user.id}`}</span>
               </div>
@@ -156,7 +156,7 @@ export default function StaffDossierPage({
                   : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
               }`}
             >
-              {user.status === "active" ? "Suspend Account" : "Activate Account"}
+              {user.status === "active" ? "Suspend Access" : "Activate Access"}
             </button>
 
             <Link
@@ -164,7 +164,7 @@ export default function StaffDossierPage({
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition"
             >
               <Edit2 className="w-3.5 h-3.5" />
-              <span>Edit Staff Details</span>
+              <span>Edit Profile</span>
             </Link>
           </div>
         </div>

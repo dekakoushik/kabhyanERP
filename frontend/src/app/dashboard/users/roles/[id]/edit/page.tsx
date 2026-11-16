@@ -177,7 +177,7 @@ export default function EditCustomRolePage({
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
               <Link href="/dashboard" className="hover:text-slate-800 transition">Workspace</Link>
               <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              <Link href="/dashboard/users" className="hover:text-slate-800 transition">Team & Staff</Link>
+              <Link href="/dashboard/users" className="hover:text-slate-800 transition">Team</Link>
               <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
               <Link href="/dashboard/users/roles" className="hover:text-slate-800 transition">Roles</Link>
               <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
@@ -188,7 +188,7 @@ export default function EditCustomRolePage({
               Edit Role: {role.name}
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Adjust authority bounds and module permissions for this internal staff role.
+              Update the name, description, or permissions for this role.
             </p>
           </div>
 
@@ -216,7 +216,7 @@ export default function EditCustomRolePage({
           <div className="p-4 rounded-xl bg-purple-50 border border-purple-200/60 flex items-start gap-3">
             <Lock className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
             <div className="text-xs text-purple-900 leading-relaxed">
-              <span className="font-semibold">System Baseline Protected Role:</span> This is a standard system role. Its core slug is immutable to maintain platform stability.
+              <span className="font-semibold">Built-in Default Role:</span> This is a standard system role. Its identifier cannot be modified.
             </div>
           </div>
         )}
@@ -225,7 +225,7 @@ export default function EditCustomRolePage({
         <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
           <h2 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-2">
             <Shield className="w-4 h-4 text-blue-600" />
-            Role Metadata & Identity
+            Role Details
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

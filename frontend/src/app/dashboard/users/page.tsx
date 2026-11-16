@@ -158,22 +158,30 @@ export default function UsersManagementPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-              <span>Administration</span>
+              <span>Workspace</span>
               <span>/</span>
-              <span className="text-blue-600">Team & Staff</span>
+              <span className="text-blue-600">Team</span>
             </div>
             <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2.5">
               <span className="p-2 bg-blue-100 text-blue-700 rounded-xl">
                 <Users className="w-5 h-5" />
               </span>
-              Team & Staff Management
+              Team Members
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Manage internal company staff, assign custom modular roles, and configure departmental access.
+              View all team members, assign their roles, and track active work.
             </p>
           </div>
 
           <div className="flex items-center gap-2">
+            <Link
+              href="/dashboard/users/departments"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition"
+            >
+              <Building className="w-3.5 h-3.5 text-slate-500" />
+              <span>Departments</span>
+            </Link>
+
             <Link
               href="/dashboard/users/roles"
               className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition"
@@ -187,7 +195,7 @@ export default function UsersManagementPage() {
               className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition"
             >
               <UserPlus className="w-3.5 h-3.5" />
-              <span>+ Onboard New Staff</span>
+              <span>+ Add Member</span>
             </Link>
           </div>
         </div>
@@ -195,15 +203,15 @@ export default function UsersManagementPage() {
         {/* Stats Summary Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Staff</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Team</span>
             <p className="text-2xl font-black text-slate-900 mt-1">{stats?.total_users ?? total}</p>
           </div>
           <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Active Access</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Active Now</span>
             <p className="text-2xl font-black text-emerald-700 mt-1">{stats?.active_users ?? 0}</p>
           </div>
           <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600">Admins & Managers</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600">Leadership</span>
             <p className="text-2xl font-black text-purple-700 mt-1">
               {(stats?.superadmins ?? 0) + (stats?.admins ?? 0) + (stats?.managers ?? 0)}
             </p>
@@ -222,7 +230,7 @@ export default function UsersManagementPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, email, employee code, designation, or department..."
+              placeholder="Search team members by name, email, or role..."
               className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-600"
             />
           </form>
@@ -474,7 +482,7 @@ export default function UsersManagementPage() {
                         href={`/dashboard/users/${item.id}`}
                         className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                       >
-                        View Dossier
+                        View Profile
                       </Link>
                       <Link
                         href={`/dashboard/users/${item.id}/edit`}
@@ -524,8 +532,8 @@ export default function UsersManagementPage() {
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900">Delete Staff Account</h3>
-                <p className="text-xs text-slate-500">This action revokes all login tokens and access.</p>
+                <h3 className="text-base font-bold text-slate-900">Delete Team Member</h3>
+                <p className="text-xs text-slate-500">This action will remove their account and revoke platform access.</p>
               </div>
             </div>
 
@@ -546,7 +554,7 @@ export default function UsersManagementPage() {
                 onClick={handleDeleteUser}
                 className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shadow-xs cursor-pointer disabled:opacity-50"
               >
-                {deleting ? "Deleting..." : "Confirm Delete"}
+                {deleting ? "Deleting..." : "Delete Member"}
               </button>
             </div>
           </div>

@@ -71,16 +71,16 @@ export default function DepartmentsOverviewPage() {
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
               <Link href="/dashboard" className="hover:text-slate-800 transition">Workspace</Link>
               <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              <Link href="/dashboard/users" className="hover:text-slate-800 transition">Team & Staff</Link>
+              <Link href="/dashboard/users" className="hover:text-slate-800 transition">Team</Link>
               <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
               <span className="font-semibold text-slate-800">Departments</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
               <Building2 className="w-6 h-6 text-blue-600" />
-              Company Departments & Units
+              Departments
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Organizational structure, unit headcounts, and departmental staff allocations.
+              View team distribution and headcount across all company departments.
             </p>
           </div>
 
@@ -90,14 +90,14 @@ export default function DepartmentsOverviewPage() {
               className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition shadow-2xs"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              Staff Directory
+              View Team
             </Link>
             <Link
               href="/dashboard/users/create"
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition"
             >
               <Plus className="w-4 h-4" />
-              + Onboard Staff
+              + Add Member
             </Link>
           </div>
         </div>
@@ -106,34 +106,34 @@ export default function DepartmentsOverviewPage() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3.5">
           <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
             <div className="flex items-center justify-between text-slate-500 mb-1">
-              <span className="text-xs font-semibold">Active Departments</span>
+              <span className="text-xs font-semibold">Departments</span>
               <Building2 className="w-4 h-4 text-blue-600" />
             </div>
             <div className="text-2xl font-bold text-slate-900">{departments.length}</div>
-            <div className="text-[11px] text-slate-400 mt-0.5">Corporate functional divisions</div>
+            <div className="text-[11px] text-slate-400 mt-0.5">Active teams</div>
           </div>
 
           <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
             <div className="flex items-center justify-between text-slate-500 mb-1">
-              <span className="text-xs font-semibold">Total Staff Headcount</span>
+              <span className="text-xs font-semibold">Team Size</span>
               <Users className="w-4 h-4 text-emerald-600" />
             </div>
             <div className="text-2xl font-bold text-slate-900">
               {departments.reduce((sum, d) => sum + d.count, 0)}
             </div>
-            <div className="text-[11px] text-slate-400 mt-0.5">Across all business units</div>
+            <div className="text-[11px] text-slate-400 mt-0.5">Total members</div>
           </div>
 
           <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
             <div className="flex items-center justify-between text-slate-500 mb-1">
-              <span className="text-xs font-semibold">Primary Core Unit</span>
+              <span className="text-xs font-semibold">Largest Team</span>
               <Sparkles className="w-4 h-4 text-purple-600" />
             </div>
             <div className="text-lg font-bold text-slate-900 truncate">
               {departments[0]?.department || "Engineering"}
             </div>
             <div className="text-[11px] text-slate-400 mt-0.5">
-              Largest team ({departments[0]?.count || 0} members)
+              {departments[0]?.count || 0} members
             </div>
           </div>
         </div>

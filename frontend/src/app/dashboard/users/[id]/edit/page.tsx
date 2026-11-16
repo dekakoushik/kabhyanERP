@@ -175,22 +175,22 @@ export default function StaffEditPage({
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
               <Link href="/dashboard" className="hover:text-slate-800 transition">Workspace</Link>
               <span>/</span>
-              <Link href="/dashboard/users" className="hover:text-slate-800 transition">Team & Staff</Link>
+              <Link href="/dashboard/users" className="hover:text-slate-800 transition">Team</Link>
               <span>/</span>
               <Link href={`/dashboard/users/${resolvedParams.id}`} className="hover:text-slate-800 transition">
-                {formData.name || "Dossier"}
+                {formData.name || "Profile"}
               </Link>
               <span>/</span>
-              <span className="text-blue-600 font-bold">Edit Profile</span>
+              <span className="text-blue-600 font-bold">Edit</span>
             </div>
             <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2.5">
               <span className="p-2 bg-blue-100 text-blue-700 rounded-xl">
                 <Edit2 className="w-5 h-5" />
               </span>
-              Edit Staff Member Record
+              Edit Profile: {formData.name}
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Update personal coordinates, department, designation, and custom role assignments.
+              Update contact info, department, designation, or role permissions.
             </p>
           </div>
 
@@ -209,7 +209,7 @@ export default function StaffEditPage({
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-xs transition disabled:opacity-50 cursor-pointer"
             >
               {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-              <span>{saving ? "Saving Changes..." : "Save Changes"}</span>
+              <span>{saving ? "Saving..." : "Save Changes"}</span>
             </button>
           </div>
         </div>
@@ -226,7 +226,7 @@ export default function StaffEditPage({
             <div className="p-6 bg-white border border-slate-200/80 rounded-2xl shadow-xs space-y-4">
               <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                 <UserIcon className="w-4 h-4 text-blue-600" />
-                Personal Information & Employee Code
+                Basic Information
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
