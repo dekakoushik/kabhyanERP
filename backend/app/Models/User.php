@@ -97,6 +97,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Daily attendance logs and mobile punches.
+     */
+    public function dailyAttendances(): HasMany
+    {
+        return $this->hasMany(DailyAttendance::class);
+    }
+
+    /**
      * Official payslips generated for this employee.
      */
     public function payslips(): HasMany

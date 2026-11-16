@@ -16,6 +16,13 @@ import {
   Users,
   Calendar,
   Calculator,
+  SlidersHorizontal,
+  CheckCheck,
+  RotateCcw,
+  ExternalLink,
+  X,
+  Clock,
+  FileText,
 } from "lucide-react";
 
 export default function GeneratePayrollBatchPage() {
@@ -29,6 +36,13 @@ export default function GeneratePayrollBatchPage() {
 
   // Calculation pre-flight preview state
   const [previewData, setPreviewData] = useState<any>(null);
+
+  // Modal state for inline manual attendance adjustment
+  const [adjustingStaff, setAdjustingStaff] = useState<any | null>(null);
+  const [adjustLopDays, setAdjustLopDays] = useState<number>(0);
+  const [adjustNotes, setAdjustNotes] = useState<string>("");
+  const [savingAttendance, setSavingAttendance] = useState(false);
+  const [quickFilling, setQuickFilling] = useState(false);
 
   const fetchPreflight = async (targetMonth: string) => {
     try {
@@ -46,6 +60,54 @@ export default function GeneratePayrollBatchPage() {
   useEffect(() => {
     fetchPreflight(month);
   }, [month]);
+
+  const handleOpenAdjust = (staff: any) => {
+    setAdjustingStaff(staff);
+    setAdjustLopDays(Number(staff.lop_days || 0));
+    setAdjustNotes(staff.notes || "");
+  };
+
+  const handleSaveAdjust = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adjustingStaff) return;
+
+    try {
+      setSavingAttendance(true);
+      await api.hrms.attendance.update({
+        user_id: adjustingStaff.user_id,
+        month,
+        loss_of_pay_days: adjustLopDays,
+        notes: adjustNotes.trim() || undefined,
+      });
+
+      toast.success(`Attendance updated for ${adjustingStaff.user_name}. Payroll recalculated.`);
+      setAdjustingStaff(null);
+      await fetchPreflight(month);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to update attendance";
+      toast.error(msg);
+    } finally {
+      setSavingAttendance(false);
+    }
+  };
+
+  const handleQuickFill = async (action: "mark_all_present" | "reset_to_leaves") => {
+    try {
+      setQuickFilling(true);
+      await api.hrms.attendance.quickFill({ month, action });
+      toast.success(
+        action === "mark_all_present"
+          ? "All staff members marked 100% present (0 LOP)."
+          : "Attendance synced with approved leave requests."
+      );
+      await fetchPreflight(month);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to update attendance";
+      toast.error(msg);
+    } finally {
+      setQuickFilling(false);
+    }
+  };
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +133,15 @@ export default function GeneratePayrollBatchPage() {
     }
   };
 
+  // Live simulation in modal
+  const totalDays = previewData?.total_days_in_month || 30;
+  const standardWorkingDays = previewData?.working_days || 22;
+  const adjustingGross = adjustingStaff ? Number(adjustingStaff.gross_monthly || 0) : 0;
+  const adjustingDailyRate = totalDays > 0 ? adjustingGross / totalDays : 0;
+  const projectedLopDeduction = Math.round(adjustingDailyRate * adjustLopDays * 100) / 100;
+  const statutoryDeductions = adjustingStaff ? Number(adjustingStaff.statutory_deductions ?? (Number(adjustingStaff.pf || 0) + Number(adjustingStaff.pt || 0) + Number(adjustingStaff.tds || 0))) : 0;
+  const projectedNet = Math.max(0, Math.round((adjustingGross - statutoryDeductions - projectedLopDeduction) * 100) / 100);
+
   return (
     <AdminLayout>
       <div className="max-w-5xl mx-auto space-y-6">
@@ -92,7 +163,7 @@ export default function GeneratePayrollBatchPage() {
                 Run Monthly Payroll
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                Generate itemized salary slips with automated Loss of Pay (LOP) and statutory deductions.
+                Generate itemized salary slips with real-time Loss of Pay (LOP) and statutory deductions.
               </p>
             </div>
             <Link
@@ -139,9 +210,9 @@ export default function GeneratePayrollBatchPage() {
           </div>
         </div>
 
-        {/* Pre-flight Financial Summary */}
+        {/* Aggregate KPI Preview */}
         {previewData && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-4 bg-white border border-slate-200/80 rounded-xl shadow-sm">
               <div className="text-[11px] font-medium text-slate-500">Working Days</div>
               <div className="text-xl font-bold text-slate-900 mt-1">
@@ -182,13 +253,47 @@ export default function GeneratePayrollBatchPage() {
 
         {/* Pre-flight Itemized Table */}
         <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
-            <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-              Pre-Flight Salary Calculation Preview
-            </h2>
-            <span className="text-[11px] text-slate-500">
-              Verified against Attendance Ledger &amp; Approved Leaves
-            </span>
+          <div className="px-5 py-3.5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div>
+              <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                Pre-Flight Salary Calculation Preview
+              </h2>
+              <span className="text-[11px] text-slate-500">
+                Verified against Attendance Ledger &amp; Approved Leaves
+              </span>
+            </div>
+
+            {/* Attendance Quick Tools */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleQuickFill("mark_all_present")}
+                disabled={quickFilling || loadingPreview}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors"
+                title="Set Loss of Pay (LOP) to 0 for all employees"
+              >
+                <CheckCheck className="w-3.5 h-3.5" />
+                <span>Mark All Present</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickFill("reset_to_leaves")}
+                disabled={quickFilling || loadingPreview}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
+                title="Sync with approved unpaid leave requests"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Sync Leaves</span>
+              </button>
+              <Link
+                href={`/dashboard/hrms/attendance?month=${month}`}
+                className="inline-flex items-center gap-1 px-2 py-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                title="View full attendance ledger"
+              >
+                <span>Ledger</span>
+                <ExternalLink className="w-3 h-3" />
+              </Link>
+            </div>
           </div>
 
           {loadingPreview ? (
@@ -222,6 +327,7 @@ export default function GeneratePayrollBatchPage() {
                     <th className="py-2.5 px-4 text-right">LOP Deduction</th>
                     <th className="py-2.5 px-4 text-right">Statutory Deductions</th>
                     <th className="py-2.5 px-4 text-right font-bold">Net Payout</th>
+                    <th className="py-2.5 px-4 text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -233,9 +339,13 @@ export default function GeneratePayrollBatchPage() {
                       </td>
                       <td className="py-3 px-4 text-center text-slate-600">
                         {item.paid_days} / {item.working_days}
-                        {item.lop_days > 0 && (
+                        {Number(item.lop_days) > 0 ? (
                           <span className="text-[10px] text-rose-600 font-semibold block">
                             {item.lop_days} days LOP
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-emerald-600 font-medium block">
+                            100% Present
                           </span>
                         )}
                       </td>
@@ -257,6 +367,17 @@ export default function GeneratePayrollBatchPage() {
                       </td>
                       <td className="py-3 px-4 text-right font-bold text-emerald-700">
                         ₹{Number(item.net_salary).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAdjust(item)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors"
+                          title="Adjust attendance or Loss of Pay (LOP)"
+                        >
+                          <SlidersHorizontal className="w-3 h-3" />
+                          <span>Adjust</span>
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -303,6 +424,147 @@ export default function GeneratePayrollBatchPage() {
             </div>
           </div>
         </form>
+
+        {/* Modal: Inline Manual Attendance Adjustment */}
+        {adjustingStaff && (
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+              {/* Modal Header */}
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+                    <SlidersHorizontal className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">
+                      Adjust Attendance &amp; LOP
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      {adjustingStaff.user_name} ({adjustingStaff.department || "Staff"}) &bull; {month}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAdjustingStaff(null)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Modal Form */}
+              <form onSubmit={handleSaveAdjust} className="p-6 space-y-4">
+                {/* Working Days & Base Reference */}
+                <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200/60 text-xs">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400">Standard Working Days</span>
+                    <div className="font-bold text-slate-800 text-sm mt-0.5">{standardWorkingDays} Days</div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400">Monthly Gross Salary</span>
+                    <div className="font-bold text-slate-800 text-sm mt-0.5">
+                      ₹{adjustingGross.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Loss of Pay Input */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      Loss of Pay (LOP) Days
+                    </label>
+                    <span className="text-xs font-bold text-blue-600">
+                      Paid Days: {Math.max(0, standardWorkingDays - adjustLopDays)}
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    max={totalDays}
+                    value={adjustLopDays}
+                    onChange={(e) => setAdjustLopDays(Math.max(0, Number(e.target.value)))}
+                    className="w-full text-sm font-bold rounded-lg border border-slate-200 px-3 py-2 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+
+                  {/* Preset quick buttons */}
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <span className="text-[10px] text-slate-400 font-medium mr-1">Quick:</span>
+                    {[0, 0.5, 1, 2, 3].map((days) => (
+                      <button
+                        key={days}
+                        type="button"
+                        onClick={() => setAdjustLopDays(days)}
+                        className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-colors ${
+                          adjustLopDays === days
+                            ? "bg-blue-600 text-white"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        }`}
+                      >
+                        {days === 0 ? "Full Present (0)" : `${days}d`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Reason / Notes */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Reason / Exception Remarks (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={adjustNotes}
+                    onChange={(e) => setAdjustNotes(e.target.value)}
+                    placeholder="e.g. Leave regularized by HR, Doctor certificate provided"
+                    className="w-full text-xs rounded-lg border border-slate-200 px-3 py-2 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Live Real-time Simulation Box */}
+                <div className="p-4 rounded-xl bg-gradient-to-br from-slate-50 to-blue-50/50 border border-blue-100 text-xs space-y-2">
+                  <div className="flex items-center justify-between text-slate-500">
+                    <span>Daily Wage Rate:</span>
+                    <span className="font-semibold text-slate-700">
+                      ₹{adjustingDailyRate.toFixed(2)}/day
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-rose-600">
+                    <span>Loss of Pay Deduction ({adjustLopDays} days):</span>
+                    <span className="font-bold">
+                      {projectedLopDeduction > 0 ? `-₹${projectedLopDeduction.toFixed(2)}` : "₹0.00"}
+                    </span>
+                  </div>
+                  <div className="pt-2 border-t border-blue-200/60 flex items-center justify-between font-bold text-sm">
+                    <span className="text-slate-900">Projected Net Payout:</span>
+                    <span className="text-emerald-700">₹{projectedNet.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {/* Modal Actions */}
+                <div className="pt-2 flex items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setAdjustingStaff(null)}
+                    disabled={savingAttendance}
+                    className="px-4 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingAttendance}
+                    className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-colors disabled:opacity-50"
+                  >
+                    {savingAttendance ? "Saving..." : "Save & Recalculate"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );

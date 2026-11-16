@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 
 use App\Models\CompanyHoliday;
+use App\Models\DailyAttendance;
 use App\Models\LeaveRequest;
 use App\Models\LeaveType;
 use App\Models\MonthlyAttendance;
+use App\Models\OfficeGeofence;
 use App\Models\PayrollBatch;
 use App\Models\Payslip;
 use App\Models\SalaryStructure;
@@ -301,17 +303,41 @@ class HrmsController extends Controller
     /**
      * Monthly Attendance & LOP Exception Ledger.
      */
+    /**
+     * Parse month & year from request safely (supports '2026-11' or separate month/year).
+     */
+    private function parseMonthYear(Request $request): array
+    {
+        $monthInput = $request->input('month');
+        if (is_string($monthInput) && str_contains($monthInput, '-')) {
+            $parts = explode('-', $monthInput);
+            $year = (int) $parts[0];
+            $month = (int) $parts[1];
+        } else {
+            $month = (int) ($monthInput ?: now()->month);
+            $year = (int) ($request->input('year') ?: now()->year);
+        }
+
+        if ($month < 1 || $month > 12) $month = (int) now()->month;
+        if ($year < 2020 || $year > 2035) $year = (int) now()->year;
+
+        return [$month, $year];
+    }
+
+    /**
+     * Monthly Attendance & LOP Exception Ledger.
+     */
     public function monthlyAttendance(Request $request): JsonResponse
     {
-        $month = (int) ($request->input('month', now()->month));
-        $year = (int) ($request->input('year', now()->year));
+        [$month, $year] = $this->parseMonthYear($request);
 
         $startOfMonth = Carbon::create($year, $month, 1);
         $totalDaysInMonth = $startOfMonth->daysInMonth;
 
-        // Calculate standard working days (Mon-Fri or Mon-Sat excluding company holidays)
+        // Calculate standard working days (Mon-Fri excluding gazetted holidays)
         $holidays = CompanyHoliday::whereYear('holiday_date', $year)
             ->whereMonth('holiday_date', $month)
+            ->where('is_optional', false)
             ->pluck('holiday_date')
             ->map(fn($d) => Carbon::parse($d)->toDateString())
             ->toArray();
@@ -328,7 +354,7 @@ class HrmsController extends Controller
         // Fetch active internal staff
         $staffMembers = User::whereNull('deleted_at')
             ->where('role', '!=', 'client')
-            ->with(['customRole'])
+            ->with(['customRole', 'salaryStructure'])
             ->get();
 
         // Fetch existing recorded monthly attendance records
@@ -368,18 +394,27 @@ class HrmsController extends Controller
             }
 
             $lopDays = $existing ? (float) $existing->lop_days : $approvedUnpaidLeaves;
-            $paidDays = max(0, $totalDaysInMonth - $lopDays);
+            $paidDays = max(0, $standardWorkingDays - $lopDays);
 
             return [
                 'user_id' => $staff->id,
                 'name' => $staff->name,
+                'user' => [
+                    'id' => $staff->id,
+                    'name' => $staff->name,
+                    'email' => $staff->email,
+                    'department' => $staff->department ?? 'General Staff',
+                ],
                 'employee_code' => $staff->employee_code,
-                'department' => $staff->department,
+                'department' => $staff->department ?? 'General Staff',
                 'designation' => $staff->designation,
+                'has_salary_structure' => (bool) $staff->salaryStructure,
                 'total_days' => $totalDaysInMonth,
                 'working_days' => $standardWorkingDays,
                 'approved_leaves' => $approvedPaidLeaves,
+                'approved_leaves_count' => $approvedPaidLeaves,
                 'lop_days' => $lopDays,
+                'loss_of_pay_days' => $lopDays,
                 'paid_days' => $paidDays,
                 'notes' => $existing ? $existing->notes : null,
                 'record_id' => $existing ? $existing->id : null,
@@ -387,47 +422,300 @@ class HrmsController extends Controller
         });
 
         return response()->json([
-            'month' => $month,
+            'month' => sprintf('%04d-%02d', $year, $month),
+            'month_number' => $month,
             'year' => $year,
             'total_days' => $totalDaysInMonth,
             'standard_working_days' => $standardWorkingDays,
+            'working_days' => $standardWorkingDays,
             'holidays_count' => count($holidays),
             'ledger' => $ledger,
         ]);
     }
 
     /**
-     * Update an employee's LOP or attendance record for a month.
+     * Update an employee's LOP or attendance record for a month (supports both PATCH and POST).
      */
-    public function updateMonthlyAttendance(Request $request, User $user): JsonResponse
+    public function updateMonthlyAttendance(Request $request, ?User $user = null): JsonResponse
     {
-        $validated = $request->validate([
-            'month' => 'required|integer|between:1,12',
-            'year' => 'required|integer|between:2020,2035',
-            'lop_days' => 'required|numeric|min:0',
-            'notes' => 'nullable|string|max:500',
-        ]);
+        $userId = $user?->id ?? $request->input('user_id');
+        if (!$userId) {
+            return response()->json(['message' => 'Employee ID is required.'], 422);
+        }
 
-        $totalDays = Carbon::create($validated['year'], $validated['month'], 1)->daysInMonth;
-        $paidDays = max(0, $totalDays - (float) $validated['lop_days']);
+        $targetUser = User::findOrFail($userId);
+        [$month, $year] = $this->parseMonthYear($request);
+
+        $startOfMonth = Carbon::create($year, $month, 1);
+        $totalDaysInMonth = $startOfMonth->daysInMonth;
+
+        // Determine LOP days
+        $lopDays = $request->input('lop_days', $request->input('loss_of_pay_days'));
+        if ($lopDays === null && $request->has('paid_days')) {
+            // Derive LOP from paid days
+            $standardWorking = (int) $request->input('working_days', 22);
+            $lopDays = max(0, $standardWorking - (float) $request->input('paid_days'));
+        }
+        $lopDays = max(0, (float) ($lopDays ?? 0));
+
+        $paidDays = max(0, $totalDaysInMonth - $lopDays);
+        if ($request->has('paid_days')) {
+            $paidDays = (float) $request->input('paid_days');
+        }
 
         $record = MonthlyAttendance::updateOrCreate(
             [
-                'user_id' => $user->id,
-                'month' => $validated['month'],
-                'year' => $validated['year'],
+                'user_id' => $targetUser->id,
+                'month' => $month,
+                'year' => $year,
             ],
             [
-                'total_days' => $totalDays,
-                'lop_days' => $validated['lop_days'],
+                'total_days' => $totalDaysInMonth,
+                'lop_days' => $lopDays,
                 'paid_days' => $paidDays,
-                'notes' => $validated['notes'] ?? null,
+                'notes' => $request->input('notes'),
             ]
         );
 
         return response()->json([
-            'message' => "Attendance record for {$user->name} updated successfully.",
+            'message' => "Attendance record for {$targetUser->name} updated successfully.",
             'attendance' => $record,
+            'lop_days' => $lopDays,
+            'paid_days' => $paidDays,
+        ]);
+    }
+
+    /**
+     * Bulk Quick-Fill Attendance for all staff for a given month.
+     */
+    public function quickFillAttendance(Request $request): JsonResponse
+    {
+        [$month, $year] = $this->parseMonthYear($request);
+        $action = $request->input('action', 'mark_all_present'); // 'mark_all_present' or 'reset_to_leaves'
+
+        $startOfMonth = Carbon::create($year, $month, 1);
+        $totalDaysInMonth = $startOfMonth->daysInMonth;
+
+        $staffMembers = User::whereNull('deleted_at')
+            ->where('role', '!=', 'client')
+            ->get();
+
+        foreach ($staffMembers as $staff) {
+            $lop = 0.0;
+            if ($action === 'reset_to_leaves') {
+                $unpaidLeaves = LeaveRequest::where('user_id', $staff->id)
+                    ->where('status', 'approved')
+                    ->whereHas('leaveType', fn($q) => $q->where('is_paid', false))
+                    ->where(function ($q) use ($startOfMonth, $year, $month, $totalDaysInMonth) {
+                        $q->whereBetween('start_date', [
+                            $startOfMonth->toDateString(),
+                            Carbon::create($year, $month, $totalDaysInMonth)->toDateString(),
+                        ])->orWhereBetween('end_date', [
+                            $startOfMonth->toDateString(),
+                            Carbon::create($year, $month, $totalDaysInMonth)->toDateString(),
+                        ]);
+                    })
+                    ->sum('days_count');
+                $lop = (float) $unpaidLeaves;
+            }
+
+            MonthlyAttendance::updateOrCreate(
+                [
+                    'user_id' => $staff->id,
+                    'month' => $month,
+                    'year' => $year,
+                ],
+                [
+                    'total_days' => $totalDaysInMonth,
+                    'lop_days' => $lop,
+                    'paid_days' => max(0, $totalDaysInMonth - $lop),
+                    'notes' => $action === 'mark_all_present' ? 'Bulk marked 100% present' : 'Synced with approved leaves',
+                ]
+            );
+        }
+
+        return response()->json([
+            'message' => 'Attendance for all staff members updated successfully.',
+            'month' => sprintf('%04d-%02d', $year, $month),
+            'action' => $action,
+        ]);
+    }
+
+    /**
+     * Daily attendance roster (Mobile & ERP View).
+     */
+    public function dailyAttendance(Request $request): JsonResponse
+    {
+        $dateStr = $request->input('date', now()->toDateString());
+        $date = Carbon::parse($dateStr)->toDateString();
+
+        $staffMembers = User::whereNull('deleted_at')
+            ->where('role', '!=', 'client')
+            ->with(['customRole'])
+            ->get();
+
+        $records = DailyAttendance::where('attendance_date', $date)
+            ->with('overrider')
+            ->get()
+            ->keyBy('user_id');
+
+        $roster = $staffMembers->map(function ($staff) use ($records, $date) {
+            $rec = $records->get($staff->id);
+            return [
+                'user_id' => $staff->id,
+                'name' => $staff->name,
+                'user' => [
+                    'id' => $staff->id,
+                    'name' => $staff->name,
+                    'email' => $staff->email,
+                    'department' => $staff->department ?? 'General Staff',
+                ],
+                'employee_code' => $staff->employee_code,
+                'department' => $staff->department ?? 'General Staff',
+                'designation' => $staff->designation,
+                'date' => $date,
+                'status' => $rec?->status ?? 'present',
+                'punch_in' => $rec?->punch_in?->toIso8601String(),
+                'punch_out' => $rec?->punch_out?->toIso8601String(),
+                'source' => $rec?->source ?? 'manual_admin',
+                'work_minutes' => $rec?->work_minutes ?? 0,
+                'is_late' => $rec?->is_late ?? false,
+                'is_half_day' => $rec?->is_half_day ?? false,
+                'is_overridden' => $rec?->is_overridden ?? false,
+                'override_reason' => $rec?->override_reason,
+            ];
+        });
+
+        return response()->json([
+            'date' => $date,
+            'roster' => $roster,
+        ]);
+    }
+
+    /**
+     * Update daily attendance status for an employee.
+     */
+    public function updateDailyAttendance(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'date' => 'required|date',
+            'status' => 'required|string|in:present,absent,half_day,on_leave,holiday,wfh',
+            'punch_in' => 'nullable|date',
+            'punch_out' => 'nullable|date',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $adminId = $request->user()?->id ?? Auth::id();
+
+        $rec = DailyAttendance::updateOrCreate(
+            [
+                'user_id' => $validated['user_id'],
+                'attendance_date' => Carbon::parse($validated['date'])->toDateString(),
+            ],
+            [
+                'status' => $validated['status'],
+                'punch_in' => !empty($validated['punch_in']) ? Carbon::parse($validated['punch_in']) : null,
+                'punch_out' => !empty($validated['punch_out']) ? Carbon::parse($validated['punch_out']) : null,
+                'source' => 'manual_admin',
+                'is_overridden' => true,
+                'overridden_by' => $adminId,
+                'override_reason' => $validated['notes'] ?? 'Updated by Admin in ERP',
+            ]
+        );
+
+        return response()->json([
+            'message' => 'Daily attendance updated successfully.',
+            'record' => $rec,
+        ]);
+    }
+
+    /**
+     * Get active office geofences for mobile app validation.
+     */
+    public function geofences(): JsonResponse
+    {
+        return response()->json([
+            'geofences' => OfficeGeofence::where('is_active', true)->get(),
+        ]);
+    }
+
+    /**
+     * Mobile App Punch-In.
+     */
+    public function punchIn(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $validated = $request->validate([
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'device_id' => 'nullable|string|max:100',
+            'device_model' => 'nullable|string|max:100',
+        ]);
+
+        $today = now()->toDateString();
+
+        $record = DailyAttendance::firstOrNew([
+            'user_id' => $user->id,
+            'attendance_date' => $today,
+        ]);
+
+        if ($record->punch_in) {
+            return response()->json([
+                'message' => 'Already punched in today at ' . $record->punch_in->format('H:i A'),
+                'record' => $record,
+            ], 422);
+        }
+
+        $record->punch_in = now();
+        $record->punch_in_latitude = $validated['latitude'] ?? null;
+        $record->punch_in_longitude = $validated['longitude'] ?? null;
+        $record->device_id = $validated['device_id'] ?? null;
+        $record->device_model = $validated['device_model'] ?? null;
+        $record->ip_address = $request->ip();
+        $record->source = 'mobile_gps';
+        $record->status = 'present';
+        $record->save();
+
+        return response()->json([
+            'message' => 'Punched in successfully at ' . now()->format('H:i A'),
+            'record' => $record,
+        ]);
+    }
+
+    /**
+     * Mobile App Punch-Out.
+     */
+    public function punchOut(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $validated = $request->validate([
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+        ]);
+
+        $today = now()->toDateString();
+
+        $record = DailyAttendance::where('user_id', $user->id)
+            ->where('attendance_date', $today)
+            ->first();
+
+        if (!$record || !$record->punch_in) {
+            return response()->json([
+                'message' => 'You must punch in first before punching out.',
+            ], 422);
+        }
+
+        $punchOut = now();
+        $record->punch_out = $punchOut;
+        $record->punch_out_latitude = $validated['latitude'] ?? null;
+        $record->punch_out_longitude = $validated['longitude'] ?? null;
+        $record->work_minutes = max(0, $punchOut->diffInMinutes($record->punch_in));
+        $record->save();
+
+        return response()->json([
+            'message' => 'Punched out successfully at ' . now()->format('H:i A'),
+            'record' => $record,
         ]);
     }
 

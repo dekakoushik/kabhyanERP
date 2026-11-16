@@ -101,13 +101,22 @@ export interface CompanyHoliday {
 }
 
 export interface MonthlyAttendanceLedgerItem {
-  id: number;
+  id?: number;
+  record_id?: number | null;
   user_id: number;
-  month: string;
+  name?: string;
+  employee_code?: string;
+  department?: string;
+  designation?: string;
+  month?: string;
+  total_days?: number;
   working_days: number;
-  days_present: number;
+  days_present?: number;
+  approved_leaves?: number;
   approved_leaves_count: number;
+  lop_days?: number;
   loss_of_pay_days: number;
+  paid_days?: number;
   notes?: string | null;
   user?: User;
 }
@@ -911,8 +920,22 @@ export const api = {
         const q = month ? `?month=${month}` : "";
         return api.request(`/hrms/attendance${q}`);
       },
-      update: (data: { user_id: number; month: string; loss_of_pay_days: number; notes?: string }) =>
+      update: (data: { user_id: number; month: string; loss_of_pay_days?: number; lop_days?: number; paid_days?: number; notes?: string }) =>
         api.request("/hrms/attendance", {
+          method: "POST",
+          body: JSON.stringify(data),
+        }),
+      quickFill: (data: { month: string; action: "mark_all_present" | "reset_to_leaves" }) =>
+        api.request("/hrms/attendance/quick-fill", {
+          method: "POST",
+          body: JSON.stringify(data),
+        }),
+      daily: (date?: string) => {
+        const q = date ? `?date=${date}` : "";
+        return api.request(`/hrms/attendance/daily${q}`);
+      },
+      updateDaily: (data: { user_id: number; date: string; status: string; punch_in?: string; punch_out?: string; notes?: string }) =>
+        api.request("/hrms/attendance/daily", {
           method: "POST",
           body: JSON.stringify(data),
         }),

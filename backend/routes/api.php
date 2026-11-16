@@ -137,6 +137,11 @@ Route::prefix('v1')->group(function () {
                 Route::get('my-payslips', [HrmsController::class, 'myPayslips']);
                 Route::get('payslips/{id}', [HrmsController::class, 'payslipShow']);
 
+                // Employee Mobile Punches & Geofences
+                Route::get('attendance/geofences', [HrmsController::class, 'geofences']);
+                Route::post('attendance/punch-in', [HrmsController::class, 'punchIn']);
+                Route::post('attendance/punch-out', [HrmsController::class, 'punchOut']);
+
                 // HR / Admin Management Operations
                 Route::middleware(EnsureAdminOrSuperAdmin::class)->group(function () {
                     Route::patch('leaves/{leaveRequest}/status', [HrmsController::class, 'updateLeaveStatus']);
@@ -145,7 +150,11 @@ Route::prefix('v1')->group(function () {
                     Route::post('holidays', [HrmsController::class, 'storeHoliday']);
                     Route::delete('holidays/{holiday}', [HrmsController::class, 'destroyHoliday'])->whereNumber('holiday');
                     Route::get('attendance', [HrmsController::class, 'monthlyAttendance']);
+                    Route::post('attendance', [HrmsController::class, 'updateMonthlyAttendance']);
                     Route::patch('attendance/{user}', [HrmsController::class, 'updateMonthlyAttendance']);
+                    Route::post('attendance/quick-fill', [HrmsController::class, 'quickFillAttendance']);
+                    Route::get('attendance/daily', [HrmsController::class, 'dailyAttendance']);
+                    Route::post('attendance/daily', [HrmsController::class, 'updateDailyAttendance']);
                     Route::get('salary-structures', [HrmsController::class, 'salaryStructures']);
                     Route::get('salary-structures/{user}', [HrmsController::class, 'getSalaryStructure']);
                     Route::post('salary-structures', [HrmsController::class, 'storeSalaryStructure']);
