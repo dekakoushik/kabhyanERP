@@ -11,11 +11,30 @@
         * {
             box-sizing: border-box;
         }
+        @font-face {
+            font-family: 'Google Sans';
+            font-style: normal;
+            font-weight: 400;
+            src: url('{{ str_replace('\\', '/', storage_path('fonts/GoogleSans-Regular.ttf')) }}') format('truetype');
+        }
+        @font-face {
+            font-family: 'Google Sans';
+            font-style: normal;
+            font-weight: 500;
+            src: url('{{ str_replace('\\', '/', storage_path('fonts/GoogleSans-Medium.ttf')) }}') format('truetype');
+        }
+        @font-face {
+            font-family: 'Google Sans';
+            font-style: normal;
+            font-weight: 700;
+            src: url('{{ str_replace('\\', '/', storage_path('fonts/GoogleSans-Bold.ttf')) }}') format('truetype');
+        }
+
         body {
             margin: 0;
             padding: 0;
             background-color: #ffffff;
-            font-family: 'DejaVu Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-family: 'Google Sans', 'DejaVu Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
             font-size: 8.5pt;
             color: #0f172a;
             line-height: 1.45;

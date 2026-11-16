@@ -174,6 +174,9 @@ SVG;
      */
     public function renderCertifiedPdf(string $html, string $docTitle, string $docNumber, array $meta = []): string
     {
+        $baseDir = base_path();
+        $storageFonts = storage_path('fonts');
+
         // 1. Primary engine: Dompdf with exact Standard A4 geometry & 96 DPI
         if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)
@@ -184,6 +187,7 @@ SVG;
                     'defaultFont' => 'DejaVu Sans',
                     'dpi' => 96,
                     'isFontSubsettingEnabled' => true,
+                    'chroot' => [$baseDir, $storageFonts],
                 ]);
             return $pdf->output();
         }
@@ -196,6 +200,7 @@ SVG;
             $options->set('defaultFont', 'DejaVu Sans');
             $options->set('dpi', 96);
             $options->set('isFontSubsettingEnabled', true);
+            $options->set('chroot', [$baseDir, $storageFonts]);
 
             $dompdf = new \Dompdf\Dompdf($options);
             $dompdf->loadHtml($html, 'UTF-8');
