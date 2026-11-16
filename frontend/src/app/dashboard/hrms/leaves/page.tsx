@@ -36,15 +36,34 @@ export default function LeavesManagementPage() {
       if (typeFilter !== "all") params.leave_type_id = typeFilter;
 
       const [leavesRes, typesRes] = await Promise.all([
-        api.hrms.leaves.list(params),
+        api.hrms.leaves.list(params).catch((err) => {
+          console.error("api.hrms.leaves.list error:", err);
+          return { leaves: [] };
+        }),
         api.hrms.leaves.types().catch(() => ({ leave_types: [] })),
       ]);
 
-      setLeaves(leavesRes.leaves || []);
-      setLeaveTypes(typesRes.leave_types || []);
+      const rawLeaves = leavesRes?.leaves ?? leavesRes?.data ?? leavesRes;
+      const leavesList: LeaveRequest[] = Array.isArray(rawLeaves)
+        ? rawLeaves
+        : Array.isArray(rawLeaves?.data)
+        ? rawLeaves.data
+        : [];
+
+      const rawTypes = typesRes?.leave_types ?? typesRes?.data ?? typesRes;
+      const typesList: LeaveType[] = Array.isArray(rawTypes)
+        ? rawTypes
+        : Array.isArray(rawTypes?.data)
+        ? rawTypes.data
+        : [];
+
+      setLeaves(leavesList);
+      setLeaveTypes(typesList);
     } catch (err: unknown) {
       console.error("Failed to load leaves:", err);
       toast.error("Failed to load leave records.");
+      setLeaves([]);
+      setLeaveTypes([]);
     } finally {
       setLoading(false);
     }
@@ -72,9 +91,12 @@ export default function LeavesManagementPage() {
     }
   };
 
-  const pendingCount = leaves.filter((l) => l.status === "pending").length;
-  const approvedCount = leaves.filter((l) => l.status === "approved").length;
-  const rejectedCount = leaves.filter((l) => l.status === "rejected").length;
+  const safeLeaves = Array.isArray(leaves) ? leaves : [];
+  const safeLeaveTypes = Array.isArray(leaveTypes) ? leaveTypes : [];
+
+  const pendingCount = safeLeaves.filter((l) => l?.status === "pending").length;
+  const approvedCount = safeLeaves.filter((l) => l?.status === "approved").length;
+  const rejectedCount = safeLeaves.filter((l) => l?.status === "rejected").length;
 
   return (
     <AdminLayout>
@@ -112,7 +134,7 @@ export default function LeavesManagementPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl shadow-sm">
             <div className="text-[11px] font-medium text-slate-500">Total Applications</div>
-            <div className="text-xl font-bold text-slate-900 mt-1">{leaves.length}</div>
+            <div className="text-xl font-bold text-slate-900 mt-1">{safeLeaves.length}</div>
           </div>
           <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl shadow-sm">
             <div className="text-[11px] font-medium text-amber-600">Pending Review</div>
@@ -151,7 +173,7 @@ export default function LeavesManagementPage() {
               className="text-xs rounded-lg border border-slate-200 px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               <option value="all">All Leave Types</option>
-              {leaveTypes.map((t) => (
+              {safeLeaveTypes.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name} ({t.code})
                 </option>
@@ -160,7 +182,7 @@ export default function LeavesManagementPage() {
           </div>
 
           <div className="text-xs text-slate-400">
-            Showing {leaves.length} requests
+            Showing {safeLeaves.length} requests
           </div>
         </div>
 
@@ -168,7 +190,7 @@ export default function LeavesManagementPage() {
         <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden">
           {loading ? (
             <div className="p-10 text-center text-xs text-slate-400">Loading leave requests...</div>
-          ) : leaves.length === 0 ? (
+          ) : safeLeaves.length === 0 ? (
             <div className="p-12 text-center">
               <CalendarDays className="w-10 h-10 text-slate-300 mx-auto mb-2" />
               <p className="text-sm font-semibold text-slate-700">No leave requests found</p>
@@ -179,7 +201,7 @@ export default function LeavesManagementPage() {
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  Apply Leave
+                  <span>Apply Leave</span>
                 </Link>
               </div>
             </div>
@@ -198,64 +220,72 @@ export default function LeavesManagementPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {leaves.map((l) => (
-                    <tr key={l.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="py-3 px-4 font-semibold text-slate-900">
-                        {l.user?.name || "Unknown"}
-                        <div className="text-[11px] font-normal text-slate-400">{l.user?.email}</div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="font-medium text-slate-800">{l.leave_type?.name}</span>
-                        <span className="text-[10px] text-slate-400 block">{l.leave_type?.is_paid ? "Paid" : "Loss of Pay"}</span>
-                      </td>
-                      <td className="py-3 px-4 whitespace-nowrap text-slate-600">
-                        <div>{l.start_date}</div>
-                        <div className="text-[11px] text-slate-400">to {l.end_date}</div>
-                      </td>
-                      <td className="py-3 px-4 font-bold text-slate-800">
-                        {l.total_days} {l.total_days === 1 ? "day" : "days"}
-                      </td>
-                      <td className="py-3 px-4 max-w-xs text-slate-600 truncate" title={l.reason}>
-                        {l.reason}
-                        {l.admin_notes && (
-                          <div className="text-[10px] text-amber-600 mt-0.5">Note: {l.admin_notes}</div>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold uppercase ${
-                          l.status === "approved"
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            : l.status === "rejected"
-                            ? "bg-rose-50 text-rose-700 border border-rose-200"
-                            : "bg-amber-50 text-amber-700 border border-amber-200"
-                        }`}>
-                          {l.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        {l.status === "pending" ? (
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              disabled={actionLoading === l.id}
-                              onClick={() => handleUpdateStatus(l.id, "approved")}
-                              className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-[11px] transition-colors"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              disabled={actionLoading === l.id}
-                              onClick={() => handleUpdateStatus(l.id, "rejected")}
-                              className="px-2.5 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 font-medium text-[11px] transition-colors"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-[11px] text-slate-400 italic">No action needed</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {safeLeaves.map((l) => {
+                    const days = Number(l.total_days ?? l.days_count ?? 1);
+                    const typeName = l.leave_type?.name ?? (l as any).leaveType?.name ?? "General Leave";
+                    const isPaid = l.leave_type?.is_paid ?? (l as any).leaveType?.is_paid ?? true;
+                    const userName = l.user?.name || "Employee";
+                    const userEmail = l.user?.email || "";
+
+                    return (
+                      <tr key={l.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-3 px-4 font-semibold text-slate-900">
+                          {userName}
+                          {userEmail && <div className="text-[11px] font-normal text-slate-400">{userEmail}</div>}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="font-medium text-slate-800">{typeName}</span>
+                          <span className="text-[10px] text-slate-400 block">{isPaid ? "Paid Leave" : "Loss of Pay"}</span>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap text-slate-600">
+                          <div>{l.start_date}</div>
+                          <div className="text-[11px] text-slate-400">to {l.end_date}</div>
+                        </td>
+                        <td className="py-3 px-4 font-bold text-slate-800">
+                          {days} {days === 1 ? "day" : "days"}
+                        </td>
+                        <td className="py-3 px-4 max-w-xs text-slate-600 truncate" title={l.reason}>
+                          {l.reason}
+                          {l.admin_notes && (
+                            <div className="text-[10px] text-amber-600 mt-0.5">Note: {l.admin_notes}</div>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold uppercase ${
+                            l.status === "approved"
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : l.status === "rejected"
+                              ? "bg-rose-50 text-rose-700 border border-rose-200"
+                              : "bg-amber-50 text-amber-700 border border-amber-200"
+                          }`}>
+                            {l.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          {l.status === "pending" ? (
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                disabled={actionLoading === l.id}
+                                onClick={() => handleUpdateStatus(l.id, "approved")}
+                                className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-[11px] transition-colors"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                disabled={actionLoading === l.id}
+                                onClick={() => handleUpdateStatus(l.id, "rejected")}
+                                className="px-2.5 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 font-medium text-[11px] transition-colors"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[11px] text-slate-400 italic">No action needed</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

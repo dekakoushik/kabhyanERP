@@ -74,7 +74,8 @@ export interface LeaveRequest {
   leave_type_id: number;
   start_date: string;
   end_date: string;
-  total_days: number;
+  days_count?: number;
+  total_days?: number;
   reason: string;
   status: "pending" | "approved" | "rejected" | "cancelled";
   approved_by?: number | null;

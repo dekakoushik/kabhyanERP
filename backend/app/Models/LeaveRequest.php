@@ -25,6 +25,13 @@ class LeaveRequest extends Model
         'rejection_reason',
     ];
 
+    protected $appends = ['total_days'];
+
+    public function getTotalDaysAttribute(): float
+    {
+        return (float) ($this->days_count ?? 1.0);
+    }
+
     protected function casts(): array
     {
         return [

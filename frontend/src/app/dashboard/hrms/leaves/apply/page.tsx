@@ -40,11 +40,14 @@ export default function ApplyLeavePage() {
           api.hrms.leaves.types().catch(() => ({ leave_types: [] })),
         ]);
 
-        const staffUsers = (usersRes.users?.data || []).filter((u: User) => u.role !== "client");
+        const rawUsers = usersRes?.users?.data ?? usersRes?.users ?? usersRes?.data ?? [];
+        const usersList: User[] = Array.isArray(rawUsers) ? rawUsers : [];
+        const staffUsers = usersList.filter((u: User) => u.role !== "client");
         setUsers(staffUsers);
         if (staffUsers.length > 0) setUserId(String(staffUsers[0].id));
 
-        const types = typesRes.leave_types || [];
+        const rawTypes = typesRes?.leave_types ?? typesRes?.data ?? [];
+        const types: LeaveType[] = Array.isArray(rawTypes) ? rawTypes : [];
         setLeaveTypes(types);
         if (types.length > 0) setLeaveTypeId(String(types[0].id));
 

@@ -108,11 +108,18 @@ class HrmsController extends Controller
             $query->whereYear('start_date', $request->input('year'));
         }
 
-        $leaves = $query->latest()->paginate($request->input('per_page', 20));
+        $leaves = $query->latest()->paginate($request->input('per_page', 50));
         $balances = $this->calculateUserLeaveBalances($request->input('user_id', $user->id), (int) ($request->input('year', now()->year)));
 
         return response()->json([
-            'leaves' => $leaves,
+            'leaves' => $leaves->items(),
+            'data' => $leaves->items(),
+            'pagination' => [
+                'current_page' => $leaves->currentPage(),
+                'last_page' => $leaves->lastPage(),
+                'per_page' => $leaves->perPage(),
+                'total' => $leaves->total(),
+            ],
             'balances' => $balances,
         ]);
     }
