@@ -565,7 +565,18 @@ export const api = {
           window.location.href = "/login";
         }
       }
-      throw new Error(data.message || "An unexpected error occurred.");
+      const firstValidationError = data.errors
+        ? (Object.values(data.errors).flat()[0] as string)
+        : null;
+      const errorMsg =
+        firstValidationError ||
+        data.message ||
+        data.error ||
+        `Server responded with error status ${res.status}`;
+      const customErr: any = new Error(errorMsg);
+      customErr.status = res.status;
+      customErr.data = data;
+      throw customErr;
     }
 
     return data;

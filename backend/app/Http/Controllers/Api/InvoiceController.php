@@ -239,7 +239,7 @@ class InvoiceController extends Controller
 
         $invoice = DB::transaction(function () use ($validated) {
             $invoiceNumber = $validated['invoice_number'] ?? null;
-            if (empty($invoiceNumber)) {
+            if (empty($invoiceNumber) || Invoice::where('invoice_number', $invoiceNumber)->exists()) {
                 $invoiceNumber = DocumentNumberService::getNextInvoiceNumber(true);
             } else {
                 DocumentNumberService::getNextInvoiceNumber(true);

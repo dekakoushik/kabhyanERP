@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Invoice;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,6 +11,32 @@ class StoreInvoiceRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $invoiceNumber = $this->invoice_number;
+        if (!empty($invoiceNumber) && Invoice::where('invoice_number', $invoiceNumber)->exists()) {
+            // Auto-advance so stale client-side previews don't hard-fail
+            $invoiceNumber = null;
+        }
+
+        $this->merge([
+            'invoice_number' => $invoiceNumber,
+            'project_id' => !empty($this->project_id) ? (int) $this->project_id : null,
+            'estimate_id' => !empty($this->estimate_id) ? (int) $this->estimate_id : null,
+            'proforma_invoice_id' => !empty($this->proforma_invoice_id) ? (int) $this->proforma_invoice_id : null,
+            'client_email' => !empty($this->client_email) ? trim($this->client_email) : null,
+            'client_phone' => !empty($this->client_phone) ? trim($this->client_phone) : null,
+            'client_company' => !empty($this->client_company) ? trim($this->client_company) : null,
+            'client_address' => !empty($this->client_address) ? trim($this->client_address) : null,
+            'client_gstin' => !empty($this->client_gstin) ? trim($this->client_gstin) : null,
+            'tax_rate' => $this->has('tax_rate') && $this->tax_rate !== '' ? (float) $this->tax_rate : 18.00,
+            'discount_rate' => $this->has('discount_rate') && $this->discount_rate !== '' ? (float) $this->discount_rate : 0.00,
+            'round_off' => $this->has('round_off') && $this->round_off !== '' ? (float) $this->round_off : 0.00,
+            'status' => !empty($this->status) ? $this->status : 'unpaid',
+            'currency' => !empty($this->currency) ? $this->currency : 'INR',
+        ]);
     }
 
     public function rules(): array

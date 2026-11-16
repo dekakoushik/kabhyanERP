@@ -580,32 +580,56 @@ export default function InvoiceCreateForm({
         throw new Error("Client name and invoice number are required");
       }
 
+      const payload = {
+        invoice_number: formData.invoice_number || undefined,
+        project_id: formData.project_id && String(formData.project_id).trim() !== "" ? Number(formData.project_id) : null,
+        proforma_invoice_id: linkedProforma ? linkedProforma.id : null,
+        estimate_id: (formData as any).estimate_id ? Number((formData as any).estimate_id) : null,
+        client_name: formData.client_name,
+        client_company: formData.client_company || null,
+        client_email: formData.client_email && formData.client_email.trim() !== "" ? formData.client_email.trim() : null,
+        client_phone: formData.client_phone || null,
+        client_address: formData.client_address || null,
+        client_gstin: formData.client_gstin || null,
+        invoice_date: formData.invoice_date,
+        due_date: formData.due_date || null,
+        status: isPaidReceived ? "paid" : formData.status,
+        currency: formData.currency || "INR",
+        tax_rate: Number(formData.tax_rate) || 18,
+        discount_rate: Number(formData.discount_rate) || 0,
+        round_off: roundOffAmount,
+        notes: formData.notes || null,
+        terms_and_conditions: formData.payment_terms || null,
+        items: formData.items.map((it) => ({
+          item_name: it.item_name,
+          hsn_sac: (it as any).hsn_sac || "998314",
+          description: it.description || null,
+          quantity: Number(it.quantity) || 1,
+          unit: it.unit || "hours",
+          unit_price: Number(it.unit_price) || 0,
+        })),
+        payment_method: isPaidReceived ? paymentMethod : undefined,
+        payment_reference: isPaidReceived ? (paymentReference || "Settled on issuance") : undefined,
+        payment_date: isPaidReceived ? (paymentDate || formData.invoice_date) : undefined,
+      };
+
       await api.request("/invoices", {
         method: "POST",
-        body: JSON.stringify({
-          ...formData,
-          proforma_invoice_id: linkedProforma ? linkedProforma.id : undefined,
-          status: isPaidReceived ? "paid" : formData.status,
-          subtotal,
-          discount_amount: discountAmount,
-          tax_amount: taxAmount,
-          round_off: roundOffAmount,
-          total: grandTotal,
-          payment_method: isPaidReceived ? paymentMethod : undefined,
-          payment_reference: isPaidReceived ? (paymentReference || "Settled on issuance") : undefined,
-          payment_date: isPaidReceived ? (paymentDate || formData.invoice_date) : undefined,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (linkedProforma) {
         toast.success(`Milestone Tax Invoice created against ${linkedProforma.proforma_number}`);
-        router.push(`/dashboard/proforma/${linkedProforma.id}`);
+        router.push(`/dashboard/proforma/${linkedProforma.proforma_number || linkedProforma.id}`);
       } else {
         toast.success("Tax Invoice created successfully");
         router.push("/dashboard/invoices");
       }
     } catch (err: any) {
-      setFormError(err.message || "Failed to create invoice");
+      console.error("Invoice creation failure:", err);
+      const msg = err.message || "Failed to create invoice";
+      setFormError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

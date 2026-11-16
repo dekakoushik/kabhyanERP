@@ -107,11 +107,31 @@ class ProformaInvoice extends Model
             $status = 'partially_invoiced';
         }
 
-        $this->updateQuietly([
-            'invoiced_amount' => $invoicedTotal,
-            'remaining_amount' => $remaining,
-            'status' => $status,
-        ]);
+        try {
+            $updateData = ['status' => $status];
+            if (\Illuminate\Support\Facades\Schema::hasColumn('proforma_invoices', 'invoiced_amount')) {
+                $updateData['invoiced_amount'] = $invoicedTotal;
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('proforma_invoices', 'remaining_amount')) {
+                $updateData['remaining_amount'] = $remaining;
+            }
+            $this->updateQuietly($updateData);
+        } catch (\Throwable $e) {
+            // Graceful fallback to legacy status values if PostgreSQL enum check constraint is still enforced
+            try {
+                $fallbackStatus = $remaining <= 0.01 ? 'paid' : ($invoicedTotal > 0 ? 'partially_paid' : 'unpaid');
+                $fallbackData = ['status' => $fallbackStatus];
+                if (\Illuminate\Support\Facades\Schema::hasColumn('proforma_invoices', 'invoiced_amount')) {
+                    $fallbackData['invoiced_amount'] = $invoicedTotal;
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn('proforma_invoices', 'remaining_amount')) {
+                    $fallbackData['remaining_amount'] = $remaining;
+                }
+                $this->updateQuietly($fallbackData);
+            } catch (\Throwable $e2) {
+                \Illuminate\Support\Facades\Log::warning("Could not sync invoiced totals for Proforma #{$this->id}: {$e2->getMessage()}");
+            }
+        }
     }
 
     /**

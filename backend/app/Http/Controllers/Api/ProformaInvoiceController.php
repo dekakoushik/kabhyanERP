@@ -154,7 +154,7 @@ class ProformaInvoiceController extends Controller
             'client_address' => ['nullable', 'string'],
             'invoice_date' => ['required', 'date'],
             'due_date' => ['nullable', 'date'],
-            'status' => ['required', Rule::in(['unpaid', 'partially_paid', 'paid', 'cancelled'])],
+            'status' => ['required', Rule::in(['unpaid', 'partially_paid', 'paid', 'partially_invoiced', 'fully_invoiced', 'cancelled'])],
             'currency' => ['required', 'string', 'max:10'],
             'tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'discount_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -256,7 +256,7 @@ class ProformaInvoiceController extends Controller
             'client_address' => ['nullable', 'string'],
             'invoice_date' => ['required', 'date'],
             'due_date' => ['nullable', 'date'],
-            'status' => ['required', Rule::in(['unpaid', 'partially_paid', 'paid', 'cancelled'])],
+            'status' => ['required', Rule::in(['unpaid', 'partially_paid', 'paid', 'partially_invoiced', 'fully_invoiced', 'cancelled'])],
             'currency' => ['required', 'string', 'max:10'],
             'tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'discount_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -321,7 +321,7 @@ class ProformaInvoiceController extends Controller
     public function updateStatus(Request $request, ProformaInvoice $proformaInvoice): JsonResponse
     {
         $validated = $request->validate([
-            'status' => ['required', Rule::in(['unpaid', 'partially_paid', 'paid', 'cancelled'])],
+            'status' => ['required', Rule::in(['unpaid', 'partially_paid', 'paid', 'partially_invoiced', 'fully_invoiced', 'cancelled'])],
             'paid_amount' => ['nullable', 'numeric', 'min:0'],
         ]);
 
