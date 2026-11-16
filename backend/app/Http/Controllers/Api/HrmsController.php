@@ -16,6 +16,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -669,12 +670,12 @@ class HrmsController extends Controller
     /**
      * Finalize and lock a payroll batch.
      */
-    public function payrollFinalize(PayrollBatch $batch): JsonResponse
+    public function payrollFinalize(Request $request, PayrollBatch $batch): JsonResponse
     {
         $batch->update([
             'status' => 'finalized',
             'finalized_at' => now(),
-            'finalized_by' => auth()->id(),
+            'finalized_by' => $request->user()?->id ?? Auth::id(),
         ]);
 
         return response()->json([
@@ -719,13 +720,13 @@ class HrmsController extends Controller
     /**
      * Fetch payslip details for rendering/printing.
      */
-    public function payslipShow($id): JsonResponse
+    public function payslipShow(Request $request, $id): JsonResponse
     {
         $payslip = Payslip::with(['user', 'batch.finalizer'])->findOrFail($id);
 
         // Security: non-admin can only view their own payslip
-        $currentUser = auth()->user();
-        if (!in_array($currentUser->role, ['superadmin', 'admin', 'hr']) && $payslip->user_id !== $currentUser->id) {
+        $currentUser = $request->user() ?? Auth::user();
+        if ($currentUser && !in_array($currentUser->role, ['superadmin', 'admin', 'hr']) && $payslip->user_id !== $currentUser->id) {
             return response()->json(['message' => 'Unauthorized access to payslip.'], 403);
         }
 
