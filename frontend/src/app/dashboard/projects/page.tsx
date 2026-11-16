@@ -231,10 +231,10 @@ export default function ProjectsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
-              Project Portfolio
+              Projects
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              Manage client deliverables, milestones, budgets, and project teams.
+              Track client deliverables, budgets, and project status.
             </p>
           </div>
 
@@ -243,14 +243,14 @@ export default function ProjectsPage() {
               href="/dashboard/tasks"
               className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition cursor-pointer shadow-2xs"
             >
-              <span>View All Tasks</span>
+              <span>Tasks</span>
             </Link>
             <Link
               href="/dashboard/projects/create"
               className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs hover:shadow-xs transition cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>New Project</span>
+              <span>+ New Project</span>
             </Link>
           </div>
         </div>
@@ -299,7 +299,7 @@ export default function ProjectsPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by project name, project code, or client..."
+              placeholder="Search projects..."
               className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </form>
@@ -355,21 +355,21 @@ export default function ProjectsPage() {
         {loading ? (
           <div className="bg-white rounded-2xl border border-slate-200/80 py-20 flex flex-col items-center justify-center gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            <p className="text-xs font-semibold text-slate-500">Loading project database...</p>
+            <p className="text-xs font-semibold text-slate-500">Loading projects...</p>
           </div>
         ) : projects.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200/80 py-16 text-center px-4">
             <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-base font-bold text-slate-800">No projects found</p>
+            <p className="text-base font-bold text-slate-800">No projects yet</p>
             <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
-              Get started by launching your first company project.
+              Create a project to manage client milestones and deliverables.
             </p>
             <Link
               href="/dashboard/projects/create"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Create Project</span>
+              <span>+ New Project</span>
             </Link>
           </div>
         ) : (

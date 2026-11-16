@@ -121,26 +121,26 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const navigationGroups: NavGroup[] = [
     {
-      title: "Core Overview",
+      title: "Overview",
       items: [
         { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       ],
     },
     {
-      title: "Finance & Sales",
+      title: "Finance",
       items: [
         { name: "Estimates", href: "/dashboard/estimates", icon: FileText, roles: ["superadmin", "admin", "manager", "hr"] },
         { name: "Proforma Invoices", href: "/dashboard/proforma", icon: Receipt, roles: ["superadmin", "admin", "manager"] },
         { name: "Tax Invoices", href: "/dashboard/invoices", icon: FileCheck, roles: ["superadmin", "admin", "manager"] },
-        { name: "Income & Expense", href: "/dashboard/accounts", icon: TrendingUp, roles: ["superadmin", "admin"] },
-        { name: "Expense Register", href: "/dashboard/expenses", icon: CreditCard, roles: ["superadmin", "admin", "manager", "hr"] },
+        { name: "Income & Expenses", href: "/dashboard/accounts", icon: TrendingUp, roles: ["superadmin", "admin"] },
+        { name: "Expenses", href: "/dashboard/expenses", icon: CreditCard, roles: ["superadmin", "admin", "manager", "hr"] },
       ],
     },
     {
-      title: "Operations & Delivery",
+      title: "Operations",
       items: [
-        { name: "Client Directory", href: "/dashboard/clients", icon: Building, roles: ["superadmin", "admin", "manager"] },
-        { name: "Projects Portfolio", href: "/dashboard/projects", icon: Briefcase },
+        { name: "Clients", href: "/dashboard/clients", icon: Building, roles: ["superadmin", "admin", "manager"] },
+        { name: "Projects", href: "/dashboard/projects", icon: Briefcase },
         { name: "Support Tickets", href: "/dashboard/tickets", icon: LifeBuoy },
       ],
     },
@@ -148,18 +148,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       title: "Administration",
       items: [
         {
-          name: "Team",
+          name: "Team & Staff",
           icon: Users,
           roles: ["superadmin", "admin", "hr"],
           children: [
-            { name: "All Members", href: "/dashboard/users", icon: Users },
+            { name: "Team Directory", href: "/dashboard/users", icon: Users },
             { name: "Add Member", href: "/dashboard/users/create", icon: UserPlus, roles: ["superadmin", "admin"] },
             { name: "Roles & Permissions", href: "/dashboard/users/roles", icon: ShieldCheck, roles: ["superadmin", "admin"] },
             { name: "Departments", href: "/dashboard/users/departments", icon: Building },
           ],
         },
         {
-          name: "System Settings",
+          name: "Settings",
           icon: Settings,
           roles: ["superadmin", "admin"],
           children: [

@@ -83,13 +83,13 @@ export default function DashboardPage() {
           <div className="relative z-10 space-y-1.5">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-[11px] font-medium uppercase tracking-wider text-blue-200">
               <Crown className="w-3 h-3 text-blue-300" />
-              <span>Executive Command Cockpit</span>
+              <span>Workspace Overview</span>
             </div>
             <h1 className="text-lg sm:text-xl font-bold tracking-tight">
               Good day, {user?.name || "Administrator"}
             </h1>
             <p className="text-xs text-slate-300 max-w-xl">
-              Real-time enterprise overview of client revenue, project milestones, accounts receivable, and operational support.
+              Here is what is happening across your business today.
             </p>
           </div>
 
@@ -99,14 +99,14 @@ export default function DashboardPage() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs shadow-2xs transition"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Create Invoice</span>
+              <span>+ New Invoice</span>
             </Link>
             <Link
               href="/dashboard/projects/create"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-xs transition backdrop-blur-xs"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>New Project</span>
+              <span>+ New Project</span>
             </Link>
           </div>
         </div>
@@ -117,7 +117,7 @@ export default function DashboardPage() {
           <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200/90 shadow-2xs hover:border-slate-300 transition">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                Invoiced Revenue
+                Total Billed
               </span>
               <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600">
                 <FileCheck className="w-4 h-4" />
@@ -131,7 +131,7 @@ export default function DashboardPage() {
               </span>
             </div>
             <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-              <span>{invoiceStats?.paid_count ?? 0} Settled Invoices</span>
+              <span>{invoiceStats?.paid_count ?? 0} Paid Invoices</span>
               <Link href="/dashboard/invoices" className="text-blue-600 hover:underline flex items-center text-[11px] font-medium">
                 View Invoices <ArrowRight className="w-3 h-3 ml-0.5" />
               </Link>
@@ -157,9 +157,9 @@ export default function DashboardPage() {
               </span>
             </div>
             <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-              <span>Total: {projectStats?.total_projects ?? 0} deliverables</span>
+              <span>Total: {projectStats?.total_projects ?? 0} projects</span>
               <Link href="/dashboard/projects" className="text-blue-600 hover:underline flex items-center text-[11px] font-medium">
-                Portfolio <ArrowRight className="w-3 h-3 ml-0.5" />
+                Projects <ArrowRight className="w-3 h-3 ml-0.5" />
               </Link>
             </div>
           </div>
@@ -168,7 +168,7 @@ export default function DashboardPage() {
           <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200/90 shadow-2xs hover:border-slate-300 transition">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                Support & Requests
+                Support Tickets
               </span>
               <div className="p-2 rounded-lg bg-purple-50 text-purple-600">
                 <LifeBuoy className="w-4 h-4" />
@@ -179,7 +179,7 @@ export default function DashboardPage() {
                 {loading ? "..." : (ticketStats?.open_tickets ?? ticketStats?.total_tickets ?? 0)}
               </span>
               <span className="text-[10px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200/60 uppercase tracking-wider">
-                Active Queue
+                Open
               </span>
             </div>
             <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
@@ -194,7 +194,7 @@ export default function DashboardPage() {
           <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200/90 shadow-2xs hover:border-slate-300 transition">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                Active Personnel
+                Team Members
               </span>
               <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600">
                 <Users className="w-4 h-4" />
@@ -205,13 +205,13 @@ export default function DashboardPage() {
                 {loading ? "..." : (userStats?.active_users ?? userStats?.total_users ?? 0)}
               </span>
               <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60 uppercase tracking-wider">
-                Engaged
+                Active
               </span>
             </div>
             <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
               <span>{userStats?.total_users ?? 0} Total Staff</span>
               <Link href="/dashboard/users" className="text-indigo-600 hover:underline flex items-center text-[11px] font-medium">
-                Directory <ArrowRight className="w-3 h-3 ml-0.5" />
+                Team <ArrowRight className="w-3 h-3 ml-0.5" />
               </Link>
             </div>
           </div>
@@ -227,14 +227,14 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2">
                   <Receipt className="w-4 h-4 text-emerald-600" />
                   <h2 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
-                    Recent Billing & Tax Invoices
+                    Recent Invoices
                   </h2>
                 </div>
                 <Link
                   href="/dashboard/invoices"
                   className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
                 >
-                  <span>View All Invoices</span>
+                  <span>View All</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
@@ -244,8 +244,8 @@ export default function DashboardPage() {
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                       <th className="py-2.5 px-4">Invoice #</th>
-                      <th className="py-2.5 px-4">Client Entity</th>
-                      <th className="py-2.5 px-4">Total (INR)</th>
+                      <th className="py-2.5 px-4">Client</th>
+                      <th className="py-2.5 px-4">Amount</th>
                       <th className="py-2.5 px-4">Status</th>
                       <th className="py-2.5 px-4 text-right">Action</th>
                     </tr>
@@ -259,7 +259,7 @@ export default function DashboardPage() {
                           </td>
                           <td className="py-2.5 px-4">
                             <span className="font-semibold text-slate-900 block text-xs">
-                              {inv.client?.company_name || inv.client?.name || "Corporate Client"}
+                              {inv.client?.company_name || inv.client?.name || "Client"}
                             </span>
                             <span className="text-[11px] text-slate-400">{inv.project?.name || "General Service"}</span>
                           </td>
@@ -294,7 +294,7 @@ export default function DashboardPage() {
                         <td colSpan={5} className="py-6 text-center text-slate-400 text-xs">
                           No recent invoices found.{" "}
                           <Link href="/dashboard/invoices/create" className="text-blue-600 underline">
-                            Create your first invoice
+                            Create an invoice
                           </Link>
                         </td>
                       </tr>
@@ -310,14 +310,14 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2">
                   <Briefcase className="w-4 h-4 text-blue-600" />
                   <h2 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
-                    Key Client Projects
+                    Active Projects
                   </h2>
                 </div>
                 <Link
                   href="/dashboard/projects"
                   className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
                 >
-                  <span>Project Portfolio</span>
+                  <span>View Projects</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
@@ -337,7 +337,7 @@ export default function DashboardPage() {
                           <span className="font-semibold text-slate-900 text-xs">{p.name}</span>
                         </div>
                         <p className="text-[11px] text-slate-500">
-                          Client: <span className="font-medium text-slate-700">{p.client?.company_name || p.client?.name || "Enterprise"}</span> • Budget: <span className="font-mono font-medium">₹{Number(p.budget || 0).toLocaleString("en-IN")}</span>
+                          Client: <span className="font-medium text-slate-700">{p.client?.company_name || p.client?.name || "Client"}</span> • Budget: <span className="font-mono font-medium">₹{Number(p.budget || 0).toLocaleString("en-IN")}</span>
                         </p>
                       </div>
 
@@ -355,18 +355,18 @@ export default function DashboardPage() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-center text-xs text-slate-400 py-3">No active projects loaded.</p>
+                  <p className="text-center text-xs text-slate-400 py-3">No active projects found.</p>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Right Column (4 cols): Quick Launch & SLA Alerts */}
+          {/* Right Column (4 cols): Quick Launch & Alerts */}
           <div className="lg:col-span-4 space-y-4 sm:space-y-6">
             {/* Quick Actions Card */}
             <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs p-4 sm:p-5 space-y-3">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                Direct Actions & Short-cuts
+                Quick Actions
               </span>
 
               <div className="grid grid-cols-1 gap-2 pt-0.5">
@@ -379,8 +379,8 @@ export default function DashboardPage() {
                       <FileText className="w-4 h-4" />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-slate-800">Draft Estimate</p>
-                      <p className="text-[11px] text-slate-400">Client proposal with deliverables</p>
+                      <p className="text-xs font-semibold text-slate-800">New Estimate</p>
+                      <p className="text-[11px] text-slate-400">Quotes and proposals</p>
                     </div>
                   </div>
                   <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 transition" />
@@ -395,8 +395,8 @@ export default function DashboardPage() {
                       <Building className="w-4 h-4" />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-slate-800">Add Corporate Client</p>
-                      <p className="text-[11px] text-slate-400">New company & GSTIN profile</p>
+                      <p className="text-xs font-semibold text-slate-800">Add Client</p>
+                      <p className="text-[11px] text-slate-400">Company & billing info</p>
                     </div>
                   </div>
                   <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 transition" />
@@ -411,8 +411,8 @@ export default function DashboardPage() {
                       <LifeBuoy className="w-4 h-4" />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-slate-800">Dispatch Support Ticket</p>
-                      <p className="text-[11px] text-slate-400">Client issue or change request</p>
+                      <p className="text-xs font-semibold text-slate-800">New Ticket</p>
+                      <p className="text-[11px] text-slate-400">Client request or issue</p>
                     </div>
                   </div>
                   <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-600 transition" />
@@ -424,7 +424,7 @@ export default function DashboardPage() {
             <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs p-4 sm:p-5 space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                  Critical SLA Radar
+                  Urgent Tickets
                 </span>
                 <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-200">
                   Live Queue
@@ -455,8 +455,8 @@ export default function DashboardPage() {
               ) : (
                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 text-center space-y-1">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto" />
-                  <p className="text-xs font-semibold text-slate-700">No Critical Breaches</p>
-                  <p className="text-[11px] text-slate-400">All client tickets are running within SLA bounds.</p>
+                  <p className="text-xs font-semibold text-slate-700">No Urgent Tickets</p>
+                  <p className="text-[11px] text-slate-400">All client tickets are running on schedule.</p>
                 </div>
               )}
 
@@ -464,7 +464,7 @@ export default function DashboardPage() {
                 href="/dashboard/tickets"
                 className="w-full flex items-center justify-center py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs transition"
               >
-                Open Support Hub
+                View Tickets
               </Link>
             </div>
           </div>

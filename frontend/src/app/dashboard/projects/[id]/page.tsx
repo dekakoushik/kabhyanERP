@@ -386,7 +386,7 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
             }`}
           >
             <LayoutGrid className="w-3.5 h-3.5" />
-            <span>Sprint Kanban</span>
+            <span>Kanban</span>
           </button>
           <button
             onClick={() => switchTab("list")}
@@ -397,7 +397,7 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
             }`}
           >
             <ListFilter className="w-3.5 h-3.5" />
-            <span>Task List</span>
+            <span>List</span>
           </button>
           <button
             onClick={() => switchTab("overview")}
@@ -408,7 +408,7 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
             }`}
           >
             <Briefcase className="w-3.5 h-3.5" />
-            <span>Overview & Team</span>
+            <span>Overview</span>
           </button>
         </div>
 

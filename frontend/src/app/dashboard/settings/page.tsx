@@ -62,7 +62,7 @@ function SettingsOverviewContent() {
 
   const cards = [
     {
-      title: "Corporate Identity",
+      title: "Company Profile",
       href: "/dashboard/settings/company",
       icon: Building,
       color: "bg-blue-50 text-blue-600 border-blue-200",
@@ -76,11 +76,11 @@ function SettingsOverviewContent() {
       ],
     },
     {
-      title: "Indian GST Statutory",
+      title: "GST & Tax Setup",
       href: "/dashboard/settings/gst",
       icon: Receipt,
       color: "bg-purple-50 text-purple-600 border-purple-200",
-      description: "CGST/SGST & IGST Tax Architecture",
+      description: "CGST, SGST & IGST Tax Rates",
       badge: flat["company_gstin"] || "18AAGCK2934D1Z2",
       badgeColor: "bg-purple-50 text-purple-700 border-purple-200 font-mono",
       details: [
@@ -90,7 +90,7 @@ function SettingsOverviewContent() {
       ],
     },
     {
-      title: "Bank & Wire Settlement",
+      title: "Bank Accounts",
       href: "/dashboard/settings/banking",
       icon: Building2,
       color: "bg-emerald-50 text-emerald-600 border-emerald-200",
@@ -104,7 +104,7 @@ function SettingsOverviewContent() {
       ],
     },
     {
-      title: "Localization & Formats",
+      title: "Currency & Formats",
       href: "/dashboard/settings/localization",
       icon: Globe,
       color: "bg-amber-50 text-amber-600 border-amber-200",
@@ -118,21 +118,21 @@ function SettingsOverviewContent() {
       ],
     },
     {
-      title: "Security & Access",
+      title: "Security & Portal",
       href: "/dashboard/settings/security",
       icon: KeyRound,
       color: "bg-rose-50 text-rose-600 border-rose-200",
       description: "Client Access & Sessions",
-      badge: flat["client_portal_enabled"] === "true" ? "API Live" : "API Disabled",
+      badge: flat["client_portal_enabled"] === "true" ? "Portal Active" : "Portal Disabled",
       badgeColor: flat["client_portal_enabled"] === "true" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-600 border-slate-200",
       details: [
-        { label: "Mobile App API", val: "Active" },
-        { label: "Session Inactivity", val: `${flat["session_timeout_minutes"] || "120"} mins` },
-        { label: "Client Auto-Alerts", val: flat["auto_notify_client_on_reply"] === "true" ? "Enabled" : "Disabled" },
+        { label: "Portal Access", val: "Active" },
+        { label: "Session Timeout", val: `${flat["session_timeout_minutes"] || "120"} mins` },
+        { label: "Notifications", val: flat["auto_notify_client_on_reply"] === "true" ? "Enabled" : "Disabled" },
       ],
     },
     {
-      title: "SMTP Mail Dispatcher",
+      title: "Email Delivery",
       href: "/dashboard/settings/email",
       icon: Mail,
       color: "bg-cyan-50 text-cyan-600 border-cyan-200",
@@ -142,7 +142,7 @@ function SettingsOverviewContent() {
       details: [
         { label: "Port & Security", val: `${flat["mail_port"] || "587"} (${(flat["mail_encryption"] || "tls").toUpperCase()})` },
         { label: "Sender Email", val: flat["mail_from_address"] || "support@kabhyan.com" },
-        { label: "Interactive Test", val: "Available in Sub-page" },
+        { label: "Test Email", val: "Available in settings" },
       ],
     },
   ];
@@ -157,13 +157,13 @@ function SettingsOverviewContent() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xs sm:text-sm font-semibold text-slate-900">Infrastructure Health: Operational</h2>
+              <h2 className="text-xs sm:text-sm font-semibold text-slate-900">System Status: Healthy</h2>
               <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-medium uppercase tracking-wider">
                 PostgreSQL Live
               </span>
             </div>
             <p className="text-[11px] text-slate-500 mt-0.5">
-              PHP {environment.php_version} • Laravel {environment.laravel_version} • PostgreSQL Connected ({environment.database_ping || "Active"})
+              PHP {environment.php_version} • Laravel {environment.laravel_version} • Database Active ({environment.database_ping || "Connected"})
             </p>
           </div>
         </div>
@@ -172,7 +172,7 @@ function SettingsOverviewContent() {
           href="/dashboard/settings/system"
           className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition cursor-pointer shadow-2xs"
         >
-          <span>View Diagnostics</span>
+          <span>Diagnostics</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </Link>
       </div>
@@ -213,7 +213,7 @@ function SettingsOverviewContent() {
               </div>
 
               <div className="pt-1.5 flex items-center justify-between text-xs font-semibold text-blue-600 group-hover:translate-x-0.5 transition-transform">
-                <span>Configure settings</span>
+                <span>Configure</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </div>
             </Link>

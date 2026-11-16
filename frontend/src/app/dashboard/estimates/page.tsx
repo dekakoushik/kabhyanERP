@@ -411,10 +411,10 @@ export default function EstimatesPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
-              Estimates & Proposals
+              Estimates
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              Manage client proposals, quotes, and 1-click conversion to Proforma Invoices.
+              Create quotes and convert them to proforma invoices.
             </p>
           </div>
 
@@ -423,7 +423,7 @@ export default function EstimatesPage() {
             className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs hover:shadow-xs transition cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Generate Estimate</span>
+            <span>+ New Estimate</span>
           </Link>
         </div>
 
@@ -471,7 +471,7 @@ export default function EstimatesPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by estimate #, client name, company, or email..."
+              placeholder="Search estimates..."
               className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </form>
@@ -486,7 +486,7 @@ export default function EstimatesPage() {
               >
                 <option value="">All Statuses</option>
                 <option value="draft">Draft</option>
-                <option value="sent">Sent to Client</option>
+                <option value="sent">Sent</option>
                 <option value="accepted">Accepted</option>
                 <option value="declined">Declined</option>
                 <option value="invoiced">Invoiced</option>
@@ -513,21 +513,21 @@ export default function EstimatesPage() {
           {loading ? (
             <div className="py-20 flex flex-col items-center justify-center gap-3">
               <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-              <p className="text-xs font-semibold text-slate-500">Loading client estimates...</p>
+              <p className="text-xs font-semibold text-slate-500">Loading estimates...</p>
             </div>
           ) : estimates.length === 0 ? (
             <div className="py-16 text-center px-4">
               <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
               <p className="text-base font-bold text-slate-800">No estimates found</p>
               <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
-                Generate your first itemized IT proposal for prospective or current clients.
+                Create an estimate to send quotes and scopes to clients.
               </p>
               <Link
                 href="/dashboard/estimates/create"
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                <span>Create Proposal</span>
+                <span>+ New Estimate</span>
               </Link>
             </div>
           ) : (

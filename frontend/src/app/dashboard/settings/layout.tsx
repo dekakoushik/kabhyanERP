@@ -58,19 +58,19 @@ export default function SettingsLayout({
         {/* Top Header & Global Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-              <span>Administration</span>
+            <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+              <Link href="/dashboard" className="hover:text-slate-800 transition">Workspace</Link>
               <span>/</span>
-              <span className="text-blue-600">Enterprise Settings</span>
+              <span className="font-semibold text-slate-800">Settings</span>
             </div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2.5">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2.5">
               <span className="p-2 bg-blue-100 text-blue-700 rounded-xl">
                 <Settings className="w-5 h-5" />
               </span>
-              System Configuration & Controls
+              Settings
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Manage corporate legal entity, Indian GST compliance, banking coordinates, and application cache.
+              Manage company profile, tax configuration, and system preferences.
             </p>
           </div>
 
@@ -79,10 +79,10 @@ export default function SettingsLayout({
               onClick={handleFlushCache}
               disabled={flushing}
               className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs tracking-wide shadow-xs transition cursor-pointer disabled:opacity-50"
-              title="Clear Laravel application and configuration cache"
+              title="Clear application cache"
             >
               <RefreshCw className={`w-3.5 h-3.5 text-blue-600 ${flushing ? "animate-spin" : ""}`} />
-              <span>{flushing ? "Flushing..." : "Flush Cache"}</span>
+              <span>{flushing ? "Clearing..." : "Clear Cache"}</span>
             </button>
           </div>
         </div>

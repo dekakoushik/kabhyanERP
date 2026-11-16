@@ -69,9 +69,9 @@ function SystemHealthContent() {
               <Cpu className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900">Infrastructure & System Diagnostics</h2>
+              <h2 className="text-base font-bold text-slate-900">System Health & Diagnostics</h2>
               <p className="text-xs text-slate-500">
-                Real-time operational status of PostgreSQL database engine, application cache, and PHP runtime.
+                Real-time status of PostgreSQL database, cache, and server runtime.
               </p>
             </div>
           </div>
@@ -82,7 +82,7 @@ function SystemHealthContent() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-xs transition cursor-pointer disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${flushing ? "animate-spin" : ""}`} />
-            <span>{flushing ? "Clearing Cache..." : "Flush Application Cache"}</span>
+            <span>{flushing ? "Clearing..." : "Clear Cache"}</span>
           </button>
         </div>
 

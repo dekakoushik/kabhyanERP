@@ -226,14 +226,14 @@ function CompanySettingsContent() {
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900">Brand Assets & Multi-Format Logos</h2>
+              <h2 className="text-base font-bold text-slate-900">Brand Logos</h2>
               <p className="text-xs text-slate-500">
-                Manage specialized logo formats optimized for Application UI, Document printing, and square icons.
+                Upload logos for the app, invoices, and browser icon.
               </p>
             </div>
           </div>
           <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-            Persistent Storage Active
+            Storage Active
           </span>
         </div>
 
@@ -369,7 +369,7 @@ function CompanySettingsContent() {
 
             <div>
               <label className="block font-bold text-slate-700 mb-1.5">
-                Official Sub-tagline / Business Scope
+                Tagline
               </label>
               <input
                 type="text"
@@ -382,7 +382,7 @@ function CompanySettingsContent() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
             <div>
-              <label className="block font-bold text-slate-700 mb-1.5">Corporate Email</label>
+              <label className="block font-bold text-slate-700 mb-1.5">Email</label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -395,7 +395,7 @@ function CompanySettingsContent() {
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1.5">HQ Telephone</label>
+              <label className="block font-bold text-slate-700 mb-1.5">Phone</label>
               <div className="relative">
                 <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -408,7 +408,7 @@ function CompanySettingsContent() {
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1.5">Official Website URL</label>
+              <label className="block font-bold text-slate-700 mb-1.5">Website</label>
               <div className="relative">
                 <Globe className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input

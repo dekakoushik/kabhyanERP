@@ -74,10 +74,10 @@ function AccountsContent() {
             <span className="p-1.5 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100">
               <TrendingUp className="w-4 h-4" />
             </span>
-            Income vs Expense (P&L Ledger)
+            Income & Expenses
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Real-time cashflow analytics, revenue realization, operational expenses, and net profit margin.
+            Track revenue, operating expenses, and net profit.
           </p>
         </div>
 
@@ -100,7 +100,7 @@ function AccountsContent() {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs tracking-wide shadow-2xs transition cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>Print / PDF Report</span>
+            <span>Export PDF</span>
           </button>
 
           <Link
@@ -108,7 +108,7 @@ function AccountsContent() {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-2xs hover:shadow-xs transition cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Record Expense</span>
+            <span>+ Add Expense</span>
           </Link>
         </div>
       </div>
@@ -132,7 +132,7 @@ function AccountsContent() {
         {/* Total Income Collected */}
         <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Income Realized</span>
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Income</span>
             <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100">
               <ArrowDownRight className="w-4 h-4" />
             </div>
@@ -152,7 +152,7 @@ function AccountsContent() {
         {/* Total Expenses Paid */}
         <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Expenses Paid</span>
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Expenses</span>
             <div className="p-2 bg-red-50 text-red-600 rounded-lg border border-red-100">
               <ArrowUpRight className="w-4 h-4" />
             </div>
@@ -172,7 +172,7 @@ function AccountsContent() {
         {/* Net Operating Profit */}
         <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Net Operating Profit</span>
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Net Profit</span>
             <div className={`p-2 rounded-lg border ${summary.net_operating_profit >= 0 ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-amber-50 text-amber-700 border-amber-100"}`}>
               <TrendingUp className="w-4 h-4" />
             </div>
@@ -192,7 +192,7 @@ function AccountsContent() {
         {/* Outstanding Client Receivables */}
         <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Outstanding Due</span>
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Unpaid Invoices</span>
             <div className="p-2 bg-amber-50 text-amber-700 rounded-lg border border-amber-100">
               <Clock className="w-4 h-4" />
             </div>
@@ -213,7 +213,7 @@ function AccountsContent() {
           <div>
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-blue-600" />
-              Monthly Cashflow Trend ({year})
+              Monthly Cashflow ({year})
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
               Side-by-side comparison of Income received vs Operating Expenses.

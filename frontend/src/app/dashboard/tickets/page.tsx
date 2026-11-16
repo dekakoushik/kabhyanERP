@@ -260,10 +260,10 @@ function TicketsContent() {
             <span className="p-1.5 bg-purple-50 text-purple-700 rounded-lg border border-purple-100">
               <LifeBuoy className="w-4 h-4" />
             </span>
-            Client Support & Change Request Hub
+            Support Tickets
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Resolve customer reported bugs, change requests, feature enhancements, and milestone queries.
+            Track and resolve client requests and support issues.
           </p>
         </div>
 
@@ -272,7 +272,7 @@ function TicketsContent() {
           className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-2xs hover:shadow-xs transition-all cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>New Support Ticket</span>
+          <span>+ New Ticket</span>
         </Link>
       </div>
 
@@ -292,9 +292,9 @@ function TicketsContent() {
 
           <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider">Open & Unassigned</p>
+              <p className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider">Open Tickets</p>
               <p className="text-xl font-bold text-amber-700 mt-1">{stats.open_tickets}</p>
-              <p className="text-[11px] text-amber-600/80 mt-0.5">Needs staff response</p>
+              <p className="text-[11px] text-amber-600/80 mt-0.5">Awaiting staff response</p>
             </div>
             <div className="p-2 bg-amber-50 text-amber-700 rounded-lg border border-amber-100">
               <Clock className="w-4 h-4" />
@@ -305,7 +305,7 @@ function TicketsContent() {
             <div>
               <p className="text-[11px] font-semibold text-blue-600 uppercase tracking-wider">In Progress</p>
               <p className="text-xl font-bold text-blue-700 mt-1">{stats.in_progress}</p>
-              <p className="text-[11px] text-blue-600/80 mt-0.5">Engineering actively investigating</p>
+              <p className="text-[11px] text-blue-600/80 mt-0.5">Actively investigating</p>
             </div>
             <div className="p-2 bg-blue-50 text-blue-700 rounded-lg border border-blue-100">
               <Sparkles className="w-4 h-4" />
@@ -316,7 +316,7 @@ function TicketsContent() {
             <div>
               <p className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">Resolved</p>
               <p className="text-xl font-bold text-emerald-700 mt-1">{stats.resolved}</p>
-              <p className="text-[11px] text-emerald-600/80 mt-0.5">Delivered to client satisfaction</p>
+              <p className="text-[11px] text-emerald-600/80 mt-0.5">Closed tickets</p>
             </div>
             <div className="p-2 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100">
               <CheckCircle className="w-4 h-4" />
@@ -331,7 +331,7 @@ function TicketsContent() {
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search ticket number, subject, description..."
+            placeholder="Search tickets..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
@@ -384,21 +384,21 @@ function TicketsContent() {
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            <p className="text-xs font-semibold text-slate-500">Loading Support Tickets...</p>
+            <p className="text-xs font-semibold text-slate-500">Loading tickets...</p>
           </div>
         ) : tickets.length === 0 ? (
           <div className="py-16 text-center">
             <LifeBuoy className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-sm font-bold text-slate-700">No Tickets Found</h3>
+            <h3 className="text-sm font-bold text-slate-700">No tickets found</h3>
             <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-4">
-              There are currently no tickets matching your filter criteria.
+              Create a ticket to log client issues or requests.
             </p>
             <Link
               href="/dashboard/tickets/create"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>New Support Ticket</span>
+              <span>+ New Ticket</span>
             </Link>
           </div>
         ) : (

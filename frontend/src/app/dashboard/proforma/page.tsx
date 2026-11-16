@@ -440,10 +440,10 @@ function ProformaContent() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
-            Proforma Invoices (PI)
+            Proforma Invoices
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Generate formal advance invoices from accepted estimates for client payment initiation.
+            Issue advance invoices for project milestones and deposits.
           </p>
         </div>
 
@@ -452,7 +452,7 @@ function ProformaContent() {
           className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs hover:shadow-xs transition cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>Create Proforma Invoice</span>
+          <span>+ New Proforma</span>
         </Link>
       </div>
 
@@ -500,7 +500,7 @@ function ProformaContent() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by PI #, client name, company, or email..."
+            placeholder="Search proforma invoices..."
             className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
           />
         </form>
@@ -546,16 +546,16 @@ function ProformaContent() {
         ) : invoices.length === 0 ? (
           <div className="py-16 text-center px-4">
             <Receipt className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-base font-bold text-slate-800">No Proforma Invoices Found</p>
+            <p className="text-base font-bold text-slate-800">No proforma invoices yet</p>
             <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
-              Accepted client estimates can be converted into Proforma Invoices, or you can create one directly.
+              Issue a proforma invoice to collect advance payments.
             </p>
             <Link
               href="/dashboard/proforma/create"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Create Proforma Invoice</span>
+              <span>+ New Proforma</span>
             </Link>
           </div>
         ) : (
