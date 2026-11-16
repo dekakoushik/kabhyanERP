@@ -55,10 +55,26 @@ class AppServiceProvider extends ServiceProvider
                 }
 
                 // 2. Auto-run pending database migrations (debounced every 5 minutes to keep requests fast)
-                $cacheKey = 'kabhyan_auto_migration_last_run';
+                $cacheKey = 'kabhyan_auto_migration_last_run_v2';
                 if (!\Illuminate\Support\Facades\Cache::has($cacheKey)) {
                     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+                    try {
+                        \Illuminate\Support\Facades\Artisan::call('route:clear');
+                    } catch (\Throwable $t) {
+                        // Safe ignore
+                    }
                     \Illuminate\Support\Facades\Cache::put($cacheKey, now()->toIso8601String(), 300);
+                }
+
+                // 3. Autonomous route cache refresher for HRMS endpoints
+                $routeVersionKey = 'kabhyan_route_cache_v2_hrms_sync';
+                if (!\Illuminate\Support\Facades\Cache::has($routeVersionKey)) {
+                    try {
+                        \Illuminate\Support\Facades\Artisan::call('route:clear');
+                        \Illuminate\Support\Facades\Cache::forever($routeVersionKey, true);
+                    } catch (\Throwable $e) {
+                        // Safe ignore
+                    }
                 }
             }
         } catch (\Throwable $e) {

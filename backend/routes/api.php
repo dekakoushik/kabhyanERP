@@ -140,9 +140,10 @@ Route::prefix('v1')->group(function () {
                 // HR / Admin Management Operations
                 Route::middleware(EnsureAdminOrSuperAdmin::class)->group(function () {
                     Route::patch('leaves/{leaveRequest}/status', [HrmsController::class, 'updateLeaveStatus']);
-                    Route::post('holidays', [HrmsController::class, 'storeHoliday']);
                     Route::post('holidays/sync', [HrmsController::class, 'syncHolidays']);
-                    Route::delete('holidays/{holiday}', [HrmsController::class, 'destroyHoliday']);
+                    Route::post('holidays-sync', [HrmsController::class, 'syncHolidays']);
+                    Route::post('holidays', [HrmsController::class, 'storeHoliday']);
+                    Route::delete('holidays/{holiday}', [HrmsController::class, 'destroyHoliday'])->whereNumber('holiday');
                     Route::get('attendance', [HrmsController::class, 'monthlyAttendance']);
                     Route::patch('attendance/{user}', [HrmsController::class, 'updateMonthlyAttendance']);
                     Route::get('salary-structures', [HrmsController::class, 'salaryStructures']);
