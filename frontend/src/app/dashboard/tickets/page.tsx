@@ -272,7 +272,7 @@ function TicketsContent() {
           className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-2xs hover:shadow-xs transition-all cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>+ New Ticket</span>
+          <span>New Ticket</span>
         </Link>
       </div>
 
@@ -398,7 +398,7 @@ function TicketsContent() {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>+ New Ticket</span>
+              <span>New Ticket</span>
             </Link>
           </div>
         ) : (

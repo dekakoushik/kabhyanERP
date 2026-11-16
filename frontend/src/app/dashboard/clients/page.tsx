@@ -262,7 +262,7 @@ function ClientsContent() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-2xs hover:shadow-xs transition-all cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>+ Add Client</span>
+              <span>Add Client</span>
             </Link>
           </div>
         </div>
@@ -360,7 +360,7 @@ function ClientsContent() {
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>+ Add Client</span>
+                  <span>Add Client</span>
                 </Link>
               </div>
             </div>

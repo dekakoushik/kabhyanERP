@@ -195,7 +195,7 @@ export default function UsersManagementPage() {
               className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition"
             >
               <UserPlus className="w-3.5 h-3.5" />
-              <span>+ Add Member</span>
+              <span>Add Member</span>
             </Link>
           </div>
         </div>

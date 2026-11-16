@@ -29,6 +29,18 @@ import {
 export default function DashboardPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [greeting, setGreeting] = useState("Good day");
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) {
+      setGreeting("Good morning");
+    } else if (hour >= 12 && hour < 17) {
+      setGreeting("Good afternoon");
+    } else {
+      setGreeting("Good evening");
+    }
+  }, []);
 
   // Aggregated Stats State
   const [userStats, setUserStats] = useState<any>(null);
@@ -86,7 +98,7 @@ export default function DashboardPage() {
               <span>Workspace Overview</span>
             </div>
             <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-              Good day, {user?.name || "Administrator"}
+              {greeting}, {user?.name || "Administrator"}
             </h1>
             <p className="text-xs text-slate-300 max-w-xl">
               Here is what is happening across your business today.
@@ -99,14 +111,14 @@ export default function DashboardPage() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs shadow-2xs transition"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>+ New Invoice</span>
+              <span>New Invoice</span>
             </Link>
             <Link
               href="/dashboard/projects/create"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-xs transition backdrop-blur-xs"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>+ New Project</span>
+              <span>New Project</span>
             </Link>
           </div>
         </div>
