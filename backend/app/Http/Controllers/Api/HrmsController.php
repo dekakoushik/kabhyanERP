@@ -579,10 +579,21 @@ class HrmsController extends Controller
      */
     public function payrollOverview(Request $request): JsonResponse
     {
-        $batches = PayrollBatch::with(['finalizer'])
+        $batches = PayrollBatch::with(['finalizer', 'payslips.user'])
             ->orderBy('year', 'desc')
             ->orderBy('month', 'desc')
             ->get();
+
+        $formattedBatches = $batches->map(function ($b) {
+            $monthStr = sprintf('%04d-%02d', $b->year, $b->month);
+            $arr = $b->toArray();
+            $arr['month'] = $monthStr;
+            $arr['formatted_month'] = $monthStr;
+            $arr['month_number'] = $b->month;
+            $arr['year_number'] = $b->year;
+            $arr['payslips_count'] = count($arr['payslips'] ?? []);
+            return $arr;
+        });
 
         $stats = [
             'total_batches' => $batches->count(),
@@ -591,7 +602,7 @@ class HrmsController extends Controller
         ];
 
         return response()->json([
-            'batches' => $batches,
+            'batches' => $formattedBatches,
             'stats' => $stats,
         ]);
     }
@@ -601,11 +612,34 @@ class HrmsController extends Controller
      */
     public function payrollCalculate(Request $request): JsonResponse
     {
-        $month = (int) ($request->input('month', now()->month));
-        $year = (int) ($request->input('year', now()->year));
+        $monthInput = $request->input('month');
+        if (is_string($monthInput) && str_contains($monthInput, '-')) {
+            $parts = explode('-', $monthInput);
+            $year = (int) $parts[0];
+            $month = (int) $parts[1];
+        } else {
+            $month = (int) ($monthInput ?: now()->month);
+            $year = (int) ($request->input('year') ?: now()->year);
+        }
 
         $startOfMonth = Carbon::create($year, $month, 1);
         $totalDaysInMonth = $startOfMonth->daysInMonth;
+
+        // Working days: calendar days excluding weekends and gazetted holidays
+        $holidays = CompanyHoliday::whereYear('holiday_date', $year)
+            ->whereMonth('holiday_date', $month)
+            ->where('is_optional', false)
+            ->pluck('holiday_date')
+            ->map(fn($d) => Carbon::parse($d)->format('Y-m-d'))
+            ->toArray();
+
+        $workingDays = 0;
+        for ($day = 1; $day <= $totalDaysInMonth; $day++) {
+            $date = Carbon::create($year, $month, $day);
+            if (!$date->isWeekend() && !in_array($date->format('Y-m-d'), $holidays)) {
+                $workingDays++;
+            }
+        }
 
         $staff = User::whereNull('deleted_at')
             ->where('role', '!=', 'client')
@@ -621,6 +655,7 @@ class HrmsController extends Controller
         $totalGross = 0;
         $totalDeductions = 0;
         $totalNet = 0;
+        $totalLopDeductions = 0;
 
         foreach ($staff as $s) {
             $structure = $s->salaryStructure;
@@ -628,20 +663,27 @@ class HrmsController extends Controller
                 $preview[] = [
                     'user_id' => $s->id,
                     'name' => $s->name,
+                    'user_name' => $s->name,
                     'employee_code' => $s->employee_code,
+                    'department' => $s->department ?? 'General Staff',
+                    'designation' => $s->designation,
                     'has_salary_structure' => false,
                     'gross' => 0,
+                    'gross_monthly' => 0,
                     'deductions' => 0,
                     'net' => 0,
+                    'net_salary' => 0,
                     'lop_days' => 0,
-                    'paid_days' => $totalDaysInMonth,
+                    'lop_deduction' => 0,
+                    'working_days' => $workingDays,
+                    'paid_days' => $workingDays,
                 ];
                 continue;
             }
 
             $att = $attendances->get($s->id);
             $lopDays = $att ? (float) $att->lop_days : 0;
-            $paidDays = max(0, $totalDaysInMonth - $lopDays);
+            $paidDays = max(0, $workingDays - $lopDays);
 
             $grossMonthly = (float) ($structure->basic_monthly + $structure->hra_monthly + $structure->special_allowance + $structure->conveyance_allowance);
             
@@ -654,41 +696,59 @@ class HrmsController extends Controller
             $netPay = max(0, round($grossMonthly - $userTotalDeductions, 2));
 
             $totalGross += $grossMonthly;
+            $totalLopDeductions += $lopDeduction;
             $totalDeductions += $userTotalDeductions;
             $totalNet += $netPay;
 
             $preview[] = [
                 'user_id' => $s->id,
                 'name' => $s->name,
+                'user_name' => $s->name,
                 'employee_code' => $s->employee_code,
-                'department' => $s->department,
+                'department' => $s->department ?? 'General Staff',
                 'designation' => $s->designation,
                 'has_salary_structure' => true,
                 'basic' => (float) $structure->basic_monthly,
+                'basic_monthly' => (float) $structure->basic_monthly,
                 'hra' => (float) $structure->hra_monthly,
+                'hra_monthly' => (float) $structure->hra_monthly,
                 'allowances' => (float) ($structure->special_allowance + $structure->conveyance_allowance),
+                'special_allowance' => (float) $structure->special_allowance,
+                'conveyance' => (float) $structure->conveyance_allowance,
                 'gross' => $grossMonthly,
+                'gross_monthly' => $grossMonthly,
                 'pf' => (float) $structure->pf_employee,
+                'epf_employee' => (float) $structure->pf_employee,
                 'pt' => (float) $structure->professional_tax,
+                'professional_tax' => (float) $structure->professional_tax,
                 'tds' => (float) $structure->tds_monthly,
                 'lop_days' => $lopDays,
                 'lop_deduction' => $lopDeduction,
                 'total_deductions' => $userTotalDeductions,
                 'net' => $netPay,
+                'net_salary' => $netPay,
                 'total_days' => $totalDaysInMonth,
+                'total_days_in_month' => $totalDaysInMonth,
+                'working_days' => $workingDays,
                 'paid_days' => $paidDays,
             ];
         }
 
+        $items = array_values(array_filter($preview, fn($r) => $r['has_salary_structure']));
+
         return response()->json([
-            'month' => $month,
+            'month' => sprintf('%04d-%02d', $year, $month),
+            'month_number' => $month,
             'year' => $year,
-            'total_days' => $totalDaysInMonth,
+            'working_days' => $workingDays,
+            'total_days_in_month' => $totalDaysInMonth,
             'total_gross' => round($totalGross, 2),
+            'total_lop_deductions' => round($totalLopDeductions, 2),
             'total_deductions' => round($totalDeductions, 2),
             'total_net' => round($totalNet, 2),
-            'staff_count' => count($preview),
+            'staff_count' => count($items),
             'records' => $preview,
+            'items' => $items,
         ]);
     }
 
@@ -697,13 +757,19 @@ class HrmsController extends Controller
      */
     public function payrollGenerate(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'month' => 'required|integer|between:1,12',
-            'year' => 'required|integer|between:2020,2035',
-        ]);
+        $monthInput = $request->input('month');
+        if (is_string($monthInput) && str_contains($monthInput, '-')) {
+            $parts = explode('-', $monthInput);
+            $year = (int) $parts[0];
+            $month = (int) $parts[1];
+        } else {
+            $month = (int) ($monthInput ?: now()->month);
+            $year = (int) ($request->input('year') ?: now()->year);
+        }
 
-        $month = (int) $validated['month'];
-        $year = (int) $validated['year'];
+        if ($month < 1 || $month > 12 || $year < 2020 || $year > 2035) {
+            return response()->json(['message' => 'Invalid month or year.'], 422);
+        }
 
         $existing = PayrollBatch::where('month', $month)->where('year', $year)->first();
         if ($existing && in_array($existing->status, ['finalized', 'paid'])) {
@@ -756,7 +822,7 @@ class HrmsController extends Controller
                         'lop_deduction' => $record['lop_deduction'],
                         'total_deductions' => $record['total_deductions'],
                         'net_pay' => $record['net'],
-                        'total_days' => $record['total_days'],
+                        'total_days' => $calc['working_days'] ?? $record['total_days'],
                         'paid_days' => $record['paid_days'],
                         'lop_days' => $record['lop_days'],
                         'payment_status' => 'unpaid',

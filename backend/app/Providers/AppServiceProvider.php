@@ -67,7 +67,7 @@ class AppServiceProvider extends ServiceProvider
                 }
 
                 // 3. Autonomous route cache refresher for HRMS endpoints
-                $routeVersionKey = 'kabhyan_route_cache_v2_hrms_sync';
+                $routeVersionKey = 'kabhyan_route_cache_v3_hrms_payroll_endpoints';
                 if (!\Illuminate\Support\Facades\Cache::has($routeVersionKey)) {
                     try {
                         \Illuminate\Support\Facades\Artisan::call('route:clear');

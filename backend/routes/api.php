@@ -149,11 +149,14 @@ Route::prefix('v1')->group(function () {
                     Route::get('salary-structures', [HrmsController::class, 'salaryStructures']);
                     Route::get('salary-structures/{user}', [HrmsController::class, 'getSalaryStructure']);
                     Route::post('salary-structures', [HrmsController::class, 'storeSalaryStructure']);
+                    Route::get('payroll', [HrmsController::class, 'payrollOverview']);
                     Route::get('payroll/overview', [HrmsController::class, 'payrollOverview']);
                     Route::get('payroll/calculate', [HrmsController::class, 'payrollCalculate']);
                     Route::post('payroll/generate', [HrmsController::class, 'payrollGenerate']);
-                    Route::post('payroll/batches/{batch}/finalize', [HrmsController::class, 'payrollFinalize']);
-                    Route::post('payroll/batches/{batch}/disburse', [HrmsController::class, 'payrollDisburse']);
+                    Route::post('payroll/{batch}/finalize', [HrmsController::class, 'payrollFinalize'])->whereNumber('batch');
+                    Route::post('payroll/batches/{batch}/finalize', [HrmsController::class, 'payrollFinalize'])->whereNumber('batch');
+                    Route::post('payroll/{batch}/disburse', [HrmsController::class, 'payrollDisburse'])->whereNumber('batch');
+                    Route::post('payroll/batches/{batch}/disburse', [HrmsController::class, 'payrollDisburse'])->whereNumber('batch');
                 });
             });
 
