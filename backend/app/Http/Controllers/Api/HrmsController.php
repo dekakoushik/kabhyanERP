@@ -439,10 +439,44 @@ class HrmsController extends Controller
         $staff = User::whereNull('deleted_at')
             ->where('role', '!=', 'client')
             ->with(['customRole', 'salaryStructure'])
+            ->orderBy('name', 'asc')
             ->get();
 
+        $result = $staff->map(function ($u) {
+            $struct = $u->salaryStructure;
+            $isConfigured = $struct !== null && (float) $struct->ctc_annual > 0;
+            return [
+                'id' => $struct?->id ?? $u->id,
+                'user_id' => $u->id,
+                'is_configured' => $isConfigured,
+                'user' => [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'email' => $u->email,
+                    'department' => $u->department ?? 'General Staff',
+                    'designation' => $u->designation,
+                ],
+                'ctc_annual' => (float) ($struct?->ctc_annual ?? 0),
+                'gross_monthly' => (float) ($struct?->gross_monthly ?? 0),
+                'basic_monthly' => (float) ($struct?->basic_monthly ?? 0),
+                'hra_monthly' => (float) ($struct?->hra_monthly ?? 0),
+                'special_allowance_monthly' => (float) ($struct?->special_allowance ?? 0),
+                'conveyance_monthly' => (float) ($struct?->conveyance_allowance ?? 0),
+                'epf_employee' => (float) ($struct?->pf_employee ?? 0),
+                'professional_tax' => (float) ($struct?->professional_tax ?? 200),
+                'tds_monthly' => (float) ($struct?->tds_monthly ?? 0),
+                'net_monthly' => (float) ($struct?->net_monthly ?? 0),
+                'effective_from' => $struct?->effective_from?->format('Y-m-d') ?? null,
+                'bank_name' => $u->bank_name ?? null,
+                'account_number' => $u->account_number ?? null,
+                'ifsc_code' => $u->ifsc_code ?? null,
+                'pan_number' => $u->pan_number ?? null,
+                'uan_number' => $u->uan_number ?? null,
+            ];
+        });
+
         return response()->json([
-            'salary_structures' => $staff,
+            'salary_structures' => $result,
         ]);
     }
 
@@ -463,7 +497,20 @@ class HrmsController extends Controller
      */
     public function storeSalaryStructure(Request $request): JsonResponse
     {
-        $validated = $request->validate([
+        $input = $request->all();
+
+        // Harmonize field naming aliases
+        if (isset($input['special_allowance_monthly']) && !isset($input['special_allowance'])) {
+            $input['special_allowance'] = $input['special_allowance_monthly'];
+        }
+        if (isset($input['conveyance_monthly']) && !isset($input['conveyance_allowance'])) {
+            $input['conveyance_allowance'] = $input['conveyance_monthly'];
+        }
+        if (isset($input['epf_employee']) && !isset($input['pf_employee'])) {
+            $input['pf_employee'] = $input['epf_employee'];
+        }
+
+        $validated = validator($input, [
             'user_id' => 'required|exists:users,id',
             'ctc_annual' => 'required|numeric|min:0',
             'basic_monthly' => 'nullable|numeric|min:0',
@@ -474,7 +521,12 @@ class HrmsController extends Controller
             'professional_tax' => 'nullable|numeric|min:0',
             'tds_monthly' => 'nullable|numeric|min:0',
             'effective_from' => 'nullable|date',
-        ]);
+            'bank_name' => 'nullable|string|max:100',
+            'account_number' => 'nullable|string|max:50',
+            'ifsc_code' => 'nullable|string|max:20',
+            'pan_number' => 'nullable|string|max:20',
+            'uan_number' => 'nullable|string|max:30',
+        ])->validate();
 
         $ctcAnnual = (float) $validated['ctc_annual'];
         $grossMonthly = $ctcAnnual / 12;
@@ -505,9 +557,20 @@ class HrmsController extends Controller
             ]
         );
 
+        // Update banking/PAN fields on User if provided
+        $userUpdate = [];
+        foreach (['bank_name', 'account_number', 'ifsc_code', 'pan_number', 'uan_number'] as $field) {
+            if (isset($validated[$field])) {
+                $userUpdate[$field] = $validated[$field];
+            }
+        }
+        if (!empty($userUpdate)) {
+            User::where('id', $validated['user_id'])->update($userUpdate);
+        }
+
         return response()->json([
             'message' => 'Salary structure saved successfully.',
-            'salary_structure' => $structure,
+            'salary_structure' => $structure->fresh(),
         ]);
     }
 

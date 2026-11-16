@@ -38,9 +38,33 @@ class SalaryStructure extends Model
         ];
     }
 
+    protected $appends = [
+        'gross_monthly',
+        'total_deductions',
+        'net_monthly',
+        'special_allowance_monthly',
+        'conveyance_monthly',
+        'epf_employee',
+    ];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function getSpecialAllowanceMonthlyAttribute(): float
+    {
+        return (float) ($this->special_allowance ?? 0);
+    }
+
+    public function getConveyanceMonthlyAttribute(): float
+    {
+        return (float) ($this->conveyance_allowance ?? 0);
+    }
+
+    public function getEpfEmployeeAttribute(): float
+    {
+        return (float) ($this->pf_employee ?? 0);
     }
 
     /**

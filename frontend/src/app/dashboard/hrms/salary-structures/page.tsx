@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
-import { api, SalaryStructure, User } from "@/lib/api";
+import { api, SalaryStructure } from "@/lib/api";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -20,8 +20,14 @@ import {
   ExternalLink,
 } from "lucide-react";
 
+function formatCurrency(val: any) {
+  const num = Number(val);
+  if (isNaN(num) || num <= 0) return "₹0.00";
+  return `₹${num.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+}
+
 export default function SalaryStructuresListPage() {
-  const [structures, setStructures] = useState<SalaryStructure[]>([]);
+  const [structures, setStructures] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
@@ -44,13 +50,17 @@ export default function SalaryStructuresListPage() {
 
   const filtered = structures.filter((s) => {
     const term = search.toLowerCase();
-    const name = s.user?.name?.toLowerCase() || "";
-    const email = s.user?.email?.toLowerCase() || "";
-    const dept = s.user?.department?.toLowerCase() || "";
+    const name = (s.user?.name || s.name || "").toLowerCase();
+    const email = (s.user?.email || s.email || "").toLowerCase();
+    const dept = (s.user?.department || s.department || "").toLowerCase();
     return name.includes(term) || email.includes(term) || dept.includes(term);
   });
 
-  const totalPayrollOutlay = structures.reduce((sum, s) => sum + Number(s.gross_monthly || 0), 0);
+  const configuredCount = structures.filter((s) => s.is_configured).length;
+  const totalPayrollOutlay = structures.reduce((sum, s) => {
+    const val = Number(s.gross_monthly);
+    return sum + (isNaN(val) ? 0 : val);
+  }, 0);
 
   return (
     <AdminLayout>
@@ -88,19 +98,26 @@ export default function SalaryStructuresListPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl shadow-sm">
             <div className="text-[11px] font-medium text-slate-500">Configured Plans</div>
-            <div className="text-xl font-bold text-slate-900 mt-1">{structures.length} Employees</div>
+            <div className="text-xl font-bold text-slate-900 mt-1">
+              {configuredCount} / {structures.length} Employees
+            </div>
+            <div className="text-[10px] text-slate-400 mt-0.5">
+              {structures.length - configuredCount} pending configuration
+            </div>
           </div>
           <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl shadow-sm">
             <div className="text-[11px] font-medium text-emerald-600">Monthly Gross Outlay</div>
             <div className="text-xl font-bold text-emerald-600 mt-1">
-              ₹{totalPayrollOutlay.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+              {formatCurrency(totalPayrollOutlay)}
             </div>
+            <div className="text-[10px] text-slate-400 mt-0.5">Active staff monthly budget</div>
           </div>
           <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl shadow-sm">
             <div className="text-[11px] font-medium text-blue-600">Annualized Outlay</div>
             <div className="text-xl font-bold text-blue-600 mt-1">
-              ₹{(totalPayrollOutlay * 12).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+              {formatCurrency(totalPayrollOutlay * 12)}
             </div>
+            <div className="text-[10px] text-slate-400 mt-0.5">Total annual payroll expenditure</div>
           </div>
         </div>
 
@@ -156,46 +173,108 @@ export default function SalaryStructuresListPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {filtered.map((s) => (
-                    <tr key={s.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="py-3 px-4 font-bold text-slate-900">
-                        {s.user?.name || "Employee"}
-                        <div className="text-[11px] font-normal text-slate-400">{s.user?.department || "Staff"} &bull; {s.user?.email}</div>
-                      </td>
-                      <td className="py-3 px-4 font-bold text-slate-800">
-                        ₹{Number(s.ctc_annual).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="py-3 px-4 font-semibold text-slate-700">
-                        ₹{Number(s.gross_monthly).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="py-3 px-4 text-slate-600">
-                        ₹{Number(s.basic_monthly).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="py-3 px-4 text-slate-500 text-[11px]">
-                        EPF: ₹{Number(s.epf_employee).toLocaleString("en-IN")} &bull; PT: ₹{Number(s.professional_tax).toLocaleString("en-IN")}
-                      </td>
-                      <td className="py-3 px-4 font-bold text-emerald-700">
-                        ₹{Number(s.net_monthly).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="py-3 px-4 text-[11px] text-slate-500">
-                        {s.bank_name ? (
-                          <span>{s.bank_name} &bull; {s.account_number ? `...${s.account_number.slice(-4)}` : ""}</span>
-                        ) : (
-                          <span className="text-amber-600 italic">No bank setup</span>
-                        )}
-                        {s.pan_number && <div className="text-slate-400">PAN: {s.pan_number}</div>}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <Link
-                          href={`/dashboard/hrms/salary-structures/create?user_id=${s.user_id}`}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-slate-200 text-slate-700 hover:bg-slate-100 text-[11px] font-medium transition-colors"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                          <span>Edit</span>
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
+                  {filtered.map((s) => {
+                    const isConfigured = Boolean(s.is_configured);
+                    const staffName = s.user?.name || s.name || "Employee";
+                    const staffEmail = s.user?.email || s.email || "";
+                    const staffDept = s.user?.department || s.department || "General Staff";
+                    const staffId = s.user_id || s.id;
+
+                    return (
+                      <tr key={s.id || staffId} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-slate-900 flex items-center gap-2">
+                            <span>{staffName}</span>
+                            {isConfigured ? (
+                              <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.2 rounded text-[10px] font-semibold">
+                                Active
+                              </span>
+                            ) : (
+                              <span className="bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.2 rounded text-[10px] font-semibold">
+                                Pending Setup
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] font-normal text-slate-400">
+                            {staffDept} &bull; {staffEmail}
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-4">
+                          {isConfigured ? (
+                            <span className="font-bold text-slate-800">{formatCurrency(s.ctc_annual)}</span>
+                          ) : (
+                            <span className="text-slate-400">--</span>
+                          )}
+                        </td>
+
+                        <td className="py-3 px-4">
+                          {isConfigured ? (
+                            <span className="font-semibold text-slate-700">{formatCurrency(s.gross_monthly)}</span>
+                          ) : (
+                            <span className="text-slate-400">--</span>
+                          )}
+                        </td>
+
+                        <td className="py-3 px-4">
+                          {isConfigured ? (
+                            <span className="text-slate-600">{formatCurrency(s.basic_monthly)}</span>
+                          ) : (
+                            <span className="text-slate-400">--</span>
+                          )}
+                        </td>
+
+                        <td className="py-3 px-4 text-[11px]">
+                          {isConfigured ? (
+                            <span className="text-slate-500">
+                              EPF: {formatCurrency(s.epf_employee)} &bull; PT: {formatCurrency(s.professional_tax)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">--</span>
+                          )}
+                        </td>
+
+                        <td className="py-3 px-4 font-bold">
+                          {isConfigured ? (
+                            <span className="text-emerald-700">{formatCurrency(s.net_monthly)}</span>
+                          ) : (
+                            <span className="text-slate-400">--</span>
+                          )}
+                        </td>
+
+                        <td className="py-3 px-4 text-[11px] text-slate-500">
+                          {s.bank_name ? (
+                            <span>
+                              {s.bank_name} &bull; {s.account_number ? `...${s.account_number.slice(-4)}` : ""}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 italic">No bank setup</span>
+                          )}
+                          {s.pan_number && <div className="text-slate-400">PAN: {s.pan_number}</div>}
+                        </td>
+
+                        <td className="py-3 px-4 text-right">
+                          {isConfigured ? (
+                            <Link
+                              href={`/dashboard/hrms/salary-structures/create?user_id=${staffId}`}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-slate-200 text-slate-700 hover:bg-slate-100 text-[11px] font-medium transition-colors"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                              <span>Edit</span>
+                            </Link>
+                          ) : (
+                            <Link
+                              href={`/dashboard/hrms/salary-structures/create?user_id=${staffId}`}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-medium shadow-2xs transition-colors"
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>Setup CTC</span>
+                            </Link>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
