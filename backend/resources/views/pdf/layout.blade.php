@@ -6,12 +6,12 @@
     <style>
         @page {
             size: a4 portrait;
-            margin: 16mm 16mm 16mm 16mm;
+            margin: 18mm 16mm 18mm 16mm;
         }
         * {
             box-sizing: border-box;
         }
-        html, body {
+        body {
             margin: 0;
             padding: 0;
             background-color: #ffffff;
