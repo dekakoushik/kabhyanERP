@@ -16,6 +16,25 @@ import {
   Info,
 } from "lucide-react";
 
+function formatHolidayDate(rawDate?: string) {
+  if (!rawDate) return { month: "---", day: "--", fullDate: "N/A", dayName: "" };
+  const clean = rawDate.split("T")[0];
+  const parts = clean.split("-");
+  if (parts.length === 3) {
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) - 1;
+    const d = parseInt(parts[2], 10);
+    const dateObj = new Date(y, m, d);
+    return {
+      month: dateObj.toLocaleString("en-US", { month: "short" }),
+      day: String(d),
+      fullDate: clean,
+      dayName: dateObj.toLocaleString("en-US", { weekday: "long" }),
+    };
+  }
+  return { month: "---", day: "--", fullDate: rawDate, dayName: "" };
+}
+
 export default function HolidaysPage() {
   const [holidays, setHolidays] = useState<CompanyHoliday[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,8 +75,10 @@ export default function HolidaysPage() {
     try {
       setAdding(true);
       await api.hrms.holidays.create({
+        title: name.trim(),
         name: name.trim(),
-        date,
+        holiday_date: date,
+        date: date,
         type,
         description: description.trim() || undefined,
       });
@@ -149,51 +170,58 @@ export default function HolidaysPage() {
                 </div>
               ) : (
                 <div className="divide-y divide-slate-100">
-                  {holidays.map((h) => (
-                    <div
-                      key={h.id}
-                      className="p-4 hover:bg-slate-50/60 transition-colors flex items-center justify-between gap-3"
-                    >
-                      <div className="flex items-center gap-3.5">
-                        <div className="w-11 h-11 rounded-lg bg-blue-50 border border-blue-100 flex flex-col items-center justify-center text-blue-700 flex-shrink-0">
-                          <span className="text-[10px] font-bold uppercase leading-none">
-                            {new Date(h.date).toLocaleString("en-US", { month: "short" })}
-                          </span>
-                          <span className="text-base font-extrabold leading-none mt-0.5">
-                            {new Date(h.date).getDate()}
-                          </span>
-                        </div>
+                  {holidays.map((h) => {
+                    const holidayTitle = h.title || h.name || "Company Holiday";
+                    const dateInfo = formatHolidayDate(h.holiday_date || h.date);
+                    const dayOfWeek = h.day_of_week || dateInfo.dayName;
+                    const holidayType = h.type || (h.is_optional ? "optional" : "company");
 
-                        <div>
-                          <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
-                            {h.name}
-                            <span className={`text-[10px] px-2 py-0.2 rounded font-medium ${
-                              h.type === "national"
-                                ? "bg-amber-50 text-amber-700 border border-amber-200"
-                                : h.type === "festival"
-                                ? "bg-purple-50 text-purple-700 border border-purple-200"
-                                : "bg-blue-50 text-blue-700 border border-blue-200"
-                            }`}>
-                              {h.type}
+                    return (
+                      <div
+                        key={h.id}
+                        className="p-4 hover:bg-slate-50/60 transition-colors flex items-center justify-between gap-3"
+                      >
+                        <div className="flex items-center gap-3.5">
+                          <div className="w-11 h-11 rounded-lg bg-blue-50 border border-blue-100 flex flex-col items-center justify-center text-blue-700 flex-shrink-0">
+                            <span className="text-[10px] font-bold uppercase leading-none">
+                              {dateInfo.month}
+                            </span>
+                            <span className="text-base font-extrabold leading-none mt-0.5">
+                              {dateInfo.day}
                             </span>
                           </div>
-                          <div className="text-[11px] text-slate-500 mt-0.5">
-                            {h.day_of_week} &bull; {h.date}
-                            {h.description && ` • ${h.description}`}
+
+                          <div>
+                            <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                              {holidayTitle}
+                              <span className={`text-[10px] px-2 py-0.2 rounded font-medium ${
+                                holidayType === "national"
+                                  ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                  : holidayType === "festival"
+                                  ? "bg-purple-50 text-purple-700 border border-purple-200"
+                                  : "bg-blue-50 text-blue-700 border border-blue-200"
+                              }`}>
+                                {holidayType}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-slate-500 mt-0.5">
+                              {dayOfWeek} &bull; {dateInfo.fullDate}
+                              {h.description && ` • ${h.description}`}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <button
-                        disabled={actionLoading === h.id}
-                        onClick={() => handleDelete(h.id)}
-                        className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
-                        title="Delete holiday"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
+                        <button
+                          disabled={actionLoading === h.id}
+                          onClick={() => handleDelete(h.id)}
+                          className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
+                          title="Delete holiday"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

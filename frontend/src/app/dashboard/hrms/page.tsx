@@ -25,6 +25,23 @@ import {
   BadgeIndianRupee,
 } from "lucide-react";
 
+function formatHolidayDate(rawDate?: string) {
+  if (!rawDate) return { fullDate: "N/A", dayName: "" };
+  const clean = rawDate.split("T")[0];
+  const parts = clean.split("-");
+  if (parts.length === 3) {
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) - 1;
+    const d = parseInt(parts[2], 10);
+    const dateObj = new Date(y, m, d);
+    return {
+      fullDate: clean,
+      dayName: dateObj.toLocaleString("en-US", { weekday: "short" }),
+    };
+  }
+  return { fullDate: rawDate, dayName: "" };
+}
+
 export default function HrmsDashboardPage() {
   const [data, setData] = useState<HrmsDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -434,17 +451,24 @@ export default function HrmsDashboardPage() {
                 </div>
               ) : (
                 <div className="divide-y divide-slate-100">
-                  {data.upcoming_holidays.map((h) => (
-                    <div key={h.id} className="p-3 hover:bg-slate-50/50 flex items-center justify-between text-xs">
-                      <div>
-                        <div className="font-semibold text-slate-900">{h.name}</div>
-                        <div className="text-[11px] text-slate-500">{h.day_of_week} &bull; {h.type}</div>
+                  {data.upcoming_holidays.map((h) => {
+                    const title = h.title || h.name || "Company Holiday";
+                    const dateInfo = formatHolidayDate(h.holiday_date || h.date);
+                    const dayOfWeek = h.day_of_week || dateInfo.dayName;
+                    const type = h.type || (h.is_optional ? "optional" : "company");
+
+                    return (
+                      <div key={h.id} className="p-3 hover:bg-slate-50/50 flex items-center justify-between text-xs">
+                        <div>
+                          <div className="font-semibold text-slate-900">{title}</div>
+                          <div className="text-[11px] text-slate-500">{dayOfWeek} &bull; {type}</div>
+                        </div>
+                        <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+                          {dateInfo.fullDate}
+                        </span>
                       </div>
-                      <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
-                        {h.date}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

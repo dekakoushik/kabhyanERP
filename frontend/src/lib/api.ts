@@ -88,10 +88,12 @@ export interface LeaveRequest {
 
 export interface CompanyHoliday {
   id: number;
-  name: string;
-  date: string;
+  name?: string;
+  title?: string;
+  date?: string;
+  holiday_date?: string;
   day_of_week?: string;
-  type: "national" | "festival" | "company";
+  type?: string;
   is_optional: boolean;
   description?: string | null;
   created_at?: string;

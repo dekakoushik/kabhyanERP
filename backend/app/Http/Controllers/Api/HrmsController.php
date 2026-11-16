@@ -226,12 +226,20 @@ class HrmsController extends Controller
      */
     public function storeHoliday(Request $request): JsonResponse
     {
-        $validated = $request->validate([
+        $input = $request->all();
+        if (!empty($input['name']) && empty($input['title'])) {
+            $input['title'] = $input['name'];
+        }
+        if (!empty($input['date']) && empty($input['holiday_date'])) {
+            $input['holiday_date'] = $input['date'];
+        }
+
+        $validated = validator($input, [
             'title' => 'required|string|max:255',
             'holiday_date' => 'required|date|unique:company_holidays,holiday_date',
             'is_optional' => 'boolean',
             'description' => 'nullable|string|max:500',
-        ]);
+        ])->validate();
 
         $holiday = CompanyHoliday::create($validated);
 
