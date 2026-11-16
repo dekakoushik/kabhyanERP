@@ -17,7 +17,6 @@ import {
   CheckCircle2,
   ExternalLink,
   ChevronRight,
-  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -124,14 +123,6 @@ export default function RolesManagementPage() {
               <Plus className="w-4 h-4" />
               + Create Custom Role
             </Link>
-          </div>
-        </div>
-
-        {/* Informational Scope Alert */}
-        <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-200/60 flex items-start gap-3">
-          <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-          <div className="text-xs text-blue-900 leading-relaxed">
-            <span className="font-semibold">Staff-Only Governance Isolation:</span> Roles and permissions defined here govern internal company employees only. External client portal users (<code className="bg-blue-100/70 px-1 py-0.5 rounded text-blue-800 font-mono">role === &apos;client&apos;</code>) are quarantined strictly within client viewports and can never be granted internal staff roles or permissions.
           </div>
         </div>
 
