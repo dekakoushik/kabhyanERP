@@ -48,16 +48,12 @@ WORKDIR /var/www/html
 COPY . /var/www/html
 COPY --from=vendor /app/vendor /var/www/html/vendor
 
-# Permissions
+# Permissions and Entrypoint
 RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod +x /var/www/html/docker-entrypoint.sh
 
 EXPOSE 80
 
-# Inline startup: link storage, run migrations, seed if needed, and start Apache
-CMD php artisan storage:link --force || true && \
-    php artisan migrate --force --isolated || true && \
-    php artisan db:seed --force || true && \
-    php artisan config:cache || true && \
-    php artisan route:cache || true && \
-    apache2-foreground
+# Run entrypoint script for automated migrations, seeding, optimization and startup
+ENTRYPOINT ["/var/www/html/docker-entrypoint.sh"]

@@ -53,14 +53,25 @@ class AuthController extends Controller
             'token' => $token,
             'user' => [
                 'id' => $user->id,
+                'employee_code' => $user->employee_code,
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'role' => $user->role,
+                'role_id' => $user->role_id,
+                'custom_role' => $user->customRole ? [
+                    'id' => $user->customRole->id,
+                    'name' => $user->customRole->name,
+                    'slug' => $user->customRole->slug,
+                    'color' => $user->customRole->color,
+                    'is_system' => $user->customRole->is_system,
+                ] : null,
                 'department' => $user->department,
                 'designation' => $user->designation,
+                'date_of_joining' => $user->date_of_joining,
                 'status' => $user->status,
                 'last_login_at' => $user->last_login_at,
+                'permissions' => $user->getAllEffectivePermissions(),
             ],
         ]);
     }
@@ -70,8 +81,12 @@ class AuthController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
+        $user = $request->user()->load('customRole:id,name,slug,color,is_system');
+        $userArray = $user->toArray();
+        $userArray['permissions'] = $user->getAllEffectivePermissions();
+
         return response()->json([
-            'user' => $request->user(),
+            'user' => $userArray,
         ]);
     }
 

@@ -49,6 +49,10 @@ import {
   ChevronRight,
   Activity,
   UserCheck,
+  UserPlus,
+  Shield,
+  KeyRound,
+  Hash,
   Sparkles,
 } from "lucide-react";
 
@@ -56,15 +60,24 @@ interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-interface NavItem {
+export interface NavSubItem {
   name: string;
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon?: React.ComponentType<{ className?: string }>;
   roles?: string[];
   badge?: string;
 }
 
-interface NavGroup {
+export interface NavItem {
+  name: string;
+  href?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  roles?: string[];
+  badge?: string;
+  children?: NavSubItem[];
+}
+
+export interface NavGroup {
   title: string;
   items: NavItem[];
 }
@@ -76,6 +89,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({});
   const pathname = usePathname();
 
   // Load saved collapse state on mount
@@ -96,6 +110,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       } catch {}
       return next;
     });
+  };
+
+  const toggleDropdown = (name: string) => {
+    setOpenDropdowns((prev) => ({
+      ...prev,
+      [name]: !prev[name],
+    }));
   };
 
   const navigationGroups: NavGroup[] = [
@@ -126,21 +147,71 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     {
       title: "Administration",
       items: [
-        { name: "Team & Staff", href: "/dashboard/users", icon: Users, roles: ["superadmin", "admin"] },
-        { name: "System Settings", href: "/dashboard/settings", icon: Settings, roles: ["superadmin", "admin"] },
+        {
+          name: "Team & Staff",
+          icon: Users,
+          roles: ["superadmin", "admin", "hr"],
+          children: [
+            { name: "Staff Directory", href: "/dashboard/users", icon: Users },
+            { name: "+ Onboard Staff", href: "/dashboard/users/create", icon: UserPlus, roles: ["superadmin", "admin"] },
+            { name: "Roles & Permissions", href: "/dashboard/users/roles", icon: ShieldCheck, roles: ["superadmin", "admin"] },
+            { name: "Departments", href: "/dashboard/users/departments", icon: Building },
+          ],
+        },
+        {
+          name: "System Settings",
+          icon: Settings,
+          roles: ["superadmin", "admin"],
+          children: [
+            { name: "Overview", href: "/dashboard/settings", icon: Settings },
+            { name: "Company Profile", href: "/dashboard/settings/company", icon: Building },
+            { name: "Document Numbering", href: "/dashboard/settings/numbering", icon: Hash },
+            { name: "GST & Taxation", href: "/dashboard/settings/gst", icon: Receipt },
+            { name: "Banking & Wire", href: "/dashboard/settings/banking", icon: CreditCard },
+            { name: "System Health", href: "/dashboard/settings/system", icon: Activity },
+          ],
+        },
       ],
     },
   ];
+
+  // Auto-expand accordion dropdown if a child link is active
+  useEffect(() => {
+    navigationGroups.forEach((group) => {
+      group.items.forEach((item) => {
+        if (item.children) {
+          const hasActiveChild = item.children.some(
+            (c) => pathname === c.href || (c.href !== "/dashboard" && pathname.startsWith(c.href))
+          );
+          if (hasActiveChild) {
+            setOpenDropdowns((prev) => ({ ...prev, [item.name]: true }));
+          }
+        }
+      });
+    });
+  }, [pathname]);
 
   // Filter groups according to current user's role
   const filteredGroups = navigationGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => {
-        if (!item.roles || item.roles.length === 0) return true;
-        if (!user?.role) return true;
-        return item.roles.includes(user.role);
-      }),
+      items: group.items
+        .filter((item) => {
+          if (!item.roles || item.roles.length === 0) return true;
+          if (!user?.role) return true;
+          return item.roles.includes(user.role);
+        })
+        .map((item) => {
+          if (!item.children) return item;
+          return {
+            ...item,
+            children: item.children.filter((child) => {
+              if (!child.roles || child.roles.length === 0) return true;
+              if (!user?.role) return true;
+              return child.roles.includes(user.role);
+            }),
+          };
+        }),
     }))
     .filter((group) => group.items.length > 0);
 
@@ -180,6 +251,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         const sub = segments[2];
         let subLabel = sub.charAt(0).toUpperCase() + sub.slice(1);
         if (sub === "create") subLabel = "New Record";
+        if (sub === "roles") subLabel = "Roles & Permissions";
+        if (sub === "departments") subLabel = "Departments";
+        if (sub === "numbering") subLabel = "Document Numbering";
         if (sub === "company") subLabel = "Company & Brand";
         if (sub === "gst") subLabel = "GST Compliance";
         if (sub === "banking") subLabel = "Banking Details";
@@ -278,15 +352,159 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               )}
 
               {group.items.map((item) => {
+                const Icon = item.icon;
+                const hasChildren = Boolean(item.children && item.children.length > 0);
+
+                if (hasChildren && item.children) {
+                  const hasActiveChild = item.children.some(
+                    (c) => pathname === c.href || (c.href !== "/dashboard" && pathname.startsWith(c.href))
+                  );
+                  const isOpen = Boolean(openDropdowns[item.name]);
+
+                  // Collapsed mode: Floating flyout menu
+                  if (isCollapsed) {
+                    return (
+                      <DropdownMenu key={item.name}>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            title={item.name}
+                            className={`w-full flex items-center justify-center p-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                              hasActiveChild
+                                ? "bg-blue-600 text-white font-semibold shadow-xs"
+                                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
+                            }`}
+                          >
+                            <Icon className={`w-4 h-4 shrink-0 ${hasActiveChild ? "text-white" : "text-slate-500"}`} />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent side="right" align="start" className="w-56 p-1.5 font-sans z-50 shadow-md">
+                          <DropdownMenuLabel className="text-xs font-bold text-slate-500 px-2 py-1">
+                            {item.name}
+                          </DropdownMenuLabel>
+                          <DropdownMenuSeparator className="my-1" />
+                          <DropdownMenuGroup>
+                            {item.children.map((child) => {
+                              const isChildActive =
+                                pathname === child.href ||
+                                (child.href !== "/dashboard" && pathname.startsWith(child.href));
+                              const ChildIcon = child.icon;
+                              return (
+                                <DropdownMenuItem key={child.name} asChild>
+                                  <Link
+                                    href={child.href}
+                                    className={`flex items-center gap-2.5 px-2.5 py-1.5 text-xs rounded-md cursor-pointer ${
+                                      isChildActive ? "bg-blue-50 text-blue-700 font-semibold" : "text-slate-700"
+                                    }`}
+                                  >
+                                    {ChildIcon ? (
+                                      <ChildIcon className={`w-3.5 h-3.5 ${isChildActive ? "text-blue-600" : "text-slate-400"}`} />
+                                    ) : (
+                                      <span className={`w-1.5 h-1.5 rounded-full ${isChildActive ? "bg-blue-600" : "bg-slate-300"}`} />
+                                    )}
+                                    <span className="truncate">{child.name}</span>
+                                  </Link>
+                                </DropdownMenuItem>
+                              );
+                            })}
+                          </DropdownMenuGroup>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    );
+                  }
+
+                  // Expanded mode: Interactive accordion
+                  return (
+                    <div key={item.name} className="space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => toggleDropdown(item.name)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                          hasActiveChild
+                            ? "bg-slate-100 text-blue-700 font-semibold"
+                            : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Icon className={`w-4 h-4 shrink-0 ${hasActiveChild ? "text-blue-600" : "text-slate-500"}`} />
+                          <span className="truncate">{item.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {item.badge && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-blue-100 text-blue-700">
+                              {item.badge}
+                            </span>
+                          )}
+                          <ChevronDown
+                            className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                              isOpen ? "rotate-180" : ""
+                            }`}
+                          />
+                        </div>
+                      </button>
+
+                      {isOpen && (
+                        <div className="ml-4 pl-2 border-l border-slate-200 space-y-1 mt-1 transition-all">
+                          {item.children.map((child) => {
+                            const isChildActive =
+                              pathname === child.href ||
+                              (child.href !== "/dashboard" && pathname.startsWith(child.href));
+                            const ChildIcon = child.icon;
+
+                            return (
+                              <Link
+                                key={child.name}
+                                href={child.href}
+                                onClick={() => setMobileMenuOpen(false)}
+                                className={`flex items-center justify-between px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all ${
+                                  isChildActive
+                                    ? "bg-blue-600 text-white font-semibold shadow-xs"
+                                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 truncate">
+                                  {ChildIcon ? (
+                                    <ChildIcon
+                                      className={`w-3.5 h-3.5 shrink-0 ${
+                                        isChildActive ? "text-white" : "text-slate-400"
+                                      }`}
+                                    />
+                                  ) : (
+                                    <span
+                                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                        isChildActive ? "bg-white" : "bg-slate-300"
+                                      }`}
+                                    />
+                                  )}
+                                  <span className="truncate">{child.name}</span>
+                                </div>
+                                {child.badge && (
+                                  <span
+                                    className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${
+                                      isChildActive ? "bg-blue-700 text-white" : "bg-slate-100 text-slate-500"
+                                    }`}
+                                  >
+                                    {child.badge}
+                                  </span>
+                                )}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                // Standard single item
                 const isActive =
                   pathname === item.href ||
-                  (item.href !== "/dashboard" && pathname.startsWith(item.href));
-                const Icon = item.icon;
+                  (item.href && item.href !== "/dashboard" && pathname.startsWith(item.href));
 
                 return (
                   <Link
                     key={item.name}
-                    href={item.href}
+                    href={item.href || "#"}
                     title={isCollapsed ? item.name : undefined}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center ${

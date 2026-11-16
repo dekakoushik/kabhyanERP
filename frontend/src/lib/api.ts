@@ -5,16 +5,53 @@ const API_BASE =
         : "/api/v1")
     : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1");
 
+export interface Role {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string | null;
+  color?: string;
+  is_system: boolean;
+  users_count?: number;
+  permissions?: Permission[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Permission {
+  id: number;
+  module: string;
+  action: string;
+  slug: string;
+  name: string;
+  description?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface PermissionModuleGroup {
+  module: string;
+  label: string;
+  permissions: Permission[];
+}
+
 export interface User {
   id: number;
+  employee_code?: string | null;
   name: string;
   email: string;
   phone?: string | null;
-  role: "superadmin" | "admin" | "hr" | "manager" | "employee" | "client";
+  emergency_contact?: string | null;
+  role: string;
+  role_id?: number | null;
+  custom_role?: Role | null;
   department?: string | null;
   designation?: string | null;
+  date_of_joining?: string | null;
   status: "active" | "inactive" | "suspended";
+  permissions?: string[];
   last_login_at?: string | null;
+  last_login_ip?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -26,7 +63,10 @@ export interface UserStats {
   suspended_users: number;
   superadmins: number;
   admins: number;
+  managers?: number;
+  hr?: number;
   employees: number;
+  custom_role_users?: number;
 }
 
 export interface Project {

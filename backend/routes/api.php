@@ -9,8 +9,10 @@ use App\Http\Controllers\Api\FinancialReportController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PdfController;
+use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ProformaInvoiceController;
 use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\TicketController;
@@ -69,14 +71,20 @@ Route::prefix('v1')->group(function () {
 
             // Read-only user directory for task assignments & filters
             Route::get('users', [UserController::class, 'index']);
+            Route::get('users/next-code', [UserController::class, 'nextEmployeeCode']);
+            Route::get('users/departments', [UserController::class, 'departments']);
             Route::get('users/{user}', [UserController::class, 'show']);
 
-            // SuperAdmin Specific User Account Management
-            Route::middleware(EnsureSuperAdmin::class)->group(function () {
+            // Staff Account & Custom Roles Management
+            Route::middleware(EnsureAdminOrSuperAdmin::class)->group(function () {
                 Route::post('users', [UserController::class, 'store']);
                 Route::put('users/{user}', [UserController::class, 'update']);
                 Route::patch('users/{user}/status', [UserController::class, 'updateStatus']);
                 Route::delete('users/{user}', [UserController::class, 'destroy']);
+
+                // Custom Roles & Permissions Management
+                Route::apiResource('roles', RoleController::class);
+                Route::get('permissions', [PermissionController::class, 'index']);
             });
 
             // Project Management Module
@@ -137,6 +145,7 @@ Route::prefix('v1')->group(function () {
                 Route::post('settings/brand-assets', [SettingController::class, 'uploadBrandAsset']);
                 Route::delete('settings/brand-assets/{type}', [SettingController::class, 'deleteBrandAsset']);
                 Route::post('settings/flush-cache', [SettingController::class, 'flushCache']);
+                Route::post('settings/migrate-database', [SettingController::class, 'migrateDatabase']);
                 Route::post('settings/test-email', [SettingController::class, 'testEmail']);
             });
         });

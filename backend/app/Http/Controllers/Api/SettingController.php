@@ -106,6 +106,39 @@ class SettingController extends Controller
     }
 
     /**
+     * Run pending database migrations and clear schema caches.
+     */
+    public function migrateDatabase(Request $request): JsonResponse
+    {
+        try {
+            // Drop PostgreSQL check constraint if lingering
+            if (\Illuminate\Support\Facades\DB::getDriverName() === 'pgsql') {
+                try {
+                    \Illuminate\Support\Facades\DB::statement('ALTER TABLE proforma_invoices DROP CONSTRAINT IF EXISTS proforma_invoices_status_check');
+                } catch (\Throwable $e) {}
+            }
+
+            Artisan::call('migrate', ['--force' => true]);
+            $migrateOutput = Artisan::output();
+
+            Artisan::call('db:seed', ['--class' => 'RoleAndPermissionSeeder', '--force' => true]);
+            $seedOutput = Artisan::output();
+
+            Artisan::call('optimize:clear');
+
+            return response()->json([
+                'message' => 'Database migrations and schema synchronization executed successfully.',
+                'migrate_output' => trim($migrateOutput),
+                'seed_output' => trim($seedOutput),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Database migration failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Test SMTP mail configuration by sending a verification test email.
      */
     public function testEmail(Request $request)

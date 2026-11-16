@@ -41,5 +41,28 @@ class AppServiceProvider extends ServiceProvider
             date_default_timezone_set('Asia/Kolkata');
             Config::set('app.timezone', 'Asia/Kolkata');
         }
+
+        // Auto-run pending migrations and auto-heal schema constraints seamlessly without manual CLI commands
+        try {
+            if (Schema::hasTable('migrations')) {
+                // 1. Instantly drop PostgreSQL status check constraint if present
+                if (\Illuminate\Support\Facades\DB::getDriverName() === 'pgsql') {
+                    try {
+                        \Illuminate\Support\Facades\DB::statement('ALTER TABLE proforma_invoices DROP CONSTRAINT IF EXISTS proforma_invoices_status_check');
+                    } catch (\Throwable $e) {
+                        // Safe ignore
+                    }
+                }
+
+                // 2. Auto-run pending database migrations (debounced every 5 minutes to keep requests fast)
+                $cacheKey = 'kabhyan_auto_migration_last_run';
+                if (!\Illuminate\Support\Facades\Cache::has($cacheKey)) {
+                    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+                    \Illuminate\Support\Facades\Cache::put($cacheKey, now()->toIso8601String(), 300);
+                }
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Automatic migration check: ' . $e->getMessage());
+        }
     }
 }
