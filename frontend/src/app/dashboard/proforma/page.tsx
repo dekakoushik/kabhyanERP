@@ -439,69 +439,69 @@ function ProformaContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
             Proforma Invoices (PI)
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500">
+          </h1>
+          <p className="text-xs text-slate-500 mt-0.5">
             Generate formal advance invoices from accepted estimates for client payment initiation.
           </p>
         </div>
 
         <Link
           href="/dashboard/proforma/create"
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold shadow-xs hover:shadow-sm transition cursor-pointer"
+          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs hover:shadow-xs transition cursor-pointer"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
           <span>Create Proforma Invoice</span>
         </Link>
       </div>
 
       {/* Stats Summary Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
             Total Proformas
           </span>
-          <p className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+          <p className="text-xl font-bold text-slate-900 mt-1">
             {stats?.total_invoices ?? invoices.length}
           </p>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600">
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-600">
             Unpaid / Pending
           </span>
-          <p className="text-xl sm:text-2xl font-black text-amber-700 mt-1">
+          <p className="text-xl font-bold text-amber-700 mt-1">
             ₹{Number(stats?.unpaid_value ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-600">
             Paid / Realized
           </span>
-          <p className="text-xl sm:text-2xl font-black text-emerald-700 mt-1">
+          <p className="text-xl font-bold text-emerald-700 mt-1">
             ₹{Number(stats?.paid_value ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600">
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-purple-600">
             Paid / Total Count
           </span>
-          <p className="text-xl sm:text-2xl font-black text-purple-700 mt-1">
+          <p className="text-xl font-bold text-purple-700 mt-1">
             {stats?.paid ?? 0} <span className="text-xs font-normal text-slate-400">/ {stats?.total_invoices ?? 0}</span>
           </p>
         </div>
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+      <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
         <form onSubmit={handleSearchSubmit} className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by PI #, client name, company, or email..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+            className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
           />
         </form>
 
@@ -562,42 +562,42 @@ function ProformaContent() {
           <div className="w-full">
             <table className="w-full text-left border-collapse table-auto">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <th className="py-3 px-3.5 sm:px-4 whitespace-nowrap">Proforma ID</th>
-                  <th className="py-3 px-3.5 sm:px-4">Client / Company</th>
-                  <th className="py-3 px-3.5 sm:px-4 whitespace-nowrap">Estimate Ref</th>
-                  <th className="py-3 px-3.5 sm:px-4 whitespace-nowrap">Date / Due</th>
-                  <th className="py-3 px-3.5 sm:px-4 whitespace-nowrap">Total Amount</th>
-                  <th className="py-3 px-3.5 sm:px-4 whitespace-nowrap">Status</th>
-                  <th className="py-3 px-3.5 sm:px-4 text-right whitespace-nowrap">Actions</th>
+                <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Proforma ID</th>
+                  <th className="py-2.5 px-3.5">Client / Company</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Estimate Ref</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Date / Due</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Total Amount</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Status</th>
+                  <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
                 {invoices.map((pi) => (
                   <tr key={pi.id} className="hover:bg-slate-50/60 transition group/row">
-                    <td className="py-3.5 px-3.5 sm:px-4 whitespace-nowrap">
+                    <td className="py-2.5 px-3.5 whitespace-nowrap">
                       <Link
                         href={`/dashboard/proforma/${pi.proforma_number}`}
-                        className="group/id inline-flex items-center gap-1 font-mono font-bold text-xs text-blue-700 bg-blue-50/80 hover:bg-blue-100 border border-blue-200/80 px-2 py-1 rounded-md transition shadow-2xs"
+                        className="group/id inline-flex items-center gap-1 font-mono font-medium text-[11px] text-blue-700 bg-blue-50/80 hover:bg-blue-100 border border-blue-200/80 px-2 py-0.5 rounded-md transition shadow-2xs"
                         title="View Full Proforma Document"
                       >
                         <span>{pi.proforma_number}</span>
                         <ArrowUpRight className="w-3 h-3 text-blue-500 group-hover/id:text-blue-700 transition-transform group-hover/id:translate-x-0.5 group-hover/id:-translate-y-0.5" />
                       </Link>
                     </td>
-                    <td className="py-3.5 px-3.5 sm:px-4">
-                      <p className="font-bold text-slate-900 text-xs sm:text-sm truncate max-w-[170px] leading-snug">
+                    <td className="py-2.5 px-3.5">
+                      <p className="font-semibold text-slate-900 text-xs truncate max-w-[170px] leading-snug">
                         {pi.client_name}
                       </p>
                       <p className="text-slate-500 text-[11px] truncate max-w-[170px]">
                         {pi.client_company || "Direct Individual"}
                       </p>
                     </td>
-                    <td className="py-3.5 px-3.5 sm:px-4 whitespace-nowrap">
+                    <td className="py-2.5 px-3.5 whitespace-nowrap">
                       {pi.estimate ? (
                         <Link
                           href={`/dashboard/estimates/${pi.estimate.estimate_number}`}
-                          className="group/est inline-flex items-center gap-1 whitespace-nowrap font-mono text-[11px] font-semibold text-purple-700 bg-purple-50/80 hover:bg-purple-100 px-2 py-0.5 rounded border border-purple-200/80 transition shadow-2xs"
+                          className="group/est inline-flex items-center gap-1 whitespace-nowrap font-mono text-[11px] font-medium text-purple-700 bg-purple-50/80 hover:bg-purple-100 px-2 py-0.5 rounded border border-purple-200/80 transition shadow-2xs"
                           title={`Linked to Source Estimate #${pi.estimate.estimate_number}`}
                         >
                           <FileText className="w-3 h-3 text-purple-500" />
@@ -607,9 +607,9 @@ function ProformaContent() {
                         <span className="text-slate-400 text-[11px] italic">Direct PI</span>
                       )}
                     </td>
-                    <td className="py-3.5 px-3.5 sm:px-4 text-slate-600 whitespace-nowrap">
+                    <td className="py-2.5 px-3.5 text-slate-600 whitespace-nowrap">
                       <div className="flex flex-col gap-0.5 items-start">
-                        <span className="font-medium text-slate-800 text-xs">{formatDate(pi.invoice_date)}</span>
+                        <span className="font-medium text-slate-800 text-[11px]">{formatDate(pi.invoice_date)}</span>
                         {pi.due_date && (
                           (() => {
                             const due = getDueDateStatus(pi.due_date, "Due");
@@ -627,16 +627,16 @@ function ProformaContent() {
                         )}
                       </div>
                     </td>
-                    <td className="py-3.5 px-3.5 sm:px-4 whitespace-nowrap">
-                      <div className="font-mono font-bold text-slate-900 text-xs sm:text-sm tabular-nums">
+                    <td className="py-2.5 px-3.5 whitespace-nowrap">
+                      <div className="font-mono font-semibold text-slate-900 text-xs tabular-nums">
                         {pi.currency === "INR" ? "₹ " : `${pi.currency} `}
                         {Number(pi.total_amount).toLocaleString(pi.currency === "INR" ? "en-IN" : undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                       {pi.invoiced_amount !== undefined && Number(pi.invoiced_amount) > 0 ? (
                         <div className="text-[10px] font-mono mt-0.5 space-x-1 flex items-center">
-                          <span className="text-emerald-700 font-semibold">Billed: ₹{Number(pi.invoiced_amount).toLocaleString("en-IN")}</span>
+                          <span className="text-emerald-700 font-medium">Billed: ₹{Number(pi.invoiced_amount).toLocaleString("en-IN")}</span>
                           <span className="text-slate-300">•</span>
-                          <span className="text-purple-700 font-semibold">Rem: ₹{Number(pi.remaining_amount ?? 0).toLocaleString("en-IN")}</span>
+                          <span className="text-purple-700 font-medium">Rem: ₹{Number(pi.remaining_amount ?? 0).toLocaleString("en-IN")}</span>
                         </div>
                       ) : (
                         <div className="text-[10px] text-slate-400 font-sans mt-0.5">
@@ -644,12 +644,12 @@ function ProformaContent() {
                         </div>
                       )}
                     </td>
-                    <td className="py-3.5 px-3.5 sm:px-4 whitespace-nowrap">
+                    <td className="py-2.5 px-3.5 whitespace-nowrap">
                       <div className="relative inline-flex items-center">
                         <select
                           value={pi.status}
                           onChange={(e) => handleStatusChange(pi, e.target.value)}
-                          className={`appearance-none text-[11px] font-bold pl-5 pr-5 py-0.5 rounded-full uppercase tracking-wider border cursor-pointer transition focus:outline-none focus:ring-1 shadow-2xs ${getStatusBadge(
+                          className={`appearance-none text-[10px] font-medium pl-4 pr-5 py-0.5 rounded-full uppercase tracking-wider border cursor-pointer transition focus:outline-none focus:ring-1 shadow-2xs ${getStatusBadge(
                             pi.status
                           )}`}
                         >
@@ -660,16 +660,16 @@ function ProformaContent() {
                           <option value="fully_invoiced">Fully Invoiced</option>
                           <option value="cancelled">Cancelled</option>
                         </select>
-                        <span className={`absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full pointer-events-none ${getStatusDot(pi.status)}`} />
+                        <span className={`absolute left-1.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full pointer-events-none ${getStatusDot(pi.status)}`} />
                         <ChevronDown className="w-2.5 h-2.5 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" />
                       </div>
                     </td>
-                    <td className="py-3.5 px-3.5 sm:px-4 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1.5">
+                    <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1">
                         {pi.remaining_amount !== undefined && Number(pi.remaining_amount) <= 0 ? (
                           <span
                             title="100% of this proforma contract has been invoiced"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-emerald-700 bg-emerald-50 border border-emerald-200/80 font-bold text-xs whitespace-nowrap shrink-0 shadow-2xs"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-emerald-700 bg-emerald-50 border border-emerald-200/80 font-medium text-[11px] whitespace-nowrap shrink-0 shadow-2xs"
                           >
                             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                             <span>Fully Invoiced</span>
@@ -678,7 +678,7 @@ function ProformaContent() {
                           <Link
                             href={`/dashboard/invoices/from-proforma/${pi.proforma_number}`}
                             title="Generate Milestone Tax Invoice"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 font-semibold text-[11px] whitespace-nowrap shrink-0 transition shadow-2xs cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-white bg-emerald-600 hover:bg-emerald-700 font-medium text-[11px] whitespace-nowrap shrink-0 transition shadow-2xs cursor-pointer"
                           >
                             <FilePlus2 className="w-3 h-3" />
                             <span>Make Tax Invoice</span>

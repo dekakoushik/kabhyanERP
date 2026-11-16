@@ -256,77 +256,77 @@ function TicketsContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2.5">
-            <span className="p-2 bg-purple-100 text-purple-700 rounded-xl">
-              <LifeBuoy className="w-6 h-6" />
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+            <span className="p-1.5 bg-purple-50 text-purple-700 rounded-lg border border-purple-100">
+              <LifeBuoy className="w-4 h-4" />
             </span>
             Client Support & Change Request Hub
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 mt-0.5">
             Resolve customer reported bugs, change requests, feature enhancements, and milestone queries.
           </p>
         </div>
 
         <Link
           href="/dashboard/tickets/create"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-sm hover:shadow transition-all cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-2xs hover:shadow-xs transition-all cursor-pointer"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
           <span>New Support Ticket</span>
         </Link>
       </div>
 
       {/* KPI Cards */}
       {stats && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-center justify-between">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Tickets</p>
-              <p className="text-2xl font-black text-slate-900 mt-1">{stats.total_tickets}</p>
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Tickets</p>
+              <p className="text-xl font-bold text-slate-900 mt-1">{stats.total_tickets}</p>
               <p className="text-[11px] text-slate-500 mt-0.5">Across all client projects</p>
             </div>
-            <div className="p-3 bg-blue-50 text-blue-700 rounded-xl">
-              <MessageSquare className="w-5 h-5" />
+            <div className="p-2 bg-blue-50 text-blue-700 rounded-lg border border-blue-100">
+              <MessageSquare className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Open & Unassigned</p>
-              <p className="text-2xl font-black text-amber-700 mt-1">{stats.open_tickets}</p>
+              <p className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider">Open & Unassigned</p>
+              <p className="text-xl font-bold text-amber-700 mt-1">{stats.open_tickets}</p>
               <p className="text-[11px] text-amber-600/80 mt-0.5">Needs staff response</p>
             </div>
-            <div className="p-3 bg-amber-50 text-amber-700 rounded-xl">
-              <Clock className="w-5 h-5" />
+            <div className="p-2 bg-amber-50 text-amber-700 rounded-lg border border-amber-100">
+              <Clock className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-bold text-blue-600 uppercase tracking-wider">In Progress</p>
-              <p className="text-2xl font-black text-blue-700 mt-1">{stats.in_progress}</p>
+              <p className="text-[11px] font-semibold text-blue-600 uppercase tracking-wider">In Progress</p>
+              <p className="text-xl font-bold text-blue-700 mt-1">{stats.in_progress}</p>
               <p className="text-[11px] text-blue-600/80 mt-0.5">Engineering actively investigating</p>
             </div>
-            <div className="p-3 bg-blue-50 text-blue-700 rounded-xl">
-              <Sparkles className="w-5 h-5" />
+            <div className="p-2 bg-blue-50 text-blue-700 rounded-lg border border-blue-100">
+              <Sparkles className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Resolved</p>
-              <p className="text-2xl font-black text-emerald-700 mt-1">{stats.resolved}</p>
+              <p className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">Resolved</p>
+              <p className="text-xl font-bold text-emerald-700 mt-1">{stats.resolved}</p>
               <p className="text-[11px] text-emerald-600/80 mt-0.5">Delivered to client satisfaction</p>
             </div>
-            <div className="p-3 bg-emerald-50 text-emerald-700 rounded-xl">
-              <CheckCircle className="w-5 h-5" />
+            <div className="p-2 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100">
+              <CheckCircle className="w-4 h-4" />
             </div>
           </div>
         </div>
       )}
 
       {/* Filter and Search Bar */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="bg-white rounded-xl p-3 border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -405,30 +405,30 @@ function TicketsContent() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <th className="py-3.5 px-6">Ticket #</th>
-                  <th className="py-3.5 px-6">Client / Project</th>
-                  <th className="py-3.5 px-6">Subject & Classification</th>
-                  <th className="py-3.5 px-6">Priority</th>
-                  <th className="py-3.5 px-6">Assigned Engineer</th>
-                  <th className="py-3.5 px-6">Status</th>
-                  <th className="py-3.5 px-6 text-right">Discussion</th>
+                <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  <th className="py-2.5 px-3.5">Ticket #</th>
+                  <th className="py-2.5 px-3.5">Client / Project</th>
+                  <th className="py-2.5 px-3.5">Subject & Classification</th>
+                  <th className="py-2.5 px-3.5">Priority</th>
+                  <th className="py-2.5 px-3.5">Assigned Engineer</th>
+                  <th className="py-2.5 px-3.5">Status</th>
+                  <th className="py-2.5 px-3.5 text-right">Discussion</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
                 {tickets.map((t) => (
                   <tr key={t.id} className="hover:bg-slate-50/60 transition">
-                    <td className="py-4 px-6">
-                      <span className="font-mono font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-md border border-purple-100">
+                    <td className="py-2.5 px-3.5">
+                      <span className="font-mono font-medium text-[11px] text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-100">
                         {t.ticket_number}
                       </span>
                     </td>
-                    <td className="py-4 px-6">
-                      <p className="font-bold text-slate-900 text-sm">
+                    <td className="py-2.5 px-3.5">
+                      <p className="font-semibold text-slate-900 text-xs">
                         {t.client?.company_name || "Direct Client"}
                       </p>
                       {t.project ? (
-                        <p className="text-[11px] text-blue-600 font-semibold flex items-center gap-1 mt-0.5">
+                        <p className="text-[11px] text-blue-600 font-medium flex items-center gap-1 mt-0.5">
                           <FolderKanban className="w-3 h-3" />
                           <span>{t.project.name}</span>
                         </p>
@@ -436,11 +436,11 @@ function TicketsContent() {
                         <p className="text-[11px] text-slate-400">General Inquiry</p>
                       )}
                     </td>
-                    <td className="py-4 px-6 max-w-xs">
-                      <p className="font-bold text-slate-900 line-clamp-1">{t.subject}</p>
-                      <div className="flex items-center gap-2 mt-1">
+                    <td className="py-2.5 px-3.5 max-w-xs">
+                      <p className="font-semibold text-slate-900 text-xs line-clamp-1">{t.subject}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
                         <span
-                          className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${getTypeBadge(
+                          className={`text-[10px] font-medium uppercase px-2 py-0.5 rounded-full border ${getTypeBadge(
                             t.type
                           )}`}
                         >
@@ -451,20 +451,20 @@ function TicketsContent() {
                         </span>
                       </div>
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="py-2.5 px-3.5">
                       <span
-                        className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${getPriorityBadge(
+                        className={`text-[10px] uppercase font-medium px-2 py-0.5 rounded-full ${getPriorityBadge(
                           t.priority
                         )}`}
                       >
                         {t.priority}
                       </span>
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="py-2.5 px-3.5">
                       <select
                         value={t.assigned_to || ""}
                         onChange={(e) => handleAssigneeChange(t.id, e.target.value)}
-                        className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-700 focus:outline-none cursor-pointer"
+                        className="bg-white border border-slate-200 rounded-md px-2 py-1 text-xs text-slate-700 focus:outline-none cursor-pointer"
                       >
                         <option value="">Unassigned</option>
                         {staffUsers.map((u) => (
@@ -474,11 +474,11 @@ function TicketsContent() {
                         ))}
                       </select>
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="py-2.5 px-3.5">
                       <select
                         value={t.status}
                         onChange={(e) => handleStatusChange(t.id, e.target.value)}
-                        className={`text-[11px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider border cursor-pointer focus:outline-none ${getStatusBadge(
+                        className={`text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wider border cursor-pointer focus:outline-none ${getStatusBadge(
                           t.status
                         )}`}
                       >
@@ -489,10 +489,10 @@ function TicketsContent() {
                         <option value="closed">Closed</option>
                       </select>
                     </td>
-                    <td className="py-4 px-6 text-right">
+                    <td className="py-2.5 px-3.5 text-right">
                       <button
                         onClick={() => openTicketDrawer(t)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs tracking-wide shadow-2xs transition cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs tracking-wide shadow-2xs transition cursor-pointer"
                       >
                         <MessageSquare className="w-3.5 h-3.5" />
                         <span>Thread ({t.replies_count ?? 0})</span>

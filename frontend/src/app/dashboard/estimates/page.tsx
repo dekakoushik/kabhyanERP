@@ -410,69 +410,69 @@ export default function EstimatesPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
               Estimates & Proposals
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500">
+            <p className="text-xs text-slate-500 mt-0.5">
               Manage client proposals, quotes, and 1-click conversion to Proforma Invoices.
             </p>
           </div>
 
           <Link
             href="/dashboard/estimates/create"
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold shadow-xs hover:shadow-sm transition cursor-pointer"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs hover:shadow-xs transition cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>Generate Estimate</span>
           </Link>
         </div>
 
         {/* Stats Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+          <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               Total Estimates
             </span>
-            <p className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+            <p className="text-xl font-bold text-slate-900 mt-1">
               {stats?.total_estimates ?? estimates.length}
             </p>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600">
+          <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-blue-600">
               Pipeline Value
             </span>
-            <p className="text-xl sm:text-2xl font-black text-blue-700 mt-1">
+            <p className="text-xl font-bold text-blue-700 mt-1">
               ₹{Number(stats?.total_value ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">
+          <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-600">
               Accepted Value
             </span>
-            <p className="text-xl sm:text-2xl font-black text-emerald-700 mt-1">
+            <p className="text-xl font-bold text-emerald-700 mt-1">
               ₹{Number(stats?.accepted_value ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600">
+          <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-purple-600">
               Accepted / Sent
             </span>
-            <p className="text-xl sm:text-2xl font-black text-purple-700 mt-1">
+            <p className="text-xl font-bold text-purple-700 mt-1">
               {stats?.accepted ?? 0} <span className="text-xs font-normal text-slate-400">/ {stats?.sent ?? 0}</span>
             </p>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+        <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
           <form onSubmit={handleSearchSubmit} className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by estimate #, client name, company, or email..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+              className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </form>
 
@@ -534,32 +534,32 @@ export default function EstimatesPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    <th className="py-3.5 px-6 whitespace-nowrap min-w-[150px]">Estimate ID</th>
-                    <th className="py-3.5 px-6 min-w-[180px]">Client / Company</th>
-                    <th className="py-3.5 px-6 min-w-[180px]">Project Reference</th>
-                    <th className="py-3.5 px-6 whitespace-nowrap min-w-[160px]">Date / Validity</th>
-                    <th className="py-3.5 px-6 whitespace-nowrap min-w-[140px]">Amount</th>
-                    <th className="py-3.5 px-6 whitespace-nowrap min-w-[130px]">Status</th>
-                    <th className="py-3.5 px-6 text-right whitespace-nowrap">Actions</th>
+                  <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                    <th className="py-2.5 px-3.5 whitespace-nowrap min-w-[140px]">Estimate ID</th>
+                    <th className="py-2.5 px-3.5 min-w-[170px]">Client / Company</th>
+                    <th className="py-2.5 px-3.5 min-w-[170px]">Project Reference</th>
+                    <th className="py-2.5 px-3.5 whitespace-nowrap min-w-[150px]">Date / Validity</th>
+                    <th className="py-2.5 px-3.5 whitespace-nowrap min-w-[130px]">Amount</th>
+                    <th className="py-2.5 px-3.5 whitespace-nowrap min-w-[120px]">Status</th>
+                    <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs">
                   {estimates.map((est) => (
                     <tr key={est.id} className="hover:bg-slate-50/60 transition">
-                      <td className="py-4 px-6 whitespace-nowrap">
+                      <td className="py-2.5 px-3.5 whitespace-nowrap">
                         <Link
                           href={`/dashboard/estimates/${est.estimate_number}`}
-                          className="inline-block whitespace-nowrap font-mono font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-800 px-2.5 py-1 rounded-md border border-blue-100 transition"
+                          className="inline-block whitespace-nowrap font-mono font-medium text-[11px] text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-800 px-2 py-0.5 rounded-md border border-blue-100 transition"
                         >
                           {est.estimate_number}
                         </Link>
                       </td>
-                      <td className="py-4 px-6">
-                        <p className="font-bold text-slate-900 text-sm">{est.client_name}</p>
+                      <td className="py-2.5 px-3.5">
+                        <p className="font-semibold text-slate-900 text-xs">{est.client_name}</p>
                         <p className="text-slate-500 text-[11px]">{est.client_company || "Direct Individual"}</p>
                       </td>
-                      <td className="py-4 px-6">
+                      <td className="py-2.5 px-3.5">
                         {est.project ? (
                           <div>
                             <span className="font-mono text-[10px] text-slate-400">{est.project.code}</span>
@@ -569,9 +569,9 @@ export default function EstimatesPage() {
                           <span className="text-slate-400 italic">Standalone</span>
                         )}
                       </td>
-                      <td className="py-4 px-6 text-slate-600 whitespace-nowrap">
-                        <div className="flex flex-col gap-1 items-start">
-                          <span className="font-medium text-slate-800">{formatDate(est.estimate_date)}</span>
+                      <td className="py-2.5 px-3.5 text-slate-600 whitespace-nowrap">
+                        <div className="flex flex-col gap-0.5 items-start">
+                          <span className="font-medium text-slate-800 text-[11px]">{formatDate(est.estimate_date)}</span>
                           {est.expiry_date && (
                             (() => {
                               const validity = getDueDateStatus(est.expiry_date);
@@ -589,16 +589,16 @@ export default function EstimatesPage() {
                           )}
                         </div>
                       </td>
-                      <td className="py-4 px-6 font-mono font-bold text-slate-900 text-sm whitespace-nowrap tabular-nums">
+                      <td className="py-2.5 px-3.5 font-mono font-semibold text-slate-900 text-xs whitespace-nowrap tabular-nums">
                         {est.currency === "INR" ? "₹ " : `${est.currency} `}
                         {Number(est.total_amount).toLocaleString(est.currency === "INR" ? "en-IN" : undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
-                      <td className="py-4 px-6">
-                        <div className="flex flex-col gap-1.5 items-start">
+                      <td className="py-2.5 px-3.5">
+                        <div className="flex flex-col gap-1 items-start">
                           <select
                             value={est.status}
                             onChange={(e) => handleStatusChange(est, e.target.value)}
-                            className={`text-[11px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider border cursor-pointer focus:outline-none ${getStatusBadge(
+                            className={`text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wider border cursor-pointer focus:outline-none ${getStatusBadge(
                               est.status
                             )}`}
                           >
@@ -614,7 +614,7 @@ export default function EstimatesPage() {
                               onClick={() => handleConvertToProforma(est)}
                               disabled={convertingId === est.id}
                               title="Generate Proforma Invoice"
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-semibold transition cursor-pointer shadow-xs disabled:opacity-60 whitespace-nowrap"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-semibold transition cursor-pointer shadow-2xs disabled:opacity-60 whitespace-nowrap"
                             >
                               {convertingId === est.id ? (
                                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -628,7 +628,7 @@ export default function EstimatesPage() {
                             <button
                               onClick={() => router.push("/dashboard/proforma")}
                               title="View Proforma Invoice"
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-semibold hover:bg-purple-100 transition cursor-pointer whitespace-nowrap"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-semibold hover:bg-purple-100 transition cursor-pointer whitespace-nowrap"
                             >
                               <Receipt className="w-3 h-3" />
                               <span>View PI</span>
@@ -636,28 +636,28 @@ export default function EstimatesPage() {
                           )}
                         </div>
                       </td>
-                      <td className="py-4 px-6 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="py-2.5 px-3.5 text-right">
+                        <div className="flex items-center justify-end gap-1">
                           <Link
                             href={`/dashboard/estimates/${est.estimate_number}`}
                             title="Open Document View"
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition"
+                            className="p-1 rounded-md text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-3.5 h-3.5" />
                           </Link>
                           <Link
                             href={`/dashboard/estimates/${est.estimate_number}/edit`}
                             title="Edit Estimate"
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+                            className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
                           >
-                            <Edit2 className="w-4 h-4" />
+                            <Edit2 className="w-3.5 h-3.5" />
                           </Link>
                           <button
                             onClick={() => setDeleteConfirm(est)}
                             title="Delete Estimate"
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                            className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>

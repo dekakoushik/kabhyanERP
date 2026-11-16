@@ -230,10 +230,10 @@ export default function ProjectsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
               Project Portfolio
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500">
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
               Manage client deliverables, milestones, budgets, and project teams.
             </p>
           </div>
@@ -241,15 +241,15 @@ export default function ProjectsPage() {
           <div className="flex items-center gap-2">
             <Link
               href="/dashboard/tasks"
-              className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold transition cursor-pointer"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition cursor-pointer shadow-2xs"
             >
               <span>View All Tasks</span>
             </Link>
             <Link
               href="/dashboard/projects/create"
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold shadow-xs hover:shadow-sm transition cursor-pointer"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs hover:shadow-xs transition cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               <span>New Project</span>
             </Link>
           </div>
@@ -257,50 +257,50 @@ export default function ProjectsPage() {
 
         {/* Aggregate Stats Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+          <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               Total Projects
             </span>
-            <p className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+            <p className="text-xl font-bold text-slate-900 mt-1">
               {stats?.total_projects ?? projects.length}
             </p>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600">
+          <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-blue-600">
               In Progress
             </span>
-            <p className="text-xl sm:text-2xl font-black text-blue-700 mt-1">
+            <p className="text-xl font-bold text-blue-700 mt-1">
               {stats?.in_progress ?? 0}
             </p>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">
+          <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-600">
               Completed
             </span>
-            <p className="text-xl sm:text-2xl font-black text-emerald-700 mt-1">
+            <p className="text-xl font-bold text-emerald-700 mt-1">
               {stats?.completed ?? 0}
             </p>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600">
+          <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-indigo-600">
               Total Tasks
             </span>
-            <p className="text-xl sm:text-2xl font-black text-indigo-700 mt-1">
+            <p className="text-xl font-bold text-indigo-700 mt-1">
               {stats?.total_tasks ?? 0}
             </p>
           </div>
         </div>
 
         {/* Filter Bar */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+        <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
           <form onSubmit={handleSearchSubmit} className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by project name, project code, or client..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+              className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </form>
 
@@ -373,28 +373,28 @@ export default function ProjectsPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {projects.map((project) => (
               <div
                 key={project.id}
-                className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:border-slate-300 hover:shadow-sm transition flex flex-col justify-between"
+                className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs hover:border-slate-300 hover:shadow-xs transition flex flex-col justify-between"
               >
                 <div>
                   {/* Top Code & Status */}
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <span className="font-mono text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-100">
+                  <div className="flex items-start justify-between gap-2 mb-2.5">
+                    <span className="font-mono text-[11px] font-medium text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
                       {project.code}
                     </span>
                     <div className="flex items-center gap-1.5">
                       <span
-                        className={`text-[11px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider border ${getPriorityColor(
+                        className={`text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wider border ${getPriorityColor(
                           project.priority
                         )}`}
                       >
                         {project.priority}
                       </span>
                       <span
-                        className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full capitalize border ${getStatusColor(
+                        className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize border ${getStatusColor(
                           project.status
                         )}`}
                       >
@@ -404,29 +404,29 @@ export default function ProjectsPage() {
                   </div>
 
                   {/* Title & Description */}
-                  <h3 className="text-base font-bold text-slate-900 line-clamp-1">{project.name}</h3>
-                  <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                  <h3 className="text-xs font-semibold text-slate-900 line-clamp-1">{project.name}</h3>
+                  <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">
                     {project.description || "No project description provided."}
                   </p>
 
                   {/* Client & Manager */}
-                  <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs text-slate-600">
+                  <div className="mt-3 pt-2.5 border-t border-slate-100 space-y-1 text-[11px] text-slate-600">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400">Client:</span>
-                      <span className="font-semibold text-slate-800">
+                      <span className="font-medium text-slate-800 truncate max-w-[170px]">
                         {project.client_name || "Internal / Kabhyan"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400">Manager:</span>
-                      <span className="font-semibold text-slate-800">
+                      <span className="font-medium text-slate-800 truncate max-w-[170px]">
                         {project.manager?.name || "Unassigned"}
                       </span>
                     </div>
                     {/* Timeline & Dates */}
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400">Timeline:</span>
-                      <span className="font-medium text-slate-700">
+                      <span className="font-normal text-slate-700">
                         {project.start_date ? formatDate(project.start_date) : "Immediate"}
                       </span>
                     </div>

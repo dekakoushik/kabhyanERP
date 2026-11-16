@@ -278,13 +278,13 @@ function ExpensesContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2.5">
-            <span className="p-2 bg-red-100 text-red-700 rounded-xl">
-              <CreditCard className="w-6 h-6" />
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+            <span className="p-1.5 bg-red-50 text-red-700 rounded-lg border border-red-100">
+              <CreditCard className="w-4 h-4" />
             </span>
             Corporate Expense Management
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 mt-0.5">
             Record company disbursements, cloud infra bills, salaries, GST input claims, and vendor payouts.
           </p>
         </div>
@@ -292,17 +292,17 @@ function ExpensesContent() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setCategoryManagerOpen(true)}
-            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs tracking-wide shadow-xs transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs tracking-wide shadow-2xs transition cursor-pointer"
           >
-            <Settings className="w-4 h-4 text-slate-500" />
+            <Settings className="w-3.5 h-3.5 text-slate-500" />
             <span>Manage Categories</span>
           </button>
 
           <button
             onClick={openCreateModal}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-sm hover:shadow transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-2xs hover:shadow-xs transition-all cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>Record Expense</span>
           </button>
         </div>
@@ -310,59 +310,59 @@ function ExpensesContent() {
 
       {/* KPI Cards */}
       {stats && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-center justify-between">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Expenses Paid</p>
-              <p className="text-xl font-mono font-black text-red-600 mt-1">
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Expenses Paid</p>
+              <p className="text-xl font-mono font-bold text-red-600 mt-1">
                 ₹{Number(stats.total_expenses_value).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <p className="text-[11px] text-slate-500 mt-0.5">{stats.total_count} logged vouchers</p>
             </div>
-            <div className="p-3 bg-red-50 text-red-600 rounded-xl">
-              <TrendingDown className="w-5 h-5" />
+            <div className="p-2 bg-red-50 text-red-600 rounded-lg border border-red-100">
+              <TrendingDown className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">GST Input Tax Credit</p>
-              <p className="text-xl font-mono font-black text-emerald-700 mt-1">
+              <p className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">GST Input Tax Credit</p>
+              <p className="text-xl font-mono font-bold text-emerald-700 mt-1">
                 ₹{Number(stats.total_tax_deductible).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <p className="text-[11px] text-emerald-600/80 mt-0.5">Claimable against GST output</p>
             </div>
-            <div className="p-3 bg-emerald-50 text-emerald-700 rounded-xl">
-              <CheckCircle className="w-5 h-5" />
+            <div className="p-2 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100">
+              <CheckCircle className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Pending Approvals</p>
-              <p className="text-xl font-black text-amber-700 mt-1">{stats.pending_count}</p>
+              <p className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider">Pending Approvals</p>
+              <p className="text-xl font-bold text-amber-700 mt-1">{stats.pending_count}</p>
               <p className="text-[11px] text-amber-600/80 mt-0.5">Awaiting disbursement</p>
             </div>
-            <div className="p-3 bg-amber-50 text-amber-700 rounded-xl">
-              <Clock className="w-5 h-5" />
+            <div className="p-2 bg-amber-50 text-amber-700 rounded-lg border border-amber-100">
+              <Clock className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-bold text-purple-600 uppercase tracking-wider">Active Categories</p>
-              <p className="text-xl font-black text-purple-700 mt-1">{categories.length}</p>
+              <p className="text-[11px] font-semibold text-purple-600 uppercase tracking-wider">Active Categories</p>
+              <p className="text-xl font-bold text-purple-700 mt-1">{categories.length}</p>
               <p className="text-[11px] text-purple-600/80 mt-0.5">Cloud, Rent, Payroll, Tools</p>
             </div>
-            <div className="p-3 bg-purple-50 text-purple-700 rounded-xl">
-              <Building2 className="w-5 h-5" />
+            <div className="p-2 bg-purple-50 text-purple-700 rounded-lg border border-purple-100">
+              <Building2 className="w-4 h-4" />
             </div>
           </div>
         </div>
       )}
 
       {/* Filter and Search Bar */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="bg-white rounded-xl p-3 border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -421,36 +421,36 @@ function ExpensesContent() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <th className="py-3.5 px-6">Voucher #</th>
-                  <th className="py-3.5 px-6">Expense Title / Vendor</th>
-                  <th className="py-3.5 px-6">Category</th>
-                  <th className="py-3.5 px-6">Date / Method</th>
-                  <th className="py-3.5 px-6">Total Amount</th>
-                  <th className="py-3.5 px-6">Input GST</th>
-                  <th className="py-3.5 px-6">Status</th>
-                  <th className="py-3.5 px-6 text-right">Actions</th>
+                <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  <th className="py-2.5 px-3.5">Voucher #</th>
+                  <th className="py-2.5 px-3.5">Expense Title / Vendor</th>
+                  <th className="py-2.5 px-3.5">Category</th>
+                  <th className="py-2.5 px-3.5">Date / Method</th>
+                  <th className="py-2.5 px-3.5">Total Amount</th>
+                  <th className="py-2.5 px-3.5">Input GST</th>
+                  <th className="py-2.5 px-3.5">Status</th>
+                  <th className="py-2.5 px-3.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
                 {expenses.map((exp) => (
                   <tr key={exp.id} className="hover:bg-slate-50/60 transition">
-                    <td className="py-4 px-6">
-                      <span className="font-mono font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+                    <td className="py-2.5 px-3.5">
+                      <span className="font-mono font-medium text-[11px] text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
                         {exp.expense_number}
                       </span>
                     </td>
-                    <td className="py-4 px-6">
-                      <p className="font-bold text-slate-900 text-sm line-clamp-1">{exp.title}</p>
+                    <td className="py-2.5 px-3.5">
+                      <p className="font-semibold text-slate-900 text-xs line-clamp-1">{exp.title}</p>
                       <p className="text-slate-500 text-[11px]">{exp.vendor_name || "Direct Vendor"}</p>
                       {exp.vendor_gstin && (
                         <p className="text-[10px] text-slate-400 font-mono">GSTIN: {exp.vendor_gstin}</p>
                       )}
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="py-2.5 px-3.5">
                       {exp.category ? (
                         <span
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border"
+                          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium border"
                           style={{
                             borderColor: `${exp.category.color}40`,
                             backgroundColor: `${exp.category.color}15`,
@@ -461,30 +461,30 @@ function ExpensesContent() {
                           {exp.category.name}
                         </span>
                       ) : (
-                        <span className="text-slate-400 italic">Uncategorized</span>
+                        <span className="text-slate-400 text-[11px] italic">Uncategorized</span>
                       )}
                     </td>
-                    <td className="py-4 px-6 text-slate-600">
-                      <div className="flex flex-col">
+                    <td className="py-2.5 px-3.5 text-slate-600">
+                      <div className="flex flex-col text-[11px]">
                         <span>{typeof exp.expense_date === "string" ? exp.expense_date.split("T")[0] : ""}</span>
-                        <span className="text-[10px] text-slate-400 uppercase font-semibold">
+                        <span className="text-[10px] text-slate-400 uppercase font-medium">
                           {exp.payment_method.replace("_", " ")}
                         </span>
                       </div>
                     </td>
-                    <td className="py-4 px-6 font-mono font-bold text-slate-900 text-sm">
+                    <td className="py-2.5 px-3.5 font-mono font-semibold text-slate-900 text-xs">
                       ₹{Number(exp.total_amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="py-4 px-6 font-mono text-emerald-600 font-semibold text-xs">
+                    <td className="py-2.5 px-3.5 font-mono text-emerald-600 font-medium text-[11px]">
                       {Number(exp.tax_amount) > 0 ? (
                         `₹${Number(exp.tax_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`
                       ) : (
                         <span className="text-slate-400">-</span>
                       )}
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="py-2.5 px-3.5">
                       <span
-                        className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                        className={`text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full border ${
                           exp.status === "paid"
                             ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                             : exp.status === "pending"
@@ -495,21 +495,21 @@ function ExpensesContent() {
                         {exp.status}
                       </span>
                     </td>
-                    <td className="py-4 px-6 text-right">
+                    <td className="py-2.5 px-3.5 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => openEditModal(exp)}
                           title="Edit Voucher"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+                          className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
                         >
-                          <Edit2 className="w-4 h-4" />
+                          <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => setDeleteConfirm(exp)}
                           title="Delete Voucher"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                          className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>

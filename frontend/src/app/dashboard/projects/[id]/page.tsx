@@ -283,7 +283,7 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
     <div className="space-y-6 pb-12">
       {/* TOP BREADCRUMB & HEADER */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+        <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
           <Link
             href="/dashboard/projects"
             className="hover:text-blue-600 transition flex items-center gap-1 cursor-pointer"
@@ -292,20 +292,20 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
             <span>Projects Portfolio</span>
           </Link>
           <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-          <span className="text-slate-900 font-bold">{project.name}</span>
+          <span className="text-slate-900 font-semibold">{project.name}</span>
         </div>
 
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 font-bold text-xs uppercase tracking-wider border border-blue-100">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-2xs">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-medium text-[11px] font-mono uppercase tracking-wider border border-blue-100">
                 {project.code}
               </span>
-              <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+              <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
                 {project.name}
               </h1>
               <span
-                className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider border ${
+                className={`text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider border ${
                   project.status === "in_progress"
                     ? "bg-blue-50 text-blue-700 border-blue-200"
                     : project.status === "completed"
@@ -322,7 +322,7 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
               {project.description || "Agile project workspace for sprint deliverables, engineering tasks, and team tracking."}
             </p>
             {project.client_name && (
-              <div className="flex items-center gap-2 text-xs text-slate-600 font-medium pt-1">
+              <div className="flex items-center gap-2 text-xs text-slate-600 font-normal pt-0.5">
                 <span className="text-slate-400">Client:</span>
                 <span className="font-semibold text-slate-800">{project.client_name}</span>
               </div>
@@ -332,9 +332,9 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => openCreateModal("todo")}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-2xs transition cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               <span>Add Task</span>
             </button>
           </div>
@@ -343,26 +343,26 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
 
       {/* METRICS STRIP */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
-          <p className="text-2xs font-bold uppercase tracking-wider text-slate-500">Total Tasks</p>
-          <p className="text-xl font-black text-slate-900 mt-1">{stats.total}</p>
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Total Tasks</p>
+          <p className="text-xl font-bold text-slate-900 mt-1">{stats.total}</p>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
-          <p className="text-2xs font-bold uppercase tracking-wider text-blue-600">In Progress</p>
-          <p className="text-xl font-black text-blue-700 mt-1">{stats.inProgress}</p>
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-blue-600">In Progress</p>
+          <p className="text-xl font-bold text-blue-700 mt-1">{stats.inProgress}</p>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
-          <p className="text-2xs font-bold uppercase tracking-wider text-emerald-600">Completed</p>
-          <p className="text-xl font-black text-emerald-700 mt-1">{stats.completed}</p>
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-600">Completed</p>
+          <p className="text-xl font-bold text-emerald-700 mt-1">{stats.completed}</p>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
-          <p className="text-2xs font-bold uppercase tracking-wider text-rose-600">Blocked</p>
-          <p className="text-xl font-black text-rose-700 mt-1">{stats.blocked}</p>
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-rose-600">Blocked</p>
+          <p className="text-xl font-bold text-rose-700 mt-1">{stats.blocked}</p>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs col-span-2 md:col-span-1">
+        <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-2xs col-span-2 md:col-span-1">
           <div className="flex items-center justify-between">
-            <p className="text-2xs font-bold uppercase tracking-wider text-slate-500">Progress</p>
-            <span className="text-xs font-black text-slate-900">{stats.progress}%</span>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Progress</p>
+            <span className="text-xs font-bold text-slate-900">{stats.progress}%</span>
           </div>
           <div className="w-full bg-slate-100 rounded-full h-2 mt-2.5 overflow-hidden">
             <div
@@ -494,12 +494,12 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
                 } p-3 flex flex-col min-h-[500px]`}
               >
                 {/* COLUMN HEADER */}
-                <div className="flex items-center justify-between mb-3 px-1">
+                <div className="flex items-center justify-between mb-2.5 px-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-black text-slate-800 tracking-tight">
+                    <span className="text-xs font-semibold text-slate-800 tracking-tight">
                       {col.label}
                     </span>
-                    <span className={`text-2xs font-bold px-2 py-0.5 rounded-full ${col.badge}`}>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${col.badge}`}>
                       {colTasks.length}
                     </span>
                   </div>

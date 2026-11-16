@@ -70,24 +70,24 @@ function AccountsContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2.5">
-            <span className="p-2 bg-emerald-100 text-emerald-700 rounded-xl">
-              <TrendingUp className="w-6 h-6" />
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+            <span className="p-1.5 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100">
+              <TrendingUp className="w-4 h-4" />
             </span>
             Income vs Expense (P&L Ledger)
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 mt-0.5">
             Real-time cashflow analytics, revenue realization, operational expenses, and net profit margin.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 print:hidden">
-          <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-2xs">
-            <Calendar className="w-3.5 h-3.5 text-slate-400 mr-2" />
+          <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2.5 py-1 shadow-2xs">
+            <Calendar className="w-3.5 h-3.5 text-slate-400 mr-1.5" />
             <select
               value={year}
               onChange={(e) => setYear(Number(e.target.value))}
-              className="text-xs font-bold text-slate-800 bg-transparent focus:outline-none cursor-pointer"
+              className="text-xs font-semibold text-slate-800 bg-transparent focus:outline-none cursor-pointer"
             >
               <option value={currentYear}>FY {currentYear}</option>
               <option value={currentYear - 1}>FY {currentYear - 1}</option>
@@ -97,17 +97,17 @@ function AccountsContent() {
 
           <button
             onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs tracking-wide shadow-xs transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs tracking-wide shadow-2xs transition cursor-pointer"
           >
-            <Printer className="w-4 h-4" />
+            <Printer className="w-3.5 h-3.5" />
             <span>Print / PDF Report</span>
           </button>
 
           <Link
             href="/dashboard/expenses"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-xs transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-2xs hover:shadow-xs transition cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>Record Expense</span>
           </Link>
         </div>
@@ -117,7 +117,7 @@ function AccountsContent() {
       <div className="hidden print:block mb-6 pb-4 border-b-2 border-slate-900">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-black text-slate-900 tracking-tight">KABHYAN TECHNOLOGIES PRIVATE LIMITED</h2>
+            <h2 className="text-base font-bold text-slate-900 tracking-tight">KABHYAN TECHNOLOGIES PRIVATE LIMITED</h2>
             <p className="text-xs text-slate-500 font-medium">Annual Financial Accounts & Cashflow Statement (FY {year})</p>
           </div>
           <div className="text-right text-xs text-slate-500">
@@ -128,16 +128,16 @@ function AccountsContent() {
       </div>
 
       {/* Primary KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Total Income Collected */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs relative overflow-hidden">
+        <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Income Realized</span>
-            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
-              <ArrowDownRight className="w-5 h-5" />
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Income Realized</span>
+            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100">
+              <ArrowDownRight className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-mono font-black text-emerald-700 mt-2">
+          <p className="text-xl font-mono font-bold text-emerald-700 mt-1.5">
             ₹{Number(summary.total_collected_income).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
           <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-1">
@@ -150,14 +150,14 @@ function AccountsContent() {
         </div>
 
         {/* Total Expenses Paid */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs relative overflow-hidden">
+        <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Expenses Paid</span>
-            <div className="p-2.5 bg-red-50 text-red-600 rounded-xl">
-              <ArrowUpRight className="w-5 h-5" />
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Expenses Paid</span>
+            <div className="p-2 bg-red-50 text-red-600 rounded-lg border border-red-100">
+              <ArrowUpRight className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-mono font-black text-red-600 mt-2">
+          <p className="text-xl font-mono font-bold text-red-600 mt-1.5">
             ₹{Number(summary.total_expenses_paid).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
           <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-1">
@@ -170,18 +170,18 @@ function AccountsContent() {
         </div>
 
         {/* Net Operating Profit */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs relative overflow-hidden">
+        <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Net Operating Profit</span>
-            <div className={`p-2.5 rounded-xl ${summary.net_operating_profit >= 0 ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-700"}`}>
-              <TrendingUp className="w-5 h-5" />
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Net Operating Profit</span>
+            <div className={`p-2 rounded-lg border ${summary.net_operating_profit >= 0 ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-amber-50 text-amber-700 border-amber-100"}`}>
+              <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <p className={`text-2xl font-mono font-black mt-2 ${summary.net_operating_profit >= 0 ? "text-blue-900" : "text-amber-700"}`}>
+          <p className={`text-xl font-mono font-bold mt-1.5 ${summary.net_operating_profit >= 0 ? "text-blue-900" : "text-amber-700"}`}>
             ₹{Number(summary.net_operating_profit).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
           <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-1">
-            <span className={`font-bold px-1.5 py-0.5 rounded text-[10px] ${summary.profit_margin >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
+            <span className={`font-semibold px-1.5 py-0.5 rounded text-[10px] ${summary.profit_margin >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
               {summary.profit_margin}% Margin
             </span>
             <span>Operating health</span>
@@ -190,14 +190,14 @@ function AccountsContent() {
         </div>
 
         {/* Outstanding Client Receivables */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs relative overflow-hidden">
+        <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Outstanding Due</span>
-            <div className="p-2.5 bg-amber-50 text-amber-700 rounded-xl">
-              <Clock className="w-5 h-5" />
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Outstanding Due</span>
+            <div className="p-2 bg-amber-50 text-amber-700 rounded-lg border border-amber-100">
+              <Clock className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-mono font-black text-amber-700 mt-2">
+          <p className="text-xl font-mono font-bold text-amber-700 mt-1.5">
             ₹{Number(summary.total_outstanding_due).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
           <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-1">

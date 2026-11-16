@@ -477,22 +477,22 @@ function InvoicesContent() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2.5">
-            <span className="p-2 bg-blue-100 text-blue-700 rounded-xl">
-              <FileCheck className="w-6 h-6" />
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+            <span className="p-1.5 bg-blue-50 text-blue-700 rounded-lg border border-blue-100">
+              <FileCheck className="w-4 h-4" />
             </span>
             Tax Invoices & Revenue
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 mt-0.5">
             Official GST-compliant tax invoices, payment records, and revenue tracking.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Link
             href="/dashboard/invoices/create"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-sm hover:shadow transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-2xs hover:shadow-xs transition-all cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>Create Tax Invoice</span>
           </Link>
         </div>
@@ -500,54 +500,54 @@ function InvoicesContent() {
 
       {/* Financial KPI Cards */}
       {stats && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-center justify-between">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Invoiced</p>
-              <p className="text-xl font-mono font-black text-slate-900 mt-1">
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Invoiced</p>
+              <p className="text-xl font-mono font-bold text-slate-900 mt-1">
                 ₹{Number(stats.total_invoiced_value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <p className="text-[11px] text-slate-500 mt-0.5">{stats.total_invoices} total invoices</p>
             </div>
-            <div className="p-3 bg-blue-50 text-blue-700 rounded-xl">
-              <Receipt className="w-5 h-5" />
+            <div className="p-2 bg-blue-50 text-blue-700 rounded-lg border border-blue-100">
+              <Receipt className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Total Collected</p>
-              <p className="text-xl font-mono font-black text-emerald-700 mt-1">
+              <p className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">Total Collected</p>
+              <p className="text-xl font-mono font-bold text-emerald-700 mt-1">
                 ₹{Number(stats.total_collected_value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <p className="text-[11px] text-emerald-600/80 mt-0.5">{stats.paid} fully settled</p>
             </div>
-            <div className="p-3 bg-emerald-50 text-emerald-700 rounded-xl">
-              <CheckCircle className="w-5 h-5" />
+            <div className="p-2 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100">
+              <CheckCircle className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold text-amber-600 uppercase tracking-wider">Outstanding Due</p>
-              <p className="text-xl font-mono font-black text-amber-700 mt-1">
+              <p className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider">Outstanding Due</p>
+              <p className="text-xl font-mono font-bold text-amber-700 mt-1">
                 ₹{Number(stats.total_outstanding_value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <p className="text-[11px] text-amber-600/80 mt-0.5">{stats.unpaid + stats.partially_paid} pending payments</p>
             </div>
-            <div className="p-3 bg-amber-50 text-amber-700 rounded-xl">
-              <Clock className="w-5 h-5" />
+            <div className="p-2 bg-amber-50 text-amber-700 rounded-lg border border-amber-100">
+              <Clock className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold text-purple-600 uppercase tracking-wider">Overdue Alerts</p>
-              <p className="text-xl font-black text-purple-900 mt-1">{stats.overdue || 0}</p>
+              <p className="text-[11px] font-semibold text-purple-600 uppercase tracking-wider">Overdue Alerts</p>
+              <p className="text-xl font-bold text-purple-900 mt-1">{stats.overdue || 0}</p>
               <p className="text-[11px] text-purple-600/80 mt-0.5">Exceeded due date</p>
             </div>
-            <div className="p-3 bg-purple-50 text-purple-700 rounded-xl">
-              <AlertCircle className="w-5 h-5" />
+            <div className="p-2 bg-purple-50 text-purple-700 rounded-lg border border-purple-100">
+              <AlertCircle className="w-4 h-4" />
             </div>
           </div>
         </div>
@@ -609,48 +609,48 @@ function InvoicesContent() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <th className="py-3.5 px-6 whitespace-nowrap min-w-[150px]">Invoice ID</th>
-                  <th className="py-3.5 px-6 min-w-[180px]">Client / Company</th>
-                  <th className="py-3.5 px-6 whitespace-nowrap min-w-[140px]">PI Reference</th>
-                  <th className="py-3.5 px-6 whitespace-nowrap min-w-[160px]">Date / Due</th>
-                  <th className="py-3.5 px-6 whitespace-nowrap min-w-[140px]">Total / Paid</th>
-                  <th className="py-3.5 px-6 whitespace-nowrap min-w-[130px]">Due Balance</th>
-                  <th className="py-3.5 px-6 whitespace-nowrap min-w-[130px]">Status</th>
-                  <th className="py-3.5 px-6 text-right whitespace-nowrap">Actions</th>
+                <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  <th className="py-2.5 px-3.5 whitespace-nowrap min-w-[140px]">Invoice ID</th>
+                  <th className="py-2.5 px-3.5 min-w-[170px]">Client / Company</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap min-w-[130px]">PI Reference</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap min-w-[150px]">Date / Due</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap min-w-[130px]">Total / Paid</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap min-w-[120px]">Due Balance</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap min-w-[120px]">Status</th>
+                  <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
                 {invoices.map((inv) => (
                   <tr key={inv.id} className="hover:bg-slate-50/60 transition">
-                    <td className="py-4 px-6 whitespace-nowrap">
-                      <span className="inline-block whitespace-nowrap font-mono font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100">
+                    <td className="py-2.5 px-3.5 whitespace-nowrap">
+                      <span className="inline-block whitespace-nowrap font-mono font-medium text-[11px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
                         {inv.invoice_number}
                       </span>
                     </td>
-                    <td className="py-4 px-6">
-                      <p className="font-bold text-slate-900 text-sm">{inv.client_name}</p>
+                    <td className="py-2.5 px-3.5">
+                      <p className="font-semibold text-slate-900 text-xs">{inv.client_name}</p>
                       <p className="text-slate-500 text-[11px]">{inv.client_company || "Direct Client"}</p>
                       {inv.client_gstin && (
                         <p className="text-slate-400 font-mono text-[10px] whitespace-nowrap">GSTIN: {inv.client_gstin}</p>
                       )}
                     </td>
-                    <td className="py-4 px-6 whitespace-nowrap">
+                    <td className="py-2.5 px-3.5 whitespace-nowrap">
                       {inv.proforma_invoice ? (
                         <Link
                           href={`/dashboard/proforma/${inv.proforma_invoice.proforma_number}`}
                           title="View Master Proforma Agreement"
-                          className="inline-block whitespace-nowrap font-mono text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200 transition"
+                          className="inline-block whitespace-nowrap font-mono text-[11px] font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200 transition"
                         >
                           {inv.proforma_invoice.proforma_number}
                         </Link>
                       ) : (
-                        <span className="text-slate-400 italic">Direct Invoice</span>
+                        <span className="text-slate-400 text-[11px] italic">Direct Invoice</span>
                       )}
                     </td>
-                    <td className="py-4 px-6 text-slate-600 whitespace-nowrap">
-                      <div className="flex flex-col gap-1 items-start">
-                        <span className="font-medium text-slate-800">{formatDate(inv.invoice_date)}</span>
+                    <td className="py-2.5 px-3.5 text-slate-600 whitespace-nowrap">
+                      <div className="flex flex-col gap-0.5 items-start">
+                        <span className="font-medium text-slate-800 text-[11px]">{formatDate(inv.invoice_date)}</span>
                         {inv.due_date && (
                           (() => {
                             const due = getDueDateStatus(inv.due_date);
@@ -668,22 +668,22 @@ function InvoicesContent() {
                         )}
                       </div>
                     </td>
-                    <td className="py-4 px-6">
-                      <p className="font-mono font-bold text-slate-900 text-sm">
+                    <td className="py-2.5 px-3.5">
+                      <p className="font-mono font-semibold text-slate-900 text-xs">
                         ₹{Number(inv.total_amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                       <p className="font-mono text-[11px] text-emerald-600">
                         Paid: ₹{Number(inv.paid_amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     </td>
-                    <td className="py-4 px-6 font-mono font-bold text-amber-700 text-sm">
+                    <td className="py-2.5 px-3.5 font-mono font-semibold text-amber-700 text-xs">
                       ₹{Number(inv.due_amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="py-2.5 px-3.5">
                       <select
                         value={inv.status}
                         onChange={(e) => handleStatusChange(inv, e.target.value)}
-                        className={`text-[11px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider border cursor-pointer focus:outline-none ${getStatusBadge(
+                        className={`text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wider border cursor-pointer focus:outline-none ${getStatusBadge(
                           inv.status
                         )}`}
                       >
@@ -694,36 +694,36 @@ function InvoicesContent() {
                         <option value="cancelled">Cancelled</option>
                       </select>
                     </td>
-                    <td className="py-4 px-6 text-right">
+                    <td className="py-2.5 px-3.5 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => openRecordPaymentModal(inv)}
                           title="Record Client Payment"
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 font-semibold text-[11px] cursor-pointer"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 font-medium text-[11px] cursor-pointer shadow-2xs"
                         >
-                          <CreditCard className="w-3.5 h-3.5" />
+                          <CreditCard className="w-3 h-3" />
                           <span className="hidden sm:inline">Pay</span>
                         </button>
                         <Link
                           href={`/dashboard/invoices/${inv.invoice_number}`}
                           title="View Full Document Page"
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 cursor-pointer"
+                          className="p-1 rounded-md text-slate-500 hover:text-blue-600 hover:bg-blue-50 cursor-pointer"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5" />
                         </Link>
                         <Link
                           href={`/dashboard/invoices/${inv.invoice_number}/edit`}
                           title="Edit Tax Invoice"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+                          className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
                         >
-                          <Edit2 className="w-4 h-4" />
+                          <Edit2 className="w-3.5 h-3.5" />
                         </Link>
                         <button
                           onClick={() => setDeleteConfirm(inv)}
                           title="Delete Invoice"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                          className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>

@@ -245,13 +245,13 @@ function ClientsContent() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2.5">
-              <span className="p-2 bg-blue-100 text-blue-700 rounded-xl">
-                <Building className="w-6 h-6" />
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+              <span className="p-1.5 bg-blue-50 text-blue-700 rounded-lg border border-blue-100">
+                <Building className="w-4 h-4" />
               </span>
               Client Directory
             </h1>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-500 mt-0.5">
               Manage corporate client accounts, project assignments, and mobile app invitation credentials.
             </p>
           </div>
@@ -259,9 +259,9 @@ function ClientsContent() {
           <div className="flex items-center gap-2 flex-wrap">
             <Link
               href="/dashboard/clients/create"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-xs hover:shadow transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-2xs hover:shadow-xs transition-all cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               <span>Add Client Account</span>
             </Link>
           </div>
@@ -269,50 +269,50 @@ function ClientsContent() {
 
         {/* KPI Cards */}
         {stats && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs flex items-center justify-between">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between">
               <div>
-                <p className="text-2xs font-bold text-slate-400 uppercase tracking-wider">
+                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                   Total Corporate Clients
                 </p>
-                <p className="text-2xl font-black text-slate-900 mt-1">{stats.total_clients}</p>
-                <p className="text-2xs text-slate-500 mt-0.5">Active enterprise accounts</p>
+                <p className="text-xl font-bold text-slate-900 mt-1">{stats.total_clients}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Active enterprise accounts</p>
               </div>
-              <div className="p-3 bg-blue-50 text-blue-700 rounded-xl border border-blue-100">
-                <Building2 className="w-5 h-5" />
+              <div className="p-2 bg-blue-50 text-blue-700 rounded-lg border border-blue-100">
+                <Building2 className="w-4 h-4" />
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs flex items-center justify-between">
+            <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between">
               <div>
-                <p className="text-2xs font-bold text-emerald-600 uppercase tracking-wider">
+                <p className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">
                   Mobile App Accounts
                 </p>
-                <p className="text-2xl font-black text-emerald-700 mt-1">{stats.active_portal_users}</p>
-                <p className="text-2xs text-emerald-600/80 mt-0.5">Enabled mobile credentials</p>
+                <p className="text-xl font-bold text-emerald-700 mt-1">{stats.active_portal_users}</p>
+                <p className="text-[11px] text-emerald-600/80 mt-0.5">Enabled mobile credentials</p>
               </div>
-              <div className="p-3 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100">
-                <KeyRound className="w-5 h-5" />
+              <div className="p-2 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100">
+                <KeyRound className="w-4 h-4" />
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs flex items-center justify-between">
+            <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between">
               <div>
-                <p className="text-2xs font-bold text-purple-600 uppercase tracking-wider">
+                <p className="text-[11px] font-semibold text-purple-600 uppercase tracking-wider">
                   Clients With Projects
                 </p>
-                <p className="text-2xl font-black text-purple-700 mt-1">{stats.total_active_projects}</p>
-                <p className="text-2xs text-purple-600/80 mt-0.5">Live software deliverables</p>
+                <p className="text-xl font-bold text-purple-700 mt-1">{stats.total_active_projects}</p>
+                <p className="text-[11px] text-purple-600/80 mt-0.5">Live software deliverables</p>
               </div>
-              <div className="p-3 bg-purple-50 text-purple-700 rounded-xl border border-purple-100">
-                <FolderKanban className="w-5 h-5" />
+              <div className="p-2 bg-purple-50 text-purple-700 rounded-lg border border-purple-100">
+                <FolderKanban className="w-4 h-4" />
               </div>
             </div>
           </div>
         )}
 
         {/* Filter and Search Bar */}
-        <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="bg-white rounded-xl p-3 border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative w-full sm:w-80">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -320,7 +320,7 @@ function ClientsContent() {
               placeholder="Search company, contact person, email, code..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-50/80 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition"
+              className="w-full pl-9 pr-4 py-1.5 bg-slate-50/80 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition"
             />
           </div>
 
@@ -368,15 +368,15 @@ function ClientsContent() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200/80 bg-slate-50/75 text-2xs font-bold uppercase tracking-wider text-slate-500">
-                    <th className="py-3.5 px-4 w-[150px] whitespace-nowrap">Client Code</th>
-                    <th className="py-3.5 px-4 min-w-[220px]">Company / Contact</th>
-                    <th className="py-3.5 px-4 min-w-[210px]">Contact Details</th>
-                    <th className="py-3.5 px-4 min-w-[170px]">GSTIN / Location</th>
-                    <th className="py-3.5 px-4 w-[90px] text-center">Projects</th>
-                    <th className="py-3.5 px-4 w-[90px] text-center">Tickets</th>
-                    <th className="py-3.5 px-4 w-[130px] text-center">Mobile Access</th>
-                    <th className="py-3.5 px-4 w-[130px] text-right">Actions</th>
+                  <tr className="border-b border-slate-200/80 bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                    <th className="py-2.5 px-3.5 w-[140px] whitespace-nowrap">Client Code</th>
+                    <th className="py-2.5 px-3.5 min-w-[200px]">Company / Contact</th>
+                    <th className="py-2.5 px-3.5 min-w-[200px]">Contact Details</th>
+                    <th className="py-2.5 px-3.5 min-w-[160px]">GSTIN / Location</th>
+                    <th className="py-2.5 px-3.5 w-[80px] text-center">Projects</th>
+                    <th className="py-2.5 px-3.5 w-[80px] text-center">Tickets</th>
+                    <th className="py-2.5 px-3.5 w-[120px] text-center">Mobile Access</th>
+                    <th className="py-2.5 px-3.5 w-[110px] text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs">
@@ -387,11 +387,11 @@ function ClientsContent() {
                     return (
                       <tr key={cli.id} className="hover:bg-slate-50/60 transition group">
                         {/* CLIENT CODE - STRICTLY NON-BREAKING */}
-                        <td className="py-3.5 px-4 whitespace-nowrap align-middle">
+                        <td className="py-2.5 px-3.5 whitespace-nowrap align-middle">
                           <button
                             onClick={() => handleCopyCode(cli.client_code)}
                             title="Click to copy client code"
-                            className="inline-flex items-center gap-1.5 font-mono font-bold text-xs text-blue-700 bg-blue-50/80 hover:bg-blue-100/80 px-2.5 py-1 rounded-lg border border-blue-200/70 transition shadow-2xs group/btn cursor-pointer"
+                            className="inline-flex items-center gap-1.5 font-mono font-medium text-[11px] text-blue-700 bg-blue-50/80 hover:bg-blue-100/80 px-2 py-0.5 rounded-md border border-blue-200/70 transition shadow-2xs group/btn cursor-pointer"
                           >
                             <span>{cli.client_code}</span>
                             <Copy className="w-3 h-3 text-blue-400 group-hover/btn:text-blue-700 transition" />
@@ -399,12 +399,12 @@ function ClientsContent() {
                         </td>
 
                         {/* COMPANY / PRIMARY CONTACT */}
-                        <td className="py-3.5 px-4 align-middle">
+                        <td className="py-2.5 px-3.5 align-middle">
                           <div className="space-y-0.5">
-                            <p className="font-bold text-slate-900 text-sm tracking-tight leading-snug">
+                            <p className="font-semibold text-slate-900 text-xs tracking-tight leading-snug">
                               {cli.company_name}
                             </p>
-                            <p className="text-slate-500 text-2xs flex items-center gap-1 font-medium">
+                            <p className="text-slate-500 text-[11px] flex items-center gap-1 font-normal">
                               <User className="w-3 h-3 text-slate-400 shrink-0" />
                               <span className="truncate">{cli.name}</span>
                             </p>
@@ -412,18 +412,18 @@ function ClientsContent() {
                         </td>
 
                         {/* CONTACT DETAILS - CLEAN CONDITIONAL RENDERING */}
-                        <td className="py-3.5 px-4 text-slate-600 align-middle">
-                          <div className="flex flex-col gap-1">
+                        <td className="py-2.5 px-3.5 text-slate-600 align-middle">
+                          <div className="flex flex-col gap-0.5">
                             {hasEmail ? (
                               <a
                                 href={`mailto:${cli.email}`}
-                                className="flex items-center gap-1.5 text-xs text-slate-700 hover:text-blue-600 font-medium transition truncate max-w-[220px]"
+                                className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-blue-600 font-normal transition truncate max-w-[210px]"
                               >
                                 <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                 <span className="truncate">{cli.email}</span>
                               </a>
                             ) : (
-                              <span className="text-2xs italic text-slate-400 flex items-center gap-1">
+                              <span className="text-[11px] italic text-slate-400 flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
                                 <span>No email provided</span>
                               </span>
@@ -432,7 +432,7 @@ function ClientsContent() {
                             {hasPhone ? (
                               <a
                                 href={`tel:${cli.phone}`}
-                                className="flex items-center gap-1.5 text-2xs text-slate-500 hover:text-blue-600 transition"
+                                className="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-blue-600 transition"
                               >
                                 <Phone className="w-3 h-3 text-slate-400 shrink-0" />
                                 <span>{cli.phone}</span>
@@ -442,29 +442,29 @@ function ClientsContent() {
                         </td>
 
                         {/* GSTIN / LOCATION */}
-                        <td className="py-3.5 px-4 align-middle">
+                        <td className="py-2.5 px-3.5 align-middle">
                           <div className="flex flex-col gap-0.5">
                             {cli.gstin ? (
-                              <span className="font-mono text-xs font-semibold text-slate-800 tracking-wider">
+                              <span className="font-mono text-[11px] font-medium text-slate-700 tracking-wider">
                                 {cli.gstin}
                               </span>
                             ) : (
-                              <span className="text-2xs font-semibold text-slate-400">
+                              <span className="text-[11px] font-normal text-slate-400">
                                 Unregistered / Non-GST
                               </span>
                             )}
-                            <div className="flex items-center gap-1 text-2xs text-slate-400">
+                            <div className="flex items-center gap-1 text-[11px] text-slate-400">
                               <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                              <span>{cli.city || "Kolkata"}, {cli.state || "West Bengal"}</span>
+                              <span>{cli.city || "Guwahati"}, {cli.state || "Assam"}</span>
                             </div>
                           </div>
                         </td>
 
                         {/* PROJECTS */}
-                        <td className="py-3.5 px-4 text-center align-middle">
+                        <td className="py-2.5 px-3.5 text-center align-middle">
                           <Link
                             href={`/dashboard/projects?search=${encodeURIComponent(cli.company_name)}`}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-bold bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 hover:scale-105 transition shadow-2xs"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 transition shadow-2xs"
                           >
                             <FolderKanban className="w-3 h-3" />
                             <span>{cli.projects_count ?? cli.projects?.length ?? 0}</span>
@@ -472,10 +472,10 @@ function ClientsContent() {
                         </td>
 
                         {/* TICKETS */}
-                        <td className="py-3.5 px-4 text-center align-middle">
+                        <td className="py-2.5 px-3.5 text-center align-middle">
                           <Link
                             href={`/dashboard/tickets?client_id=${cli.id}`}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-bold bg-purple-50 text-purple-700 border border-purple-100 hover:bg-purple-100 hover:scale-105 transition shadow-2xs"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-100 hover:bg-purple-100 transition shadow-2xs"
                           >
                             <LifeBuoy className="w-3 h-3" />
                             <span>{cli.tickets_count ?? 0}</span>
@@ -483,18 +483,18 @@ function ClientsContent() {
                         </td>
 
                         {/* PORTAL / MOBILE ACCESS BADGE */}
-                        <td className="py-3.5 px-4 text-center align-middle">
+                        <td className="py-2.5 px-3.5 text-center align-middle">
                           {!hasEmail ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-3xs font-extrabold uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200">
                               No Login
                             </span>
                           ) : cli.portal_access_status === "active" ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-3xs font-extrabold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
                               <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                               <span>Mobile Ready</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-3xs font-extrabold uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200">
                               <XCircle className="w-3 h-3 text-rose-600" />
                               <span>Inactive</span>
                             </span>
@@ -502,23 +502,23 @@ function ClientsContent() {
                         </td>
 
                         {/* ACTIONS GROUP WITH SHADCN RADIX TOOLTIPS */}
-                        <td className="py-3.5 px-4 text-right align-middle">
+                        <td className="py-2.5 px-3.5 text-right align-middle">
                           <div className="flex items-center justify-end gap-1">
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <button
                                   onClick={() => handleResendInvite(cli)}
                                   disabled={sendingInviteId === cli.id || !hasEmail}
-                                  className={`p-1.5 rounded-lg transition ${
+                                  className={`p-1 rounded-md transition ${
                                     !hasEmail
                                       ? "text-slate-300 cursor-not-allowed"
                                       : "text-slate-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer disabled:opacity-50"
                                   }`}
                                 >
                                   {sendingInviteId === cli.id ? (
-                                    <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
                                   ) : (
-                                    <Send className="w-4 h-4" />
+                                    <Send className="w-3.5 h-3.5" />
                                   )}
                                 </button>
                               </TooltipTrigger>
@@ -533,9 +533,9 @@ function ClientsContent() {
                               <TooltipTrigger asChild>
                                 <button
                                   onClick={() => openEditModal(cli)}
-                                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer transition"
+                                  className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer transition"
                                 >
-                                  <Edit2 className="w-4 h-4" />
+                                  <Edit2 className="w-3.5 h-3.5" />
                                 </button>
                               </TooltipTrigger>
                               <TooltipContent side="top">Edit Profile</TooltipContent>
@@ -545,9 +545,9 @@ function ClientsContent() {
                               <TooltipTrigger asChild>
                                 <button
                                   onClick={() => setDeleteConfirm(cli)}
-                                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer transition"
+                                  className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer transition"
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               </TooltipTrigger>
                               <TooltipContent side="top">Delete Client</TooltipContent>
@@ -637,13 +637,13 @@ function ClientsContent() {
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <p className="text-3xs text-slate-400 mt-1">
+                    <p className="text-[11px] text-slate-400 mt-1">
                       Required if client requires access to the Mobile App.
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-2xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 mb-1">
                       Phone Number
                     </label>
                     <input
@@ -651,7 +651,7 @@ function ClientsContent() {
                       placeholder="+91 98310 98765"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none"
+                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none"
                     />
                   </div>
                 </div>
@@ -659,7 +659,7 @@ function ClientsContent() {
                 {/* Indian GSTIN & PAN Intelligence */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-2xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 mb-1">
                       GSTIN (15-Digit Indian GST)
                     </label>
                     <input
@@ -668,10 +668,10 @@ function ClientsContent() {
                       placeholder="e.g. 19AAECK4829K1ZX"
                       value={formData.gstin}
                       onChange={(e) => handleGstinChange(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono uppercase focus:outline-none"
+                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono uppercase focus:outline-none"
                     />
                     {formData.gstin && (
-                      <p className={`text-3xs mt-1 font-semibold ${gstAnalysis.isValid ? "text-emerald-600" : "text-amber-600"}`}>
+                      <p className={`text-[11px] mt-1 font-medium ${gstAnalysis.isValid ? "text-emerald-600" : "text-amber-600"}`}>
                         {gstAnalysis.isValid
                           ? `Valid GSTIN: Registered in ${gstAnalysis.stateName || "India"}`
                           : (gstAnalysis.errorMessage || "Invalid GSTIN format")}
@@ -781,7 +781,7 @@ function ClientsContent() {
                         <Smartphone className="w-4 h-4 text-blue-700" />
                         <span className="font-bold text-blue-900 text-xs">Client Mobile App Access</span>
                       </div>
-                      <span className="text-3xs font-extrabold uppercase text-blue-700 bg-blue-100 px-2 py-0.5 rounded">
+                      <span className="text-[10px] font-semibold uppercase text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200">
                         Passwordless Admin
                       </span>
                     </div>

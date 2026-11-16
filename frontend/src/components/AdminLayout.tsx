@@ -384,12 +384,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     <React.Fragment key={crumb.href + idx}>
                       <BreadcrumbItem>
                         {crumb.isCurrent ? (
-                          <BreadcrumbPage className="text-sm font-black text-slate-900 tracking-tight truncate max-w-[200px] sm:max-w-none">
+                          <BreadcrumbPage className="text-xs sm:text-sm font-semibold text-slate-900 tracking-tight truncate max-w-[200px] sm:max-w-none">
                             {crumb.label}
                           </BreadcrumbPage>
                         ) : (
                           <BreadcrumbLink asChild>
-                            <Link href={crumb.href} className="text-slate-500 hover:text-slate-800 font-semibold text-xs transition">
+                            <Link href={crumb.href} className="text-slate-500 hover:text-slate-800 font-medium text-xs transition">
                               {crumb.label}
                             </Link>
                           </BreadcrumbLink>
@@ -450,7 +450,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     </AvatarFallback>
                   </Avatar>
                   <div className="hidden md:block text-left text-xs leading-tight">
-                    <p className="font-bold text-slate-900 truncate max-w-[130px]">{user?.name}</p>
+                    <p className="font-semibold text-slate-900 truncate max-w-[130px]">{user?.name}</p>
                     <p className="text-slate-400 text-[10px] truncate max-w-[130px]">{user?.email}</p>
                   </div>
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden md:block" />
@@ -459,9 +459,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
               <DropdownMenuContent align="end" sideOffset={8} className="w-56 p-1.5 shadow-xl">
                 <DropdownMenuLabel className="p-2">
-                  <p className="text-xs font-bold text-slate-900">{user?.name}</p>
+                  <p className="text-xs font-semibold text-slate-900">{user?.name}</p>
                   <p className="text-[11px] text-slate-500 truncate font-normal">{user?.email}</p>
-                  <span className="mt-1.5 inline-block text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/80">
+                  <span className="mt-1.5 inline-block text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/80">
                     {user?.role}
                   </span>
                 </DropdownMenuLabel>

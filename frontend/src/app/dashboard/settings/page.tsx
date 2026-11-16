@@ -150,19 +150,19 @@ function SettingsOverviewContent() {
   return (
     <div className="space-y-6">
       {/* Infrastructure Top Banner */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600">
-            <Cpu className="w-6 h-6" />
+          <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
+            <Cpu className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-slate-900">Infrastructure Health: Operational</h2>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider">
+              <h2 className="text-xs sm:text-sm font-semibold text-slate-900">Infrastructure Health: Operational</h2>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-medium uppercase tracking-wider">
                 PostgreSQL Live
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-[11px] text-slate-500 mt-0.5">
               PHP {environment.php_version} • Laravel {environment.laravel_version} • PostgreSQL Connected ({environment.database_ping || "Active"})
             </p>
           </div>
@@ -170,7 +170,7 @@ function SettingsOverviewContent() {
 
         <Link
           href="/dashboard/settings/system"
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition cursor-pointer shadow-2xs"
         >
           <span>View Diagnostics</span>
           <ArrowRight className="w-3.5 h-3.5" />
@@ -178,43 +178,43 @@ function SettingsOverviewContent() {
       </div>
 
       {/* Grid of Sub-Page Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {cards.map((c) => {
           const Icon = c.icon;
           return (
             <Link
               key={c.href}
               href={c.href}
-              className="group bg-white rounded-2xl border border-slate-200 p-6 shadow-xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between cursor-pointer space-y-4"
+              className="group bg-white rounded-xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs hover:shadow-xs hover:border-blue-300 transition-all flex flex-col justify-between cursor-pointer space-y-3"
             >
               <div>
                 <div className="flex items-center justify-between">
-                  <div className={`p-2.5 rounded-xl border ${c.color}`}>
-                    <Icon className="w-5 h-5" />
+                  <div className={`p-2 rounded-lg border ${c.color}`}>
+                    <Icon className="w-4 h-4" />
                   </div>
-                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${c.badgeColor}`}>
+                  <span className={`text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full border ${c.badgeColor}`}>
                     {c.badge}
                   </span>
                 </div>
 
-                <h3 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition mt-3">
+                <h3 className="text-xs sm:text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition mt-2.5">
                   {c.title}
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{c.description}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">{c.description}</p>
 
-                <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs">
+                <div className="mt-3 pt-2.5 border-t border-slate-100 space-y-1 text-xs">
                   {c.details.map((d, i) => (
                     <div key={i} className="flex justify-between items-center text-slate-600">
                       <span className="text-slate-400 text-[11px]">{d.label}:</span>
-                      <span className="font-medium text-slate-800 text-right truncate max-w-[170px]">{d.val}</span>
+                      <span className="font-medium text-slate-800 text-right truncate max-w-[170px] text-[11px]">{d.val}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="pt-2 flex items-center justify-between text-xs font-bold text-blue-600 group-hover:translate-x-0.5 transition-transform">
+              <div className="pt-1.5 flex items-center justify-between text-xs font-semibold text-blue-600 group-hover:translate-x-0.5 transition-transform">
                 <span>Configure settings</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </div>
             </Link>
           );
