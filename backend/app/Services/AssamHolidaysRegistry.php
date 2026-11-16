@@ -166,6 +166,37 @@ class AssamHolidaysRegistry
             ['title' => 'Christmas Day', 'holiday_date' => '2028-12-25', 'is_optional' => false, 'category' => 'national', 'description' => 'National Gazetted Day'],
         ];
 
+        // For any future years beyond 2028, dynamically generate standard recurring Gazetted & Assam holidays
+        if ($year !== null && $year > 2028) {
+            $isLeap = ($year % 4 === 0 && ($year % 100 !== 0 || $year % 400 === 0));
+            $maghBihuDay1 = $isLeap ? "$year-01-15" : "$year-01-14";
+            $maghBihuDay2 = $isLeap ? "$year-01-16" : "$year-01-15";
+
+            $futureHolidays = [
+                ['title' => "New Year's Day", 'holiday_date' => "$year-01-01", 'is_optional' => false, 'category' => 'national', 'description' => 'General / New Year'],
+                ['title' => 'Magh Bihu & Tusu Puja (Uruka & Bihu)', 'holiday_date' => $maghBihuDay1, 'is_optional' => false, 'category' => 'assam', 'description' => 'Govt of Assam Gazetted Holiday - Magh Bihu'],
+                ['title' => 'Magh Bihu (Day 2)', 'holiday_date' => $maghBihuDay2, 'is_optional' => false, 'category' => 'assam', 'description' => 'Govt of Assam Gazetted Holiday - Magh Bihu'],
+                ['title' => 'Netaji Subhas Chandra Bose Jayanti / Gwther Bathou San', 'holiday_date' => "$year-01-23", 'is_optional' => false, 'category' => 'assam', 'description' => 'Govt of Assam Gazetted Holiday'],
+                ['title' => 'Republic Day', 'holiday_date' => "$year-01-26", 'is_optional' => false, 'category' => 'national', 'description' => 'National Gazetted Day'],
+                ['title' => 'Me-Dam-Me-Phi', 'holiday_date' => "$year-01-31", 'is_optional' => false, 'category' => 'assam', 'description' => 'Govt of Assam Gazetted Holiday - Ahom Ancestor Festival'],
+                ['title' => 'Bohag Bihu / Rongali Bihu (Goru Bihu)', 'holiday_date' => "$year-04-14", 'is_optional' => false, 'category' => 'assam', 'description' => 'Govt of Assam Gazetted Holiday - Rongali Bihu Day 1'],
+                ['title' => 'Bohag Bihu / Rongali Bihu (Manuh Bihu)', 'holiday_date' => "$year-04-15", 'is_optional' => false, 'category' => 'assam', 'description' => 'Govt of Assam Gazetted Holiday - Rongali Bihu Day 2'],
+                ['title' => 'Bohag Bihu / Rongali Bihu (Gosai Bihu)', 'holiday_date' => "$year-04-16", 'is_optional' => false, 'category' => 'assam', 'description' => 'Govt of Assam Gazetted Holiday - Rongali Bihu Day 3'],
+                ['title' => 'May Day / Labour Day', 'holiday_date' => "$year-05-01", 'is_optional' => false, 'category' => 'national', 'description' => 'International Labour Day'],
+                ['title' => 'Independence Day', 'holiday_date' => "$year-08-15", 'is_optional' => false, 'category' => 'national', 'description' => 'National Gazetted Day'],
+                ['title' => 'Mahatma Gandhi Jayanti', 'holiday_date' => "$year-10-02", 'is_optional' => false, 'category' => 'national', 'description' => 'National Gazetted Day'],
+                ['title' => 'Kati Bihu', 'holiday_date' => "$year-10-18", 'is_optional' => false, 'category' => 'assam', 'description' => 'Govt of Assam Gazetted Holiday - Kongali/Kati Bihu'],
+                ['title' => 'Asom Divas (Sukapha Divas)', 'holiday_date' => "$year-12-02", 'is_optional' => false, 'category' => 'assam', 'description' => 'Govt of Assam Gazetted Holiday - Chaolung Sukapha Divas'],
+                ['title' => 'Christmas Day', 'holiday_date' => "$year-12-25", 'is_optional' => false, 'category' => 'national', 'description' => 'National Gazetted Day'],
+            ];
+
+            return array_values(array_filter($futureHolidays, function ($item) use ($region) {
+                if ($region === 'assam' && $item['category'] !== 'assam') return false;
+                if ($region === 'national' && $item['category'] !== 'national') return false;
+                return true;
+            }));
+        }
+
         return array_values(array_filter($catalog, function ($item) use ($year, $region) {
             $itemYear = (int) substr($item['holiday_date'], 0, 4);
             if ($year !== null && $itemYear !== $year) {
