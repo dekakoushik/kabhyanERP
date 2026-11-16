@@ -54,6 +54,8 @@ import {
   KeyRound,
   Hash,
   Sparkles,
+  Calendar,
+  CalendarDays,
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -142,6 +144,24 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         { name: "Clients", href: "/dashboard/clients", icon: Building, roles: ["superadmin", "admin", "manager"] },
         { name: "Projects", href: "/dashboard/projects", icon: Briefcase },
         { name: "Support Tickets", href: "/dashboard/tickets", icon: LifeBuoy },
+      ],
+    },
+    {
+      title: "HR & Payroll",
+      items: [
+        {
+          name: "HR Operations",
+          icon: UserCheck,
+          roles: ["superadmin", "admin", "hr", "manager", "staff"],
+          children: [
+            { name: "Overview", href: "/dashboard/hrms", icon: LayoutDashboard },
+            { name: "Leaves", href: "/dashboard/hrms/leaves", icon: CalendarDays },
+            { name: "Attendance", href: "/dashboard/hrms/attendance", icon: CheckSquare },
+            { name: "Payroll", href: "/dashboard/hrms/payroll", icon: CreditCard, roles: ["superadmin", "admin", "hr"] },
+            { name: "Salary Setup", href: "/dashboard/hrms/salary-structures", icon: Receipt, roles: ["superadmin", "admin", "hr"] },
+            { name: "Holidays", href: "/dashboard/hrms/holidays", icon: Calendar },
+          ],
+        },
       ],
     },
     {

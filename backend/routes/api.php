@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ClientPortalController;
 use App\Http\Controllers\Api\EstimateController;
 use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\FinancialReportController;
+use App\Http\Controllers\Api\HrmsController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PdfController;
@@ -125,6 +126,34 @@ Route::prefix('v1')->group(function () {
             // Support & Change Request Tickets (ERP Admin / Staff)
             Route::apiResource('tickets', TicketController::class);
             Route::post('tickets/{ticket}/reply', [TicketController::class, 'reply']);
+
+            // HRMS & Payroll - Staff Access
+            Route::prefix('hrms')->group(function () {
+                Route::get('dashboard', [HrmsController::class, 'dashboard']);
+                Route::get('leaves', [HrmsController::class, 'leaves']);
+                Route::get('leave-types', [HrmsController::class, 'leaveTypes']);
+                Route::post('leaves', [HrmsController::class, 'applyLeave']);
+                Route::get('holidays', [HrmsController::class, 'holidays']);
+                Route::get('my-payslips', [HrmsController::class, 'myPayslips']);
+                Route::get('payslips/{id}', [HrmsController::class, 'payslipShow']);
+
+                // HR / Admin Management Operations
+                Route::middleware(EnsureAdminOrSuperAdmin::class)->group(function () {
+                    Route::patch('leaves/{leaveRequest}/status', [HrmsController::class, 'updateLeaveStatus']);
+                    Route::post('holidays', [HrmsController::class, 'storeHoliday']);
+                    Route::delete('holidays/{holiday}', [HrmsController::class, 'destroyHoliday']);
+                    Route::get('attendance', [HrmsController::class, 'monthlyAttendance']);
+                    Route::patch('attendance/{user}', [HrmsController::class, 'updateMonthlyAttendance']);
+                    Route::get('salary-structures', [HrmsController::class, 'salaryStructures']);
+                    Route::get('salary-structures/{user}', [HrmsController::class, 'getSalaryStructure']);
+                    Route::post('salary-structures', [HrmsController::class, 'storeSalaryStructure']);
+                    Route::get('payroll/overview', [HrmsController::class, 'payrollOverview']);
+                    Route::get('payroll/calculate', [HrmsController::class, 'payrollCalculate']);
+                    Route::post('payroll/generate', [HrmsController::class, 'payrollGenerate']);
+                    Route::post('payroll/batches/{batch}/finalize', [HrmsController::class, 'payrollFinalize']);
+                    Route::post('payroll/batches/{batch}/disburse', [HrmsController::class, 'payrollDisburse']);
+                });
+            });
 
             // System Settings - Read Access (General company metadata, next invoice numbers)
             Route::get('settings', [SettingController::class, 'index']);

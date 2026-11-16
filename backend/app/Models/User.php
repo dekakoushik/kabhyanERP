@@ -6,6 +6,8 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -68,6 +70,38 @@ class User extends Authenticatable
     public function customRole(): BelongsTo
     {
         return $this->belongsTo(Role::class, 'role_id');
+    }
+
+    /**
+     * Current active salary structure (compensation breakdown).
+     */
+    public function salaryStructure(): HasOne
+    {
+        return $this->hasOne(SalaryStructure::class);
+    }
+
+    /**
+     * Leave applications submitted by this employee.
+     */
+    public function leaveRequests(): HasMany
+    {
+        return $this->hasMany(LeaveRequest::class);
+    }
+
+    /**
+     * Monthly attendance and working days ledgers.
+     */
+    public function monthlyAttendances(): HasMany
+    {
+        return $this->hasMany(MonthlyAttendance::class);
+    }
+
+    /**
+     * Official payslips generated for this employee.
+     */
+    public function payslips(): HasMany
+    {
+        return $this->hasMany(Payslip::class);
     }
 
     /**

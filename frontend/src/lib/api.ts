@@ -56,6 +56,150 @@ export interface User {
   updated_at?: string;
 }
 
+export interface LeaveType {
+  id: number;
+  name: string;
+  code: string;
+  days_per_year: number;
+  is_paid: boolean;
+  description?: string | null;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface LeaveRequest {
+  id: number;
+  user_id: number;
+  leave_type_id: number;
+  start_date: string;
+  end_date: string;
+  total_days: number;
+  reason: string;
+  status: "pending" | "approved" | "rejected" | "cancelled";
+  approved_by?: number | null;
+  admin_notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  user?: User;
+  leave_type?: LeaveType;
+  approver?: User | null;
+}
+
+export interface CompanyHoliday {
+  id: number;
+  name: string;
+  date: string;
+  day_of_week?: string;
+  type: "national" | "festival" | "company";
+  is_optional: boolean;
+  description?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface MonthlyAttendanceLedgerItem {
+  id: number;
+  user_id: number;
+  month: string;
+  working_days: number;
+  days_present: number;
+  approved_leaves_count: number;
+  loss_of_pay_days: number;
+  notes?: string | null;
+  user?: User;
+}
+
+export interface SalaryStructure {
+  id: number;
+  user_id: number;
+  effective_from: string;
+  ctc_annual: number;
+  basic_monthly: number;
+  hra_monthly: number;
+  special_allowance_monthly: number;
+  conveyance_monthly: number;
+  gross_monthly: number;
+  epf_employee: number;
+  epf_employer: number;
+  professional_tax: number;
+  tds_monthly: number;
+  net_monthly: number;
+  bank_name?: string | null;
+  account_number?: string | null;
+  ifsc_code?: string | null;
+  pan_number?: string | null;
+  uan_number?: string | null;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+  user?: User;
+}
+
+export interface PayrollBatch {
+  id: number;
+  month: string;
+  total_gross: number;
+  total_deductions: number;
+  total_net: number;
+  total_lop_deductions: number;
+  status: "draft" | "finalized" | "disbursed";
+  processed_by?: number | null;
+  processed_at?: string | null;
+  disbursed_at?: string | null;
+  notes?: string | null;
+  payslips_count?: number;
+  payslips?: Payslip[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Payslip {
+  id: number;
+  payroll_batch_id: number;
+  user_id: number;
+  payslip_number: string;
+  month: string;
+  working_days: number;
+  paid_days: number;
+  lop_days: number;
+  gross_salary: number;
+  lop_deduction: number;
+  basic_salary: number;
+  hra: number;
+  special_allowance: number;
+  conveyance: number;
+  total_earnings: number;
+  epf_deduction: number;
+  professional_tax: number;
+  tds_deduction: number;
+  other_deductions: number;
+  total_deductions: number;
+  net_salary: number;
+  status: "draft" | "generated" | "disbursed";
+  payment_mode?: string | null;
+  transaction_reference?: string | null;
+  disbursed_at?: string | null;
+  salary_snapshot?: any;
+  created_at?: string;
+  updated_at?: string;
+  user?: User;
+  batch?: PayrollBatch;
+}
+
+export interface HrmsDashboardData {
+  stats: {
+    total_staff: number;
+    active_salary_structures: number;
+    pending_leaves: number;
+    current_month_batch: PayrollBatch | null;
+    current_month: string;
+  };
+  upcoming_holidays: CompanyHoliday[];
+  recent_leaves: LeaveRequest[];
+  latest_batches: PayrollBatch[];
+}
+
 export interface UserStats {
   total_users: number;
   active_users: number;
@@ -719,5 +863,81 @@ export const api = {
 
   departments: {
     list: () => api.request("/users/departments"),
+  },
+
+  hrms: {
+    dashboard: () => api.request("/hrms/dashboard"),
+    leaves: {
+      list: (params?: Record<string, any>) => {
+        const q = params ? "?" + new URLSearchParams(params).toString() : "";
+        return api.request(`/hrms/leaves${q}`);
+      },
+      types: () => api.request("/hrms/leave-types"),
+      apply: (data: any) =>
+        api.request("/hrms/leaves", {
+          method: "POST",
+          body: JSON.stringify(data),
+        }),
+      updateStatus: (id: number | string, data: { status: "approved" | "rejected"; admin_notes?: string }) =>
+        api.request(`/hrms/leaves/${id}/status`, {
+          method: "PATCH",
+          body: JSON.stringify(data),
+        }),
+    },
+    holidays: {
+      list: (year?: number | string) => {
+        const q = year ? `?year=${year}` : "";
+        return api.request(`/hrms/holidays${q}`);
+      },
+      create: (data: any) =>
+        api.request("/hrms/holidays", {
+          method: "POST",
+          body: JSON.stringify(data),
+        }),
+      delete: (id: number | string) =>
+        api.request(`/hrms/holidays/${id}`, {
+          method: "DELETE",
+        }),
+    },
+    attendance: {
+      get: (month?: string) => {
+        const q = month ? `?month=${month}` : "";
+        return api.request(`/hrms/attendance${q}`);
+      },
+      update: (data: { user_id: number; month: string; loss_of_pay_days: number; notes?: string }) =>
+        api.request("/hrms/attendance", {
+          method: "POST",
+          body: JSON.stringify(data),
+        }),
+    },
+    salaryStructures: {
+      list: () => api.request("/hrms/salary-structures"),
+      get: (userId: number | string) => api.request(`/hrms/salary-structures/${userId}`),
+      save: (data: any) =>
+        api.request("/hrms/salary-structures", {
+          method: "POST",
+          body: JSON.stringify(data),
+        }),
+    },
+    payroll: {
+      overview: () => api.request("/hrms/payroll"),
+      calculate: (month: string) => api.request(`/hrms/payroll/calculate?month=${month}`),
+      generate: (data: { month: string; notes?: string }) =>
+        api.request("/hrms/payroll/generate", {
+          method: "POST",
+          body: JSON.stringify(data),
+        }),
+      finalize: (id: number | string) =>
+        api.request(`/hrms/payroll/${id}/finalize`, {
+          method: "POST",
+        }),
+      disburse: (id: number | string, data: { payment_mode: string; transaction_reference?: string; disbursed_at?: string }) =>
+        api.request(`/hrms/payroll/${id}/disburse`, {
+          method: "POST",
+          body: JSON.stringify(data),
+        }),
+      payslip: (id: number | string) => api.request(`/hrms/payslips/${id}`),
+      myPayslips: () => api.request("/hrms/my-payslips"),
+    },
   },
 };
