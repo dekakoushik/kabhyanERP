@@ -30,3 +30,20 @@ This repository contains the enterprise ERP system for **Kabhyan Technologies Pr
 - Always run `./node_modules/.bin/tsc --noEmit` in `frontend/` before pushing commits.
 - Ensure 0 TypeScript errors.
 
+### 5. Human-Friendly & Crisp Copywriting Standard (Mandatory)
+- **No Bureaucratic or Developer Jargon**: Never use robotic, academic, or corporate-speak labels (e.g. no "Configure corporate RBAC authority", no "Modular permission boundaries", no "Dossier", no "Personal coordinates", no "Functional divisions", no "Non-deletable anchors").
+- **Concise Action-First Buttons**: 1–3 words per button (`+ Add Member`, `Save Role`, `Edit Profile`, `Save Changes`, `Cancel`).
+- **Clean Breadcrumbs**: `Workspace > {Section} > {Action/Record}` format.
+- **Reference**: See `.agents/rules/human-friendly-copywriting.md` for complete vocabulary and guidelines.
+
+### 6. Staff & Client Governance Isolation
+- **Strict Role Separation**: External client portal accounts (`role === 'client'`) must never appear in internal team lists, departmental directories, or role/permission builders.
+- **Reserved Slug**: The role slug `'client'` is permanently reserved and cannot be assigned as a custom internal role.
+- **Invisible Governance**: Never expose developer or security isolation warning banners to users.
+- **Reference**: See `.agents/rules/staff-client-governance-isolation.md`.
+
+### 7. Automated Zero-Manual-Command Deployments
+- **Self-Healing Schemas**: The application autonomously executes pending database migrations (`php artisan migrate --force`) and drops lingering PostgreSQL constraints via `AppServiceProvider.php` without requiring manual SSH or terminal commands.
+- **Automated Container Startup**: Containers must use `backend/docker-entrypoint.sh` to poll database readiness, run migrations, seed missing baseline roles, and cache configs automatically on boot.
+- **Reference**: See `.agents/rules/automated-migrations-and-deployment.md`.
+
