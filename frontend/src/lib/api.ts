@@ -670,4 +670,54 @@ export const api = {
     window.open(fileUrl, "_blank");
     setTimeout(() => window.URL.revokeObjectURL(fileUrl), 10000);
   },
+
+  users: {
+    list: (params?: Record<string, any>) => {
+      const q = params ? "?" + new URLSearchParams(params).toString() : "";
+      return api.request(`/users${q}`);
+    },
+    get: (id: number | string) => api.request(`/users/${id}`),
+    create: (data: any) =>
+      api.request("/users", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    update: (id: number | string, data: any) =>
+      api.request(`/users/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    delete: (id: number | string) =>
+      api.request(`/users/${id}`, {
+        method: "DELETE",
+      }),
+    departments: () => api.request("/users/departments"),
+  },
+
+  roles: {
+    list: () => api.request("/roles"),
+    get: (id: number | string) => api.request(`/roles/${id}`),
+    create: (data: any) =>
+      api.request("/roles", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    update: (id: number | string, data: any) =>
+      api.request(`/roles/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    delete: (id: number | string) =>
+      api.request(`/roles/${id}`, {
+        method: "DELETE",
+      }),
+  },
+
+  permissions: {
+    list: () => api.request("/permissions"),
+  },
+
+  departments: {
+    list: () => api.request("/users/departments"),
+  },
 };
