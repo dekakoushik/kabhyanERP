@@ -24,13 +24,13 @@
 @section('content')
 
     <!-- Recipient Client & Project Info Cards -->
-    <table style="width: 100%; border-collapse: collapse; margin-top: 4px; margin-bottom: 22px;">
+    <table style="width: 100%; border-collapse: collapse; margin-top: 2px; margin-bottom: 16px;">
         <tr>
-            <td style="width: 48.5%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 18px;">
-                <div style="font-size: 7.8pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">BILLED TO (CLIENT)</div>
-                <div style="font-size: 12pt; font-weight: bold; color: #0f172a; margin-bottom: 3px;">{{ $invoice->client_name }}</div>
-                <div style="font-size: 9.5pt; font-weight: 500; color: #475569; margin-bottom: 4px;">{{ $invoice->client_company ?? 'Direct Client' }}</div>
-                <div style="font-size: 8.5pt; color: #64748b; line-height: 1.45;">
+            <td style="width: 48.5%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 11px 13px;">
+                <div style="font-size: 7pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 3px;">BILLED TO (CLIENT)</div>
+                <div style="font-size: 10pt; font-weight: bold; color: #0f172a; margin-bottom: 2px;">{{ $invoice->client_name }}</div>
+                <div style="font-size: 8.5pt; font-weight: 500; color: #475569; margin-bottom: 3px;">{{ $invoice->client_company ?? 'Direct Client' }}</div>
+                <div style="font-size: 7.8pt; color: #64748b; line-height: 1.4;">
                     {{ $invoice->client_email }}<br/>
                     @if(!empty($invoice->client_phone))
                         {{ $invoice->client_phone }}<br/>
@@ -41,15 +41,15 @@
                     @if(!empty($invoice->client_gstin))
                         <strong style="color: #059669;">GSTIN: {{ $invoice->client_gstin }}</strong>
                     @else
-                        <span style="color: #94a3b8; font-size: 8pt;">Unregistered Consumer (B2C)</span>
+                        <span style="color: #94a3b8; font-size: 7.5pt;">Unregistered Consumer (B2C)</span>
                     @endif
                 </div>
             </td>
             <td style="width: 3%;"></td>
-            <td style="width: 48.5%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 18px;">
-                <div style="font-size: 7.8pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">PROJECT REFERENCE</div>
-                <div style="font-size: 12pt; font-weight: bold; color: #0f172a; margin-bottom: 4px;">{{ $invoice->project?->name ?? 'Corporate Engagement' }}</div>
-                <div style="font-size: 8.5pt; color: #64748b; line-height: 1.5;">
+            <td style="width: 48.5%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 11px 13px;">
+                <div style="font-size: 7pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 3px;">PROJECT REFERENCE</div>
+                <div style="font-size: 10pt; font-weight: bold; color: #0f172a; margin-bottom: 3px;">{{ $invoice->project?->name ?? 'Corporate Engagement' }}</div>
+                <div style="font-size: 7.8pt; color: #64748b; line-height: 1.45;">
                     @if(!empty($invoice->project?->code))
                         <span style="color: #059669; font-weight: bold;">Project Code: {{ $invoice->project->code }}</span><br/>
                     @endif
@@ -75,36 +75,36 @@
             @forelse($invoice->items as $item)
             <tr>
                 <td style="text-align: left;">
-                    <div style="font-size: 9.5pt; font-weight: bold; color: #0f172a;">{{ $item->item_name }}</div>
+                    <div style="font-size: 8.5pt; font-weight: bold; color: #0f172a;">{{ $item->item_name }}</div>
                     @if(!empty($item->description))
-                        <div style="font-size: 8.5pt; color: #64748b; margin-top: 3px; line-height: 1.4;">{{ $item->description }}</div>
+                        <div style="font-size: 7.5pt; color: #64748b; margin-top: 2px; line-height: 1.35;">{{ $item->description }}</div>
                     @endif
-                    <div style="font-size: 7.5pt; color: #94a3b8; margin-top: 3px;">
+                    <div style="font-size: 7pt; color: #94a3b8; margin-top: 2px;">
                         SAC: {{ $item->sac_code ?? $company['sac_code'] }}
                     </div>
                 </td>
-                <td style="text-align: right; color: #334155; font-size: 9.5pt;">
+                <td style="text-align: right; color: #334155; font-size: 8.5pt;">
                     {{ number_format($item->quantity, 2) }} {{ $item->unit ?? 'hours' }}
                 </td>
-                <td style="text-align: right; color: #334155; font-size: 9.5pt;">
+                <td style="text-align: right; color: #334155; font-size: 8.5pt;">
                     {{ number_format($item->unit_price, 2) }}
                 </td>
-                <td style="text-align: right; font-weight: bold; color: #0f172a; font-size: 9.5pt;">
+                <td style="text-align: right; font-weight: bold; color: #0f172a; font-size: 8.5pt;">
                     {{ number_format($item->amount, 2) }}
                 </td>
             </tr>
             @empty
             <tr>
-                <td colspan="4" style="text-align: center; color: #94a3b8; padding: 20px;">No line items recorded.</td>
+                <td colspan="4" style="text-align: center; color: #94a3b8; padding: 16px;">No line items recorded.</td>
             </tr>
             @endforelse
         </tbody>
     </table>
 
     <!-- Bottom Section: Bank / Terms (Left) & Totals (Right) -->
-    <table style="width: 100%; border-collapse: collapse; margin-top: 6px; margin-bottom: 24px; page-break-inside: avoid;">
+    <table style="width: 100%; border-collapse: collapse; margin-top: 4px; margin-bottom: 18px; page-break-inside: avoid;">
         <tr>
-            <td style="width: 52%; vertical-align: top; padding-right: 18px;">
+            <td style="width: 52%; vertical-align: top; padding-right: 14px;">
                 <!-- Bank Coordinates Card -->
                 <div class="note-card">
                     <div class="note-card-title">BANK SETTLEMENT COORDINATES</div>
@@ -167,7 +167,7 @@
                     </tr>
                     @endif
                     <tr>
-                        <td colspan="2" style="border-top: 2px solid #cbd5e1; padding-top: 8px; margin-top: 4px;"></td>
+                        <td colspan="2" style="border-top: 1.5px solid #cbd5e1; padding-top: 6px; margin-top: 3px;"></td>
                     </tr>
                     <tr>
                         <td class="grand-total-label">Grand Total:</td>
@@ -177,7 +177,7 @@
                     </tr>
                     @if(!empty($amountInWords))
                     <tr>
-                        <td colspan="2" style="text-align: right; font-size: 7.8pt; color: #64748b; font-style: italic; padding-top: 4px;">
+                        <td colspan="2" style="text-align: right; font-size: 7.5pt; color: #64748b; font-style: italic; padding-top: 3px;">
                             ({{ $amountInWords }})
                         </td>
                     </tr>

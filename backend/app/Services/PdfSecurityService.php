@@ -212,11 +212,11 @@ SVG;
         $pdf->SetAuthor('Kabhyan Technologies Private Limited');
         $pdf->SetTitle(sprintf('%s - %s', $docTitle, $docNumber));
 
-        // Margins & Page setup - Strictly A4
+        // Margins & Page setup - Strictly A4 with standard 16mm margins
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
-        $pdf->SetMargins(10, 10, 10);
-        $pdf->SetAutoPageBreak(true, 10);
+        $pdf->SetMargins(16, 16, 16);
+        $pdf->SetAutoPageBreak(true, 16);
         $pdf->setImageScale(1.0);
         $pdf->SetFont('dejavusans', '', 8);
 
