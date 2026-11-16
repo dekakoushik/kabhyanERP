@@ -141,6 +141,7 @@ Route::prefix('v1')->group(function () {
                 Route::middleware(EnsureAdminOrSuperAdmin::class)->group(function () {
                     Route::patch('leaves/{leaveRequest}/status', [HrmsController::class, 'updateLeaveStatus']);
                     Route::post('holidays', [HrmsController::class, 'storeHoliday']);
+                    Route::post('holidays/sync', [HrmsController::class, 'syncHolidays']);
                     Route::delete('holidays/{holiday}', [HrmsController::class, 'destroyHoliday']);
                     Route::get('attendance', [HrmsController::class, 'monthlyAttendance']);
                     Route::patch('attendance/{user}', [HrmsController::class, 'updateMonthlyAttendance']);

@@ -250,6 +250,46 @@ class HrmsController extends Controller
     }
 
     /**
+     * Auto-sync Government & Assam State Holidays for selected year or full 2025-2028 spectrum.
+     */
+    public function syncHolidays(Request $request): JsonResponse
+    {
+        $yearInput = $request->input('year');
+        $year = ($yearInput && $yearInput !== 'all') ? (int) $yearInput : null;
+        $region = (string) $request->input('region', 'all');
+
+        $holidays = \App\Services\AssamHolidaysRegistry::getHolidays($year, $region);
+        $added = 0;
+        $updated = 0;
+
+        foreach ($holidays as $h) {
+            $existing = CompanyHoliday::where('holiday_date', $h['holiday_date'])->first();
+            if (!$existing) {
+                CompanyHoliday::create([
+                    'title' => $h['title'],
+                    'holiday_date' => $h['holiday_date'],
+                    'is_optional' => $h['is_optional'],
+                    'description' => $h['description'],
+                ]);
+                $added++;
+            } else {
+                $existing->update([
+                    'title' => $h['title'],
+                    'description' => $h['description'],
+                ]);
+                $updated++;
+            }
+        }
+
+        return response()->json([
+            'message' => "Successfully synced {$added} new holidays and updated {$updated} existing holidays.",
+            'added' => $added,
+            'updated' => $updated,
+            'total_in_registry' => count($holidays),
+        ]);
+    }
+
+    /**
      * Delete a holiday.
      */
     public function destroyHoliday(CompanyHoliday $holiday): JsonResponse

@@ -896,6 +896,11 @@ export const api = {
           method: "POST",
           body: JSON.stringify(data),
         }),
+      sync: (data?: { year?: number | string; region?: string }) =>
+        api.request("/hrms/holidays/sync", {
+          method: "POST",
+          body: JSON.stringify(data || {}),
+        }),
       delete: (id: number | string) =>
         api.request(`/hrms/holidays/${id}`, {
           method: "DELETE",

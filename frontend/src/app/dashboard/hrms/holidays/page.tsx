@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Sparkles,
   Info,
+  RotateCw,
 } from "lucide-react";
 
 function formatHolidayDate(rawDate?: string) {
@@ -35,17 +36,73 @@ function formatHolidayDate(rawDate?: string) {
   return { month: "---", day: "--", fullDate: rawDate, dayName: "" };
 }
 
+function getHolidayCategoryInfo(h: CompanyHoliday) {
+  const desc = (h.description || "").toLowerCase();
+  const title = (h.title || h.name || "").toLowerCase();
+
+  const isAssam =
+    desc.includes("assam") ||
+    title.includes("bihu") ||
+    title.includes("chilarai") ||
+    title.includes("me-dam-me-phi") ||
+    title.includes("sankardeva") ||
+    title.includes("madhabdeva") ||
+    title.includes("ali-aye-ligang") ||
+    title.includes("sukapha") ||
+    title.includes("asom divas") ||
+    title.includes("bathou");
+
+  if (isAssam) {
+    return {
+      label: "Assam State",
+      emoji: "🦏",
+      badgeClass: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+      key: "assam",
+    };
+  }
+
+  const isNational =
+    desc.includes("national") ||
+    title.includes("republic") ||
+    title.includes("independence") ||
+    title.includes("gandhi") ||
+    title.includes("labour") ||
+    title.includes("may day") ||
+    title.includes("buddha") ||
+    title.includes("id-ul") ||
+    title.includes("muharram") ||
+    title.includes("christmas");
+
+  if (isNational) {
+    return {
+      label: "National",
+      emoji: "🇮🇳",
+      badgeClass: "bg-indigo-50 text-indigo-700 border border-indigo-200",
+      key: "national",
+    };
+  }
+
+  return {
+    label: "Festival",
+    emoji: "🎉",
+    badgeClass: "bg-purple-50 text-purple-700 border border-purple-200",
+    key: "festival",
+  };
+}
+
 export default function HolidaysPage() {
   const [holidays, setHolidays] = useState<CompanyHoliday[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [activeFilter, setActiveFilter] = useState<string>("all");
   const [adding, setAdding] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
   // New Holiday Form State
   const [name, setName] = useState("");
   const [date, setDate] = useState("");
-  const [type, setType] = useState<"national" | "festival" | "company">("festival");
+  const [type, setType] = useState<string>("assam");
   const [description, setDescription] = useState("");
 
   const fetchHolidays = async () => {
@@ -65,6 +122,20 @@ export default function HolidaysPage() {
     fetchHolidays();
   }, [selectedYear]);
 
+  const handleSyncGovernmentHolidays = async () => {
+    try {
+      setSyncing(true);
+      const res = await api.hrms.holidays.sync({ year: selectedYear, region: "all" });
+      toast.success(res.message || `Government & Assam holidays synced for ${selectedYear}.`);
+      fetchHolidays();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to sync government holidays.";
+      toast.error(msg);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !date) {
@@ -74,13 +145,16 @@ export default function HolidaysPage() {
 
     try {
       setAdding(true);
+      const categoryDesc = type === "assam" ? "Govt of Assam Gazetted Holiday" : type === "national" ? "National Gazetted Day" : "Festival Holiday";
+      const fullDesc = description.trim() ? `${categoryDesc} - ${description.trim()}` : categoryDesc;
+
       await api.hrms.holidays.create({
         title: name.trim(),
         name: name.trim(),
         holiday_date: date,
         date: date,
         type,
-        description: description.trim() || undefined,
+        description: fullDesc,
       });
 
       toast.success("Holiday added to company calendar.");
@@ -111,6 +185,15 @@ export default function HolidaysPage() {
     }
   };
 
+  const filteredHolidays = holidays.filter((h) => {
+    if (activeFilter === "all") return true;
+    const cat = getHolidayCategoryInfo(h);
+    return cat.key === activeFilter;
+  });
+
+  const assamCount = holidays.filter((h) => getHolidayCategoryInfo(h).key === "assam").length;
+  const nationalCount = holidays.filter((h) => getHolidayCategoryInfo(h).key === "national").length;
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -128,22 +211,80 @@ export default function HolidaysPage() {
               Company Holiday Calendar
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              Official gazetted national and festival holidays observed by Kabhyan Technologies.
+              Official gazetted national and Assam State government holidays for Kabhyan Technologies.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500">Year:</span>
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="text-xs rounded-lg border border-slate-200 px-3 py-1.5 bg-white text-slate-800 font-bold focus:outline-none focus:ring-1 focus:ring-blue-500"
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex items-center gap-2 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+              <span className="text-xs font-semibold text-slate-500">Year:</span>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="text-xs bg-transparent text-slate-800 font-bold focus:outline-none"
+              >
+                <option value={2025}>2025</option>
+                <option value={2026}>2026</option>
+                <option value={2027}>2027</option>
+                <option value={2028}>2028</option>
+              </select>
+            </div>
+
+            <button
+              disabled={syncing}
+              onClick={handleSyncGovernmentHolidays}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-colors disabled:opacity-60"
             >
-              <option value={2025}>2025</option>
-              <option value={2026}>2026</option>
-              <option value={2027}>2027</option>
-            </select>
+              <RotateCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
+              <span>{syncing ? "Syncing..." : "Sync Govt & Assam Holidays"}</span>
+            </button>
           </div>
+        </div>
+
+        {/* Region Filter Chips */}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <button
+            onClick={() => setActiveFilter("all")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeFilter === "all"
+                ? "bg-slate-900 text-white shadow-xs"
+                : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"
+            }`}
+          >
+            All Holidays ({holidays.length})
+          </button>
+          <button
+            onClick={() => setActiveFilter("assam")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              activeFilter === "assam"
+                ? "bg-emerald-600 text-white shadow-xs"
+                : "bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50/50"
+            }`}
+          >
+            <span>🦏 Assam State Gazetted</span>
+            <span className="text-[10px] opacity-80">({assamCount})</span>
+          </button>
+          <button
+            onClick={() => setActiveFilter("national")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              activeFilter === "national"
+                ? "bg-indigo-600 text-white shadow-xs"
+                : "bg-white border border-slate-200 text-slate-700 hover:bg-indigo-50/50"
+            }`}
+          >
+            <span>🇮🇳 National Gazetted</span>
+            <span className="text-[10px] opacity-80">({nationalCount})</span>
+          </button>
+          <button
+            onClick={() => setActiveFilter("festival")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              activeFilter === "festival"
+                ? "bg-purple-600 text-white shadow-xs"
+                : "bg-white border border-slate-200 text-slate-700 hover:bg-purple-50/50"
+            }`}
+          >
+            <span>🎉 Festivals</span>
+          </button>
         </div>
 
         {/* Content Layout: Holiday List (2 Cols) + Add Holiday Form (1 Col) */}
@@ -154,27 +295,40 @@ export default function HolidaysPage() {
               <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-900">
-                    {selectedYear} Calendar ({holidays.length} Days)
+                    {selectedYear} Calendar ({filteredHolidays.length} Days)
                   </h2>
-                  <p className="text-xs text-slate-500">Holidays are automatically excluded from working day calculations</p>
+                  <p className="text-xs text-slate-500">
+                    All listed days are automatically excluded from monthly working days calculation
+                  </p>
                 </div>
               </div>
 
               {loading ? (
                 <div className="p-10 text-center text-xs text-slate-400">Loading holiday schedule...</div>
-              ) : holidays.length === 0 ? (
+              ) : filteredHolidays.length === 0 ? (
                 <div className="p-12 text-center">
                   <Calendar className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                  <p className="text-sm font-semibold text-slate-700">No holidays scheduled for {selectedYear}</p>
-                  <p className="text-xs text-slate-400 mt-1">Add holidays using the form on the right.</p>
+                  <p className="text-sm font-semibold text-slate-700">No holidays found for {selectedYear}</p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Click <strong>&quot;Sync Govt &amp; Assam Holidays&quot;</strong> above to auto-fetch official Assam &amp; National holidays.
+                  </p>
+                  <div className="mt-4">
+                    <button
+                      onClick={handleSyncGovernmentHolidays}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700"
+                    >
+                      <RotateCw className="w-3.5 h-3.5" />
+                      Auto-Sync Now
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-100">
-                  {holidays.map((h) => {
+                  {filteredHolidays.map((h) => {
                     const holidayTitle = h.title || h.name || "Company Holiday";
                     const dateInfo = formatHolidayDate(h.holiday_date || h.date);
                     const dayOfWeek = h.day_of_week || dateInfo.dayName;
-                    const holidayType = h.type || (h.is_optional ? "optional" : "company");
+                    const catInfo = getHolidayCategoryInfo(h);
 
                     return (
                       <div
@@ -194,14 +348,9 @@ export default function HolidaysPage() {
                           <div>
                             <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
                               {holidayTitle}
-                              <span className={`text-[10px] px-2 py-0.2 rounded font-medium ${
-                                holidayType === "national"
-                                  ? "bg-amber-50 text-amber-700 border border-amber-200"
-                                  : holidayType === "festival"
-                                  ? "bg-purple-50 text-purple-700 border border-purple-200"
-                                  : "bg-blue-50 text-blue-700 border border-blue-200"
-                              }`}>
-                                {holidayType}
+                              <span className={`text-[10px] px-2 py-0.5 rounded font-medium flex items-center gap-1 ${catInfo.badgeClass}`}>
+                                <span>{catInfo.emoji}</span>
+                                <span>{catInfo.label}</span>
                               </span>
                             </div>
                             <div className="text-[11px] text-slate-500 mt-0.5">
@@ -227,7 +376,7 @@ export default function HolidaysPage() {
             </div>
           </div>
 
-          {/* Add Holiday Form (1 Col) */}
+          {/* Add Custom Holiday Form (1 Col) */}
           <div className="space-y-4">
             <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm space-y-4">
               <div className="flex items-center gap-2 font-bold text-xs text-slate-900 uppercase tracking-wider">
@@ -242,7 +391,7 @@ export default function HolidaysPage() {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Diwali, Independence Day"
+                    placeholder="e.g. Rongali Bihu, Bir Chilarai Divas"
                     required
                     className="w-full text-xs rounded-lg border border-slate-200 px-3 py-2 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -260,15 +409,16 @@ export default function HolidaysPage() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Category</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Jurisdiction / Category</label>
                   <select
                     value={type}
-                    onChange={(e) => setType(e.target.value as any)}
+                    onChange={(e) => setType(e.target.value)}
                     className="w-full text-xs rounded-lg border border-slate-200 px-3 py-2 bg-white text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="national">National Holiday</option>
-                    <option value="festival">Festival Holiday</option>
-                    <option value="company">Company Specific</option>
+                    <option value="assam">🦏 Assam State Gazetted</option>
+                    <option value="national">🇮🇳 National Gazetted</option>
+                    <option value="festival">🎉 Festival Holiday</option>
+                    <option value="company">🏢 Company Specific</option>
                   </select>
                 </div>
 
@@ -278,7 +428,7 @@ export default function HolidaysPage() {
                     type="text"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Brief holiday note"
+                    placeholder="Additional holiday notes"
                     className="w-full text-xs rounded-lg border border-slate-200 px-3 py-2 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -295,13 +445,13 @@ export default function HolidaysPage() {
               </form>
             </div>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs text-slate-600 space-y-1.5">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs text-slate-600 space-y-2">
               <div className="font-semibold text-slate-900 flex items-center gap-1.5">
                 <Info className="w-3.5 h-3.5 text-blue-600" />
-                Working Days Calculation
+                Assam State &amp; National Gazettes
               </div>
               <p className="text-[11px] text-slate-500 leading-relaxed">
-                Working days in each month are dynamically derived by taking calendar days minus Saturday/Sunday weekends minus the holidays listed above.
+                Pre-configured for <strong>2025, 2026, 2027, and 2028</strong> including Magh Bihu, Rongali Bihu (3 days), Kati Bihu, Bir Chilarai Divas, Me-Dam-Me-Phi, Tithi of Srimanta Sankardeva, Tithi of Madhabdeva, Durga Puja, and Central National Holidays.
               </p>
             </div>
           </div>
