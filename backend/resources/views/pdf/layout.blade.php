@@ -3,6 +3,11 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>@yield('title')</title>
+    @php
+        $fontRegular = str_replace('\\', '/', storage_path('fonts/GoogleSans-Regular.ttf'));
+        $fontMedium  = str_replace('\\', '/', storage_path('fonts/GoogleSans-Medium.ttf'));
+        $fontBold    = str_replace('\\', '/', storage_path('fonts/GoogleSans-Bold.ttf'));
+    @endphp
     <style>
         @page {
             size: a4 portrait;
@@ -15,19 +20,19 @@
             font-family: 'Google Sans';
             font-style: normal;
             font-weight: 400;
-            src: url('{{ str_replace('\\', '/', storage_path('fonts/GoogleSans-Regular.ttf')) }}') format('truetype');
+            src: url("{{ $fontRegular }}") format('truetype');
         }
         @font-face {
             font-family: 'Google Sans';
             font-style: normal;
             font-weight: 500;
-            src: url('{{ str_replace('\\', '/', storage_path('fonts/GoogleSans-Medium.ttf')) }}') format('truetype');
+            src: url("{{ $fontMedium }}") format('truetype');
         }
         @font-face {
             font-family: 'Google Sans';
             font-style: normal;
             font-weight: 700;
-            src: url('{{ str_replace('\\', '/', storage_path('fonts/GoogleSans-Bold.ttf')) }}') format('truetype');
+            src: url("{{ $fontBold }}") format('truetype');
         }
 
         body {
