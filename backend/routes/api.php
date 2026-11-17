@@ -199,6 +199,7 @@ Route::prefix('v1')->group(function () {
                 Route::delete('settings/brand-assets/{type}', [SettingController::class, 'deleteBrandAsset']);
                 Route::post('settings/flush-cache', [SettingController::class, 'flushCache']);
                 Route::post('settings/migrate-database', [SettingController::class, 'migrateDatabase']);
+                Route::post('settings/reset-database', [SettingController::class, 'resetDatabase']);
                 Route::post('settings/test-email', [SettingController::class, 'testEmail']);
             });
         });

@@ -1048,4 +1048,26 @@ export const api = {
         body: JSON.stringify({ message }),
       }),
   },
+
+  settings: {
+    get: () => api.request("/settings"),
+    update: (settings: any[]) =>
+      api.request("/settings", {
+        method: "POST",
+        body: JSON.stringify({ settings }),
+      }),
+    flushCache: () =>
+      api.request("/settings/flush-cache", {
+        method: "POST",
+      }),
+    migrateDatabase: () =>
+      api.request("/settings/migrate-database", {
+        method: "POST",
+      }),
+    resetDatabase: (data: { confirmation: string; password: string }) =>
+      api.request("/settings/reset-database", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+  },
 };

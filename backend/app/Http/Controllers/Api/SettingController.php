@@ -5,10 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\SystemSetting;
 use App\Services\DocumentNumberService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 
 class SettingController extends Controller
 {
@@ -134,6 +138,209 @@ class SettingController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'Database migration failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Factory database reset: Purges all commercial, client, project, task,
+     * ticket, expense, HRMS, and non-admin staff records, resetting counters to 001.
+     * Strictly preserves the currently authenticated SuperAdmin.
+     */
+    public function resetDatabase(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        // 1. SuperAdmin authorization guard
+        if (! $user || ! $user->isSuperAdmin()) {
+            return response()->json([
+                'message' => 'Unauthorized. Only Super Administrators can perform a database reset.',
+            ], 403);
+        }
+
+        // 2. Validate confirmation phrase and current password
+        $validated = $request->validate([
+            'confirmation' => ['required', 'string'],
+            'password' => ['required', 'string'],
+        ]);
+
+        if (trim($validated['confirmation']) !== 'RESET DATABASE') {
+            throw ValidationException::withMessages([
+                'confirmation' => ['You must type "RESET DATABASE" exactly to authorize this operation.'],
+            ]);
+        }
+
+        if (! Hash::check($validated['password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'password' => ['The password you entered is incorrect.'],
+            ]);
+        }
+
+        // 3. Execute atomic factory reset
+        try {
+            DB::beginTransaction();
+
+            // Purge Commercial Billing Ledger
+            if (Schema::hasTable('invoice_payments')) {
+                DB::table('invoice_payments')->delete();
+            }
+            if (Schema::hasTable('invoice_items')) {
+                DB::table('invoice_items')->delete();
+            }
+            if (Schema::hasTable('invoices')) {
+                DB::table('invoices')->delete();
+            }
+            if (Schema::hasTable('proforma_invoice_items')) {
+                DB::table('proforma_invoice_items')->delete();
+            }
+            if (Schema::hasTable('proforma_invoices')) {
+                DB::table('proforma_invoices')->delete();
+            }
+            if (Schema::hasTable('estimate_items')) {
+                DB::table('estimate_items')->delete();
+            }
+            if (Schema::hasTable('estimates')) {
+                DB::table('estimates')->delete();
+            }
+
+            // Purge Projects, Tasks, and Members
+            if (Schema::hasTable('tasks')) {
+                DB::table('tasks')->delete();
+            }
+            if (Schema::hasTable('project_members')) {
+                DB::table('project_members')->delete();
+            }
+            if (Schema::hasTable('projects')) {
+                DB::table('projects')->delete();
+            }
+
+            // Purge Support Tickets & Conversations
+            if (Schema::hasTable('ticket_replies')) {
+                DB::table('ticket_replies')->delete();
+            }
+            if (Schema::hasTable('tickets')) {
+                DB::table('tickets')->delete();
+            }
+
+            // Purge CRM Clients Directory
+            if (Schema::hasTable('clients')) {
+                DB::table('clients')->delete();
+            }
+
+            // Purge Organizational Expenses Ledger
+            if (Schema::hasTable('expenses')) {
+                DB::table('expenses')->delete();
+            }
+
+            // Purge HRMS, Attendances & Payroll
+            if (Schema::hasTable('payslips')) {
+                DB::table('payslips')->delete();
+            }
+            if (Schema::hasTable('payroll_batches')) {
+                DB::table('payroll_batches')->delete();
+            }
+            if (Schema::hasTable('salary_structures')) {
+                DB::table('salary_structures')->delete();
+            }
+            if (Schema::hasTable('leave_requests')) {
+                DB::table('leave_requests')->delete();
+            }
+            if (Schema::hasTable('daily_attendances')) {
+                DB::table('daily_attendances')->delete();
+            }
+            if (Schema::hasTable('monthly_attendances')) {
+                DB::table('monthly_attendances')->delete();
+            }
+
+            // Purge System Notifications
+            if (Schema::hasTable('system_notifications')) {
+                DB::table('system_notifications')->delete();
+            }
+
+            // Purge other users' sessions (keep current user's active session)
+            if (Schema::hasTable('personal_access_tokens')) {
+                DB::table('personal_access_tokens')
+                    ->where('tokenable_id', '!=', $user->id)
+                    ->delete();
+            }
+
+            // Purge all users except the current authenticated SuperAdmin
+            if (Schema::hasTable('users')) {
+                DB::table('users')
+                    ->where('id', '!=', $user->id)
+                    ->where('role', '!=', 'superadmin')
+                    ->delete();
+            }
+
+            // Reset Document Numbering Sequences in System Settings to 1
+            if (Schema::hasTable('system_settings')) {
+                $counters = [
+                    'estimate_next_number' => 1,
+                    'proforma_next_number' => 1,
+                    'invoice_next_number' => 1,
+                    'client_next_number' => 1,
+                    'expense_next_number' => 1,
+                ];
+
+                foreach ($counters as $key => $val) {
+                    DB::table('system_settings')->updateOrInsert(
+                        ['key' => $key],
+                        [
+                            'value' => (string) $val,
+                            'group' => 'document_numbering',
+                            'type' => 'integer',
+                            'updated_at' => now(),
+                        ]
+                    );
+                }
+
+                DB::table('system_settings')->updateOrInsert(
+                    ['key' => 'last_database_reset_at'],
+                    [
+                        'value' => now()->toIso8601String(),
+                        'group' => 'system_lifecycle',
+                        'type' => 'string',
+                        'description' => 'Timestamp of last manual factory database reset',
+                        'updated_at' => now(),
+                    ]
+                );
+            }
+
+            // Reset PostgreSQL auto-increment sequences
+            if (DB::getDriverName() === 'pgsql') {
+                $tables = [
+                    'clients', 'projects', 'tasks', 'estimates', 'estimate_items',
+                    'proforma_invoices', 'proforma_invoice_items', 'invoices',
+                    'invoice_items', 'invoice_payments', 'expenses', 'tickets',
+                    'ticket_replies', 'daily_attendances', 'monthly_attendances',
+                    'leave_requests', 'salary_structures', 'payroll_batches',
+                    'payslips', 'system_notifications',
+                ];
+
+                foreach ($tables as $t) {
+                    try {
+                        DB::statement("ALTER SEQUENCE IF EXISTS {$t}_id_seq RESTART WITH 1");
+                    } catch (\Throwable $seqE) {
+                        // Safe ignore
+                    }
+                }
+            }
+
+            DB::commit();
+
+            // Clear application caches
+            Cache::flush();
+            Artisan::call('cache:clear');
+            Artisan::call('optimize:clear');
+
+            return response()->json([
+                'message' => 'Factory database reset completed successfully. All records have been cleared and counters reset to 001.',
+                'reset_at' => now()->toIso8601String(),
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Failed to reset database: ' . $e->getMessage(),
             ], 500);
         }
     }
