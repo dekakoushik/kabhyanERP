@@ -23,6 +23,11 @@ import {
   Draggable,
   DropResult,
 } from "@hello-pangea/dnd";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
 
 export interface DocumentItemRow {
   id?: number;
@@ -212,9 +217,9 @@ export default function DocumentItemsTable({
     : Number(((modalTaxable * modalItemTaxRate) / 100).toFixed(2));
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
+    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
       {/* Header Bar */}
-      <div className="p-4 sm:px-6 sm:py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-white">
+      <div className="p-4 sm:px-6 sm:py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-white rounded-t-2xl">
         <div className="flex items-center gap-2.5">
           <h2 className="text-sm font-bold text-slate-900 tracking-tight">{title}</h2>
           <span className="text-[11px] font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
@@ -233,51 +238,48 @@ export default function DocumentItemsTable({
 
         <div className="flex items-center gap-2">
           {/* Preset Template Selector */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setPresetDropdownOpen(!presetDropdownOpen)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/80 font-semibold text-xs shadow-2xs transition cursor-pointer select-none"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-              <span>Scope Presets</span>
-              <ChevronDown className="w-3 h-3 text-purple-500" />
-            </button>
+          <Popover open={presetDropdownOpen} onOpenChange={setPresetDropdownOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/80 font-semibold text-xs shadow-2xs transition cursor-pointer select-none"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                <span>Scope Presets</span>
+                <ChevronDown className="w-3 h-3 text-purple-500" />
+              </button>
+            </PopoverTrigger>
 
-            {presetDropdownOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setPresetDropdownOpen(false)}
-                />
-                <div className="absolute right-0 sm:left-0 sm:right-auto mt-2 w-72 sm:w-80 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 text-left animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Quick Insert Service Package
-                  </div>
-                  <div className="max-h-72 overflow-y-auto divide-y divide-slate-50">
-                    {DELIVERABLE_PRESETS.map((preset, pIdx) => (
-                      <button
-                        key={pIdx}
-                        type="button"
-                        onClick={() => handleSelectPreset(preset)}
-                        className="w-full text-left px-3 py-2.5 hover:bg-blue-50/70 transition cursor-pointer group"
-                      >
-                        <div className="flex items-center justify-between text-xs font-bold text-slate-800 group-hover:text-blue-700">
-                          <span>{preset.name}</span>
-                          <span className="font-mono text-[11px] text-slate-500 font-semibold">
-                            ₹{preset.unit_price.toLocaleString("en-IN")}/{preset.unit}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5 font-normal">
-                          {preset.description}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+            <PopoverContent
+              align="end"
+              sideOffset={6}
+              className="w-72 sm:w-80 p-0 rounded-2xl border border-slate-200 bg-white shadow-xl z-50 text-left overflow-hidden"
+            >
+              <div className="px-3.5 py-2 border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/50">
+                Quick Insert Service Package
+              </div>
+              <div className="max-h-72 overflow-y-auto divide-y divide-slate-100/70 p-1">
+                {DELIVERABLE_PRESETS.map((preset, pIdx) => (
+                  <button
+                    key={pIdx}
+                    type="button"
+                    onClick={() => handleSelectPreset(preset)}
+                    className="w-full text-left p-2.5 rounded-xl hover:bg-blue-50/70 transition cursor-pointer group"
+                  >
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-800 group-hover:text-blue-700">
+                      <span>{preset.name}</span>
+                      <span className="font-mono text-[11px] text-slate-500 font-semibold">
+                        ₹{preset.unit_price.toLocaleString("en-IN")}/{preset.unit}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5 font-normal">
+                      {preset.description}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
 
           {/* Add Blank Line */}
           <button
@@ -293,7 +295,7 @@ export default function DocumentItemsTable({
 
       <DragDropContext onDragEnd={handleDragEnd}>
         {/* 1. DESKTOP & TABLET VIEWPORT TABLE (Zero Horizontal Scroll Guaranteed) */}
-        <div className="hidden sm:block overflow-hidden w-full">
+        <div className="hidden sm:block w-full">
           <table className="w-full table-fixed text-left border-collapse">
             <colgroup>
               <col className="w-8" />
@@ -468,38 +470,41 @@ export default function DocumentItemsTable({
                                 </div>
 
                                 {/* In-Row GST Pill Trigger with Popover */}
-                                <div className="relative inline-block mt-0.5 text-right">
-                                  <button
-                                    type="button"
-                                    onClick={() => setActiveTaxPopover(activeTaxPopover === idx ? null : idx)}
-                                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition cursor-pointer select-none border ${
-                                      currentItemTaxRate === 0
-                                        ? "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
-                                        : "bg-purple-50 text-purple-700 border-purple-200/80 hover:bg-purple-100"
-                                    }`}
-                                    title="Click to change statutory GST rate for this deliverable"
+                                <div className="inline-block mt-0.5 text-right">
+                                  <Popover
+                                    open={activeTaxPopover === idx}
+                                    onOpenChange={(open) => setActiveTaxPopover(open ? idx : null)}
                                   >
-                                    <span>
-                                      {currentItemTaxRate === 0
-                                        ? "0% Exempt"
-                                        : isInclusive
-                                        ? `Incl. ${currentItemTaxRate}%`
-                                        : `+${currentItemTaxRate}% GST`}
-                                    </span>
-                                    <ChevronDown className="w-2.5 h-2.5 opacity-70" />
-                                  </button>
+                                    <PopoverTrigger asChild>
+                                      <button
+                                        type="button"
+                                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition cursor-pointer select-none border ${
+                                          currentItemTaxRate === 0
+                                            ? "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
+                                            : "bg-purple-50 text-purple-700 border-purple-200/80 hover:bg-purple-100"
+                                        }`}
+                                        title="Click to change statutory GST rate for this deliverable"
+                                      >
+                                        <span>
+                                          {currentItemTaxRate === 0
+                                            ? "0% Exempt"
+                                            : isInclusive
+                                            ? `Incl. ${currentItemTaxRate}%`
+                                            : `+${currentItemTaxRate}% GST`}
+                                        </span>
+                                        <ChevronDown className="w-2.5 h-2.5 opacity-70" />
+                                      </button>
+                                    </PopoverTrigger>
 
-                                  {/* Popover Dropdown */}
-                                  {activeTaxPopover === idx && (
-                                    <>
-                                      <div
-                                        className="fixed inset-0 z-40"
-                                        onClick={() => setActiveTaxPopover(null)}
-                                      />
-                                      <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 text-left animate-in fade-in zoom-in-95 duration-100">
-                                        <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100">
-                                          Select GST Slab
-                                        </div>
+                                    <PopoverContent
+                                      align="end"
+                                      sideOffset={4}
+                                      className="w-48 p-1 rounded-xl border border-slate-200 bg-white shadow-xl z-50 text-left"
+                                    >
+                                      <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-1">
+                                        Select GST Slab
+                                      </div>
+                                      <div className="space-y-0.5">
                                         {GST_RATE_OPTIONS.map((opt) => (
                                           <button
                                             key={opt.rate}
@@ -508,7 +513,7 @@ export default function DocumentItemsTable({
                                               onItemChange(idx, "tax_rate", opt.rate);
                                               setActiveTaxPopover(null);
                                             }}
-                                            className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between hover:bg-purple-50 hover:text-purple-700 transition cursor-pointer ${
+                                            className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between hover:bg-purple-50 hover:text-purple-700 transition cursor-pointer ${
                                               currentItemTaxRate === opt.rate
                                                 ? "bg-purple-50/70 text-purple-700 font-bold"
                                                 : "text-slate-700 font-medium"
@@ -521,8 +526,8 @@ export default function DocumentItemsTable({
                                           </button>
                                         ))}
                                       </div>
-                                    </>
-                                  )}
+                                    </PopoverContent>
+                                  </Popover>
                                 </div>
 
                                 {/* Line GST Subtext */}
