@@ -46,15 +46,22 @@ export default function CreateTicketPage() {
       try {
         setLoading(true);
         const [clientsRes, projectsRes, staffRes] = await Promise.all([
-          api.request("/clients"),
-          api.request("/projects"),
-          api.request("/users"),
+          api.request("/clients?per_page=100").catch(() => ({ clients: { data: [] } })),
+          api.request("/projects?per_page=100").catch(() => ({ projects: { data: [] } })),
+          api.request("/users?per_page=100").catch(() => ({ users: { data: [] } })),
         ]);
 
-        const loadedClients = clientsRes.clients?.data || [];
+        const rawClients = clientsRes?.clients?.data ?? clientsRes?.clients ?? clientsRes?.data ?? [];
+        const loadedClients: Client[] = Array.isArray(rawClients) ? rawClients : [];
         setClients(loadedClients);
-        setProjects(projectsRes.projects?.data || []);
-        setStaffUsers(staffRes.users || []);
+
+        const rawProjects = projectsRes?.projects?.data ?? projectsRes?.projects ?? projectsRes?.data ?? [];
+        const loadedProjects: Project[] = Array.isArray(rawProjects) ? rawProjects : [];
+        setProjects(loadedProjects);
+
+        const rawStaff = staffRes?.users?.data ?? staffRes?.users ?? staffRes?.data ?? [];
+        const loadedStaff: User[] = Array.isArray(rawStaff) ? rawStaff : [];
+        setStaffUsers(loadedStaff);
 
         if (loadedClients.length > 0) {
           setFormData((prev) => ({
@@ -102,9 +109,13 @@ export default function CreateTicketPage() {
     }
   };
 
-  const selectedClient = clients.find((c) => c.id.toString() === formData.client_id);
-  const selectedProject = projects.find((p) => p.id.toString() === formData.project_id);
-  const selectedStaff = staffUsers.find((u) => u.id.toString() === formData.assigned_to);
+  const safeClients = Array.isArray(clients) ? clients : [];
+  const safeProjects = Array.isArray(projects) ? projects : [];
+  const safeStaffUsers = Array.isArray(staffUsers) ? staffUsers : [];
+
+  const selectedClient = safeClients.find((c) => c && c.id && c.id.toString() === formData.client_id);
+  const selectedProject = safeProjects.find((p) => p && p.id && p.id.toString() === formData.project_id);
+  const selectedStaff = safeStaffUsers.find((u) => u && u.id && u.id.toString() === formData.assigned_to);
 
   return (
     <AdminLayout>
@@ -183,11 +194,13 @@ export default function CreateTicketPage() {
                         className="w-full pl-9 pr-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition"
                       >
                         <option value="">Select client...</option>
-                        {clients.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.company_name} ({c.name})
-                          </option>
-                        ))}
+                        {safeClients
+                          .filter((c) => c && c.id)
+                          .map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.company_name || c.name} ({c.name})
+                            </option>
+                          ))}
                       </select>
                     </div>
                   </div>
@@ -204,11 +217,13 @@ export default function CreateTicketPage() {
                         className="w-full pl-9 pr-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition"
                       >
                         <option value="">No specific project link</option>
-                        {projects.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            [{p.code}] {p.name}
-                          </option>
-                        ))}
+                        {safeProjects
+                          .filter((p) => p && p.id)
+                          .map((p) => (
+                            <option key={p.id} value={p.id}>
+                              [{p.code || "PRJ"}] {p.name}
+                            </option>
+                          ))}
                       </select>
                     </div>
                   </div>
@@ -266,11 +281,13 @@ export default function CreateTicketPage() {
                         className="w-full pl-9 pr-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition"
                       >
                         <option value="">Unassigned (Queue)</option>
-                        {staffUsers.map((u) => (
-                          <option key={u.id} value={u.id}>
-                            {u.name} ({typeof u.role === 'object' && u.role !== null ? (u.role as any).name : (u.role || "Staff")})
-                          </option>
-                        ))}
+                        {safeStaffUsers
+                          .filter((u) => u && u.id)
+                          .map((u) => (
+                            <option key={u.id} value={u.id}>
+                              {u.name} ({typeof u.role === 'object' && u.role !== null ? (u.role as any).name : (u.role || "Staff")})
+                            </option>
+                          ))}
                       </select>
                     </div>
                   </div>
