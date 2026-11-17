@@ -239,76 +239,93 @@ class InvoiceController extends Controller
         $validated = $request->validated();
         $validated['created_by'] = $request->user()->id;
 
-        $invoice = DB::transaction(function () use ($validated) {
-            $invoiceNumber = $validated['invoice_number'] ?? null;
-            if (empty($invoiceNumber) || Invoice::where('invoice_number', $invoiceNumber)->exists()) {
-                $invoiceNumber = DocumentNumberService::getNextInvoiceNumber(true);
-            } else {
-                DocumentNumberService::getNextInvoiceNumber(true);
-            }
+        try {
+            $invoice = DB::transaction(function () use ($validated) {
+                $invoiceNumber = $validated['invoice_number'] ?? null;
+                if (empty($invoiceNumber) || Invoice::withTrashed()->where('invoice_number', $invoiceNumber)->exists()) {
+                    $invoiceNumber = DocumentNumberService::getNextInvoiceNumber(true);
+                } else {
+                    DocumentNumberService::getNextInvoiceNumber(true);
+                }
 
-            $newInvoice = Invoice::create([
-                'invoice_number' => $invoiceNumber,
-                'proforma_invoice_id' => $validated['proforma_invoice_id'] ?? null,
-                'estimate_id' => $validated['estimate_id'] ?? null,
-                'project_id' => $validated['project_id'] ?? null,
-                'created_by' => $validated['created_by'],
-                'client_name' => $validated['client_name'],
-                'client_company' => $validated['client_company'] ?? null,
-                'client_email' => $validated['client_email'] ?? null,
-                'client_phone' => $validated['client_phone'] ?? null,
-                'client_address' => $validated['client_address'] ?? null,
-                'client_gstin' => $validated['client_gstin'] ?? null,
-                'invoice_date' => $validated['invoice_date'],
-                'due_date' => $validated['due_date'] ?? null,
-                'status' => $validated['status'],
-                'currency' => $validated['currency'] ?? 'INR',
-                'tax_calculation_type' => $validated['tax_calculation_type'] ?? 'exclusive',
-                'tax_rate' => $validated['tax_rate'] ?? 18,
-                'discount_type' => $validated['discount_type'] ?? 'percentage',
-                'discount_rate' => $validated['discount_rate'] ?? 0,
-                'discount_amount' => $validated['discount_amount'] ?? 0,
-                'round_off' => $validated['round_off'] ?? 0,
-                'notes' => $validated['notes'] ?? null,
-                'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
-                'bank_details' => $validated['bank_details'] ?? null,
+                $newInvoice = Invoice::create([
+                    'invoice_number' => $invoiceNumber,
+                    'proforma_invoice_id' => !empty($validated['proforma_invoice_id']) ? (int) $validated['proforma_invoice_id'] : null,
+                    'estimate_id' => !empty($validated['estimate_id']) ? (int) $validated['estimate_id'] : null,
+                    'project_id' => !empty($validated['project_id']) ? (int) $validated['project_id'] : null,
+                    'created_by' => $validated['created_by'],
+                    'client_name' => $validated['client_name'],
+                    'client_company' => $validated['client_company'] ?? null,
+                    'client_email' => $validated['client_email'] ?? null,
+                    'client_phone' => $validated['client_phone'] ?? null,
+                    'client_address' => $validated['client_address'] ?? null,
+                    'client_gstin' => $validated['client_gstin'] ?? null,
+                    'invoice_date' => $validated['invoice_date'],
+                    'due_date' => $validated['due_date'] ?? null,
+                    'status' => $validated['status'],
+                    'currency' => $validated['currency'] ?? 'INR',
+                    'tax_calculation_type' => $validated['tax_calculation_type'] ?? 'exclusive',
+                    'tax_rate' => $validated['tax_rate'] ?? 18,
+                    'discount_type' => $validated['discount_type'] ?? 'percentage',
+                    'discount_rate' => $validated['discount_rate'] ?? 0,
+                    'discount_amount' => $validated['discount_amount'] ?? 0,
+                    'round_off' => $validated['round_off'] ?? 0,
+                    'notes' => $validated['notes'] ?? null,
+                    'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
+                    'bank_details' => $validated['bank_details'] ?? null,
+                ]);
+
+                foreach ($validated['items'] as $item) {
+                    $qty = (float) ($item['quantity'] ?? 1);
+                    $unitPrice = (float) ($item['unit_price'] ?? 0);
+                    $amount = $qty * $unitPrice;
+                    $itemTaxRate = isset($item['tax_rate']) && $item['tax_rate'] !== null && $item['tax_rate'] !== ''
+                        ? (float) $item['tax_rate']
+                        : null;
+
+                    $newInvoice->items()->create([
+                        'item_name' => $item['item_name'],
+                        'hsn_sac' => $item['hsn_sac'] ?? '998314',
+                        'description' => $item['description'] ?? null,
+                        'quantity' => $qty,
+                        'unit' => $item['unit'] ?? 'hours',
+                        'unit_price' => $unitPrice,
+                        'tax_rate' => $itemTaxRate,
+                        'amount' => $amount,
+                    ]);
+                }
+
+                $newInvoice->recalculateTotals();
+
+                if (($validated['status'] ?? 'unpaid') === 'paid' || !empty($validated['payment_reference'])) {
+                    $newInvoice->payments()->create([
+                        'recorded_by' => $validated['created_by'],
+                        'payment_reference' => $validated['payment_reference'] ?? 'Full settlement recorded at issuance',
+                        'amount' => $newInvoice->total_amount,
+                        'payment_date' => $validated['payment_date'] ?? $newInvoice->invoice_date,
+                        'payment_method' => $validated['payment_method'] ?? 'bank_transfer',
+                        'notes' => $validated['payment_notes'] ?? 'Settled milestone against Proforma',
+                    ]);
+                    $newInvoice->recalculateTotals();
+                }
+
+                return $newInvoice;
+            });
+
+            return response()->json([
+                'message' => 'Tax Invoice created successfully',
+                'invoice' => $invoice->fresh()->load(['items', 'payments', 'project:id,name,code', 'creator:id,name,email']),
+            ], 201);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to create tax invoice: ' . $e->getMessage(), [
+                'exception' => $e,
+                'validated' => $validated,
             ]);
 
-            foreach ($validated['items'] as $item) {
-                $amount = $item['quantity'] * $item['unit_price'];
-                $newInvoice->items()->create([
-                    'item_name' => $item['item_name'],
-                    'hsn_sac' => $item['hsn_sac'] ?? '998314',
-                    'description' => $item['description'] ?? null,
-                    'quantity' => $item['quantity'],
-                    'unit' => $item['unit'] ?? 'hours',
-                    'unit_price' => $item['unit_price'],
-                    'tax_rate' => $item['tax_rate'] ?? null,
-                    'amount' => $amount,
-                ]);
-            }
-
-            $newInvoice->recalculateTotals();
-
-            if (($validated['status'] ?? 'unpaid') === 'paid' || !empty($validated['payment_reference'])) {
-                $newInvoice->payments()->create([
-                    'recorded_by' => $validated['created_by'],
-                    'payment_reference' => $validated['payment_reference'] ?? 'Full settlement recorded at issuance',
-                    'amount' => $newInvoice->total_amount,
-                    'payment_date' => $validated['payment_date'] ?? $newInvoice->invoice_date,
-                    'payment_method' => $validated['payment_method'] ?? 'bank_transfer',
-                    'notes' => $validated['payment_notes'] ?? 'Settled milestone against Proforma',
-                ]);
-                $newInvoice->recalculateTotals();
-            }
-
-            return $newInvoice;
-        });
-
-        return response()->json([
-            'message' => 'Tax Invoice created successfully',
-            'invoice' => $invoice->fresh()->load(['items', 'payments', 'project:id,name,code', 'creator:id,name,email']),
-        ], 201);
+            return response()->json([
+                'message' => 'Failed to generate tax invoice: ' . $e->getMessage(),
+            ], 422);
+        }
     }
 
     /**

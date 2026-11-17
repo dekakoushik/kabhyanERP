@@ -66,61 +66,78 @@ class EstimateController extends Controller
         $validated = $request->validated();
         $validated['created_by'] = $request->user()->id;
 
-        $estimate = DB::transaction(function () use ($validated) {
-            // Auto-assign or advance document numbering sequence
-            $estimateNumber = $validated['estimate_number'] ?? null;
-            if (empty($estimateNumber)) {
-                $estimateNumber = DocumentNumberService::getNextEstimateNumber(true);
-            } else {
-                // Increment the next counter in settings if the user used the current generated sequence
-                DocumentNumberService::getNextEstimateNumber(true);
-            }
+        try {
+            $estimate = DB::transaction(function () use ($validated) {
+                // Auto-assign or advance document numbering sequence
+                $estimateNumber = $validated['estimate_number'] ?? null;
+                if (empty($estimateNumber) || Estimate::withTrashed()->where('estimate_number', $estimateNumber)->exists()) {
+                    $estimateNumber = DocumentNumberService::getNextEstimateNumber(true);
+                } else {
+                    // Increment the next counter in settings if the user used the current generated sequence
+                    DocumentNumberService::getNextEstimateNumber(true);
+                }
 
-            $newEstimate = Estimate::create([
-                'estimate_number' => $estimateNumber,
-                'project_id' => $validated['project_id'] ?? null,
-                'created_by' => $validated['created_by'],
-                'client_name' => $validated['client_name'],
-                'client_email' => $validated['client_email'] ?? null,
-                'client_company' => $validated['client_company'] ?? null,
-                'client_phone' => $validated['client_phone'] ?? null,
-                'client_address' => $validated['client_address'] ?? null,
-                'estimate_date' => $validated['estimate_date'],
-                'expiry_date' => $validated['expiry_date'] ?? null,
-                'status' => $validated['status'],
-                'currency' => $validated['currency'] ?? 'INR',
-                'tax_calculation_type' => $validated['tax_calculation_type'] ?? 'exclusive',
-                'tax_rate' => $validated['tax_rate'] ?? 0,
-                'discount_type' => $validated['discount_type'] ?? 'percentage',
-                'discount_rate' => $validated['discount_rate'] ?? 0,
-                'discount_amount' => $validated['discount_amount'] ?? 0,
-                'round_off' => $validated['round_off'] ?? 0,
-                'notes' => $validated['notes'] ?? null,
-                'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
+                $newEstimate = Estimate::create([
+                    'estimate_number' => $estimateNumber,
+                    'project_id' => !empty($validated['project_id']) ? (int) $validated['project_id'] : null,
+                    'created_by' => $validated['created_by'],
+                    'client_name' => $validated['client_name'],
+                    'client_email' => $validated['client_email'] ?? null,
+                    'client_company' => $validated['client_company'] ?? null,
+                    'client_phone' => $validated['client_phone'] ?? null,
+                    'client_address' => $validated['client_address'] ?? null,
+                    'estimate_date' => $validated['estimate_date'],
+                    'expiry_date' => $validated['expiry_date'] ?? null,
+                    'status' => $validated['status'] ?? 'draft',
+                    'currency' => $validated['currency'] ?? 'INR',
+                    'tax_calculation_type' => $validated['tax_calculation_type'] ?? 'exclusive',
+                    'tax_rate' => $validated['tax_rate'] ?? 0,
+                    'discount_type' => $validated['discount_type'] ?? 'percentage',
+                    'discount_rate' => $validated['discount_rate'] ?? 0,
+                    'discount_amount' => $validated['discount_amount'] ?? 0,
+                    'round_off' => $validated['round_off'] ?? 0,
+                    'notes' => $validated['notes'] ?? null,
+                    'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
+                ]);
+
+                foreach ($validated['items'] as $item) {
+                    $qty = (float) ($item['quantity'] ?? 1);
+                    $unitPrice = (float) ($item['unit_price'] ?? 0);
+                    $amount = $qty * $unitPrice;
+                    $itemTaxRate = isset($item['tax_rate']) && $item['tax_rate'] !== null && $item['tax_rate'] !== ''
+                        ? (float) $item['tax_rate']
+                        : null;
+
+                    $newEstimate->items()->create([
+                        'item_name' => $item['item_name'],
+                        'description' => $item['description'] ?? null,
+                        'quantity' => $qty,
+                        'unit' => $item['unit'] ?? 'hours',
+                        'unit_price' => $unitPrice,
+                        'amount' => $amount,
+                        'tax_rate' => $itemTaxRate,
+                    ]);
+                }
+
+                $newEstimate->recalculateTotals();
+
+                return $newEstimate;
+            });
+
+            return response()->json([
+                'message' => 'Estimate generated successfully',
+                'estimate' => $estimate->fresh()->load(['items', 'project:id,name,code', 'creator:id,name,email']),
+            ], 201);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to create estimate: ' . $e->getMessage(), [
+                'exception' => $e,
+                'validated' => $validated,
             ]);
 
-            foreach ($validated['items'] as $item) {
-                $amount = $item['quantity'] * $item['unit_price'];
-                $newEstimate->items()->create([
-                    'item_name' => $item['item_name'],
-                    'description' => $item['description'] ?? null,
-                    'quantity' => $item['quantity'],
-                    'unit' => $item['unit'] ?? 'hours',
-                    'unit_price' => $item['unit_price'],
-                    'amount' => $amount,
-                    'tax_rate' => $item['tax_rate'] ?? null,
-                ]);
-            }
-
-            $newEstimate->recalculateTotals();
-
-            return $newEstimate;
-        });
-
-        return response()->json([
-            'message' => 'Estimate generated successfully',
-            'estimate' => $estimate->fresh()->load(['items', 'project:id,name,code', 'creator:id,name,email']),
-        ], 201);
+            return response()->json([
+                'message' => 'Failed to generate estimate: ' . $e->getMessage(),
+            ], 422);
+        }
     }
 
     /**
@@ -169,51 +186,69 @@ class EstimateController extends Controller
             'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
             'items.*.unit' => ['nullable', 'string', 'max:50'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'items.*.tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]);
 
-        $estimate->update([
-            'estimate_number' => $validated['estimate_number'],
-            'project_id' => $validated['project_id'] ?? null,
-            'client_name' => $validated['client_name'],
-            'client_email' => $validated['client_email'] ?? null,
-            'client_company' => $validated['client_company'] ?? null,
-            'client_phone' => $validated['client_phone'] ?? null,
-            'client_address' => $validated['client_address'] ?? null,
-            'estimate_date' => $validated['estimate_date'],
-            'expiry_date' => $validated['expiry_date'] ?? null,
-            'status' => $validated['status'],
-            'currency' => $validated['currency'],
-            'tax_calculation_type' => $validated['tax_calculation_type'] ?? 'exclusive',
-            'tax_rate' => $validated['tax_rate'] ?? 0,
-            'discount_type' => $validated['discount_type'] ?? 'percentage',
-            'discount_rate' => $validated['discount_rate'] ?? 0,
-            'discount_amount' => $validated['discount_amount'] ?? 0,
-            'round_off' => $validated['round_off'] ?? 0,
-            'notes' => $validated['notes'] ?? null,
-            'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
-        ]);
-
-        // Recreate items
-        $estimate->items()->delete();
-        foreach ($validated['items'] as $item) {
-            $amount = $item['quantity'] * $item['unit_price'];
-            $estimate->items()->create([
-                'item_name' => $item['item_name'],
-                'description' => $item['description'] ?? null,
-                'quantity' => $item['quantity'],
-                'unit' => $item['unit'] ?? 'hours',
-                'unit_price' => $item['unit_price'],
-                'amount' => $amount,
-                'tax_rate' => $item['tax_rate'] ?? null,
+        try {
+            $estimate->update([
+                'estimate_number' => $validated['estimate_number'],
+                'project_id' => !empty($validated['project_id']) ? (int) $validated['project_id'] : null,
+                'client_name' => $validated['client_name'],
+                'client_email' => $validated['client_email'] ?? null,
+                'client_company' => $validated['client_company'] ?? null,
+                'client_phone' => $validated['client_phone'] ?? null,
+                'client_address' => $validated['client_address'] ?? null,
+                'estimate_date' => $validated['estimate_date'],
+                'expiry_date' => $validated['expiry_date'] ?? null,
+                'status' => $validated['status'],
+                'currency' => $validated['currency'],
+                'tax_calculation_type' => $validated['tax_calculation_type'] ?? 'exclusive',
+                'tax_rate' => $validated['tax_rate'] ?? 0,
+                'discount_type' => $validated['discount_type'] ?? 'percentage',
+                'discount_rate' => $validated['discount_rate'] ?? 0,
+                'discount_amount' => $validated['discount_amount'] ?? 0,
+                'round_off' => $validated['round_off'] ?? 0,
+                'notes' => $validated['notes'] ?? null,
+                'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
             ]);
+
+            // Recreate items
+            $estimate->items()->delete();
+            foreach ($validated['items'] as $item) {
+                $qty = (float) ($item['quantity'] ?? 1);
+                $unitPrice = (float) ($item['unit_price'] ?? 0);
+                $amount = $qty * $unitPrice;
+                $itemTaxRate = isset($item['tax_rate']) && $item['tax_rate'] !== null && $item['tax_rate'] !== ''
+                    ? (float) $item['tax_rate']
+                    : null;
+
+                $estimate->items()->create([
+                    'item_name' => $item['item_name'],
+                    'description' => $item['description'] ?? null,
+                    'quantity' => $qty,
+                    'unit' => $item['unit'] ?? 'hours',
+                    'unit_price' => $unitPrice,
+                    'amount' => $amount,
+                    'tax_rate' => $itemTaxRate,
+                ]);
+            }
+
+            $estimate->recalculateTotals();
+
+            return response()->json([
+                'message' => 'Estimate updated successfully',
+                'estimate' => $estimate->fresh()->load(['items', 'project:id,name,code', 'creator:id,name,email']),
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to update estimate: ' . $e->getMessage(), [
+                'exception' => $e,
+                'validated' => $validated,
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to update estimate: ' . $e->getMessage(),
+            ], 422);
         }
-
-        $estimate->recalculateTotals();
-
-        return response()->json([
-            'message' => 'Estimate updated successfully',
-            'estimate' => $estimate->fresh()->load(['items', 'project:id,name,code', 'creator:id,name,email']),
-        ]);
     }
 
     /**

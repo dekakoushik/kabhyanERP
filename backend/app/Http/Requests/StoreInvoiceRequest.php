@@ -16,7 +16,7 @@ class StoreInvoiceRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $invoiceNumber = $this->invoice_number;
-        if (!empty($invoiceNumber) && Invoice::where('invoice_number', $invoiceNumber)->exists()) {
+        if (!empty($invoiceNumber) && Invoice::withTrashed()->where('invoice_number', $invoiceNumber)->exists()) {
             // Auto-advance so stale client-side previews don't hard-fail
             $invoiceNumber = null;
         }
@@ -79,6 +79,7 @@ class StoreInvoiceRequest extends FormRequest
             'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
             'items.*.unit' => ['nullable', 'string', 'max:50'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'items.*.tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ];
     }
 }

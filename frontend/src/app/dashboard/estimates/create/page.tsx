@@ -375,26 +375,53 @@ export default function CreateEstimatePage() {
       if (!formData.estimate_number) {
         throw new Error("Estimate number is required");
       }
+      if (!formData.items || formData.items.length === 0 || !formData.items.some((it) => it.item_name?.trim())) {
+        throw new Error("Please add at least one line item with a title");
+      }
+
+      const payload = {
+        estimate_number: formData.estimate_number?.trim() || null,
+        project_id: formData.project_id && String(formData.project_id).trim() !== "" ? Number(formData.project_id) : null,
+        client_name: formData.client_name,
+        client_company: formData.client_company || null,
+        client_email: formData.client_email && formData.client_email.trim() !== "" ? formData.client_email.trim() : null,
+        client_phone: formData.client_phone || null,
+        client_address: formData.client_address || null,
+        estimate_date: formData.estimate_date,
+        expiry_date: formData.expiry_date || null,
+        status: formData.status || "draft",
+        currency: formData.currency || "INR",
+        tax_calculation_type: formData.tax_calculation_type || "exclusive",
+        tax_rate: Number(formData.tax_rate) || 0,
+        discount_type: formData.discount_type || "percentage",
+        discount_rate: effectiveDiscountRate,
+        discount_amount: discountAmount,
+        round_off: roundOffAmount,
+        notes: formData.notes || null,
+        terms_and_conditions: formData.terms_and_conditions || null,
+        items: formData.items
+          .filter((it) => it.item_name && it.item_name.trim() !== "")
+          .map((it) => ({
+            item_name: it.item_name.trim(),
+            description: it.description?.trim() || null,
+            quantity: Number(it.quantity) || 1,
+            unit: it.unit || "hours",
+            unit_price: Number(it.unit_price) || 0,
+            tax_rate: it.tax_rate !== undefined && it.tax_rate !== null && it.tax_rate !== "" ? Number(it.tax_rate) : null,
+          })),
+      };
 
       await api.request("/estimates", {
         method: "POST",
-        body: JSON.stringify({
-          ...formData,
-          tax_calculation_type: formData.tax_calculation_type,
-          discount_type: formData.discount_type,
-          discount_rate: effectiveDiscountRate,
-          discount_amount: discountAmount,
-          subtotal,
-          tax_amount: taxAmount,
-          round_off: roundOffAmount,
-          total: grandTotal,
-        }),
+        body: JSON.stringify(payload),
       });
 
       toast.success("Estimate saved successfully!");
       router.push("/dashboard/estimates");
     } catch (err: any) {
-      setFormError(err.message || "Failed to create estimate");
+      const msg = err.message || "Failed to create estimate";
+      setFormError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

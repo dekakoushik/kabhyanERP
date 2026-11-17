@@ -711,6 +711,7 @@ export default function InvoiceCreateForm({
           quantity: Number(it.quantity) || 1,
           unit: it.unit || "hours",
           unit_price: Number(it.unit_price) || 0,
+          tax_rate: (it as any).tax_rate !== undefined && (it as any).tax_rate !== null && (it as any).tax_rate !== "" ? Number((it as any).tax_rate) : null,
         })),
         payment_method: isPaidReceived ? paymentMethod : undefined,
         payment_reference: isPaidReceived ? (paymentReference || "Settled on issuance") : undefined,

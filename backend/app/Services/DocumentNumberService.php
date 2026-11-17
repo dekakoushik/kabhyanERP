@@ -48,9 +48,9 @@ class DocumentNumberService
         $includeYear = filter_var($overrides['estimate_include_year'] ?? SystemSetting::get('estimate_include_year', true), FILTER_VALIDATE_BOOLEAN);
         $nextNum = (int) ($overrides['estimate_next_number'] ?? SystemSetting::get('estimate_next_number', 1));
 
-        // Ensure unique against database
+        // Ensure unique against database (including soft-deleted records to satisfy DB unique constraints)
         $candidate = self::formatNumber($prefix, $includeYear, $nextNum, $padding, $suffix);
-        while (Estimate::where('estimate_number', $candidate)->exists()) {
+        while (Estimate::withTrashed()->where('estimate_number', $candidate)->exists()) {
             $nextNum++;
             $candidate = self::formatNumber($prefix, $includeYear, $nextNum, $padding, $suffix);
         }
@@ -74,7 +74,7 @@ class DocumentNumberService
         $nextNum = (int) ($overrides['proforma_next_number'] ?? SystemSetting::get('proforma_next_number', 1));
 
         $candidate = self::formatNumber($prefix, $includeYear, $nextNum, $padding, $suffix);
-        while (ProformaInvoice::where('proforma_number', $candidate)->exists()) {
+        while (ProformaInvoice::withTrashed()->where('proforma_number', $candidate)->exists()) {
             $nextNum++;
             $candidate = self::formatNumber($prefix, $includeYear, $nextNum, $padding, $suffix);
         }
@@ -98,7 +98,7 @@ class DocumentNumberService
         $nextNum = (int) ($overrides['invoice_next_number'] ?? SystemSetting::get('invoice_next_number', 1));
 
         $candidate = self::formatNumber($prefix, $includeYear, $nextNum, $padding, $suffix);
-        while (Invoice::where('invoice_number', $candidate)->exists()) {
+        while (Invoice::withTrashed()->where('invoice_number', $candidate)->exists()) {
             $nextNum++;
             $candidate = self::formatNumber($prefix, $includeYear, $nextNum, $padding, $suffix);
         }

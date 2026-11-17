@@ -172,62 +172,84 @@ class ProformaInvoiceController extends Controller
             'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
             'items.*.unit' => ['nullable', 'string', 'max:50'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'items.*.tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]);
 
         $validated['created_by'] = $request->user()->id;
 
-        $proformaNumber = $validated['proforma_number'] ?? null;
-        if (empty($proformaNumber)) {
-            $proformaNumber = DocumentNumberService::getNextProformaNumber(true);
-        } else {
-            DocumentNumberService::getNextProformaNumber(true);
-        }
+        try {
+            $proforma = DB::transaction(function () use ($validated) {
+                $proformaNumber = $validated['proforma_number'] ?? null;
+                if (empty($proformaNumber) || ProformaInvoice::withTrashed()->where('proforma_number', $proformaNumber)->exists()) {
+                    $proformaNumber = DocumentNumberService::getNextProformaNumber(true);
+                } else {
+                    DocumentNumberService::getNextProformaNumber(true);
+                }
 
-        $proforma = ProformaInvoice::create([
-            'proforma_number' => $proformaNumber,
-            'estimate_id' => $validated['estimate_id'] ?? null,
-            'project_id' => $validated['project_id'] ?? null,
-            'created_by' => $validated['created_by'],
-            'client_name' => $validated['client_name'],
-            'client_company' => $validated['client_company'] ?? null,
-            'client_email' => $validated['client_email'] ?? null,
-            'client_phone' => $validated['client_phone'] ?? null,
-            'client_address' => $validated['client_address'] ?? null,
-            'invoice_date' => $validated['invoice_date'],
-            'due_date' => $validated['due_date'] ?? null,
-            'status' => $validated['status'],
-            'currency' => $validated['currency'] ?? 'INR',
-            'tax_calculation_type' => $validated['tax_calculation_type'] ?? 'exclusive',
-            'tax_rate' => $validated['tax_rate'] ?? 0,
-            'discount_type' => $validated['discount_type'] ?? 'percentage',
-            'discount_rate' => $validated['discount_rate'] ?? 0,
-            'discount_amount' => $validated['discount_amount'] ?? 0,
-            'round_off' => $validated['round_off'] ?? 0,
-            'paid_amount' => $validated['paid_amount'] ?? 0,
-            'notes' => $validated['notes'] ?? null,
-            'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
-            'bank_details' => $validated['bank_details'] ?? null,
-        ]);
+                $proforma = ProformaInvoice::create([
+                    'proforma_number' => $proformaNumber,
+                    'estimate_id' => !empty($validated['estimate_id']) ? (int) $validated['estimate_id'] : null,
+                    'project_id' => !empty($validated['project_id']) ? (int) $validated['project_id'] : null,
+                    'created_by' => $validated['created_by'],
+                    'client_name' => $validated['client_name'],
+                    'client_company' => $validated['client_company'] ?? null,
+                    'client_email' => $validated['client_email'] ?? null,
+                    'client_phone' => $validated['client_phone'] ?? null,
+                    'client_address' => $validated['client_address'] ?? null,
+                    'invoice_date' => $validated['invoice_date'],
+                    'due_date' => $validated['due_date'] ?? null,
+                    'status' => $validated['status'] ?? 'unpaid',
+                    'currency' => $validated['currency'] ?? 'INR',
+                    'tax_calculation_type' => $validated['tax_calculation_type'] ?? 'exclusive',
+                    'tax_rate' => $validated['tax_rate'] ?? 0,
+                    'discount_type' => $validated['discount_type'] ?? 'percentage',
+                    'discount_rate' => $validated['discount_rate'] ?? 0,
+                    'discount_amount' => $validated['discount_amount'] ?? 0,
+                    'round_off' => $validated['round_off'] ?? 0,
+                    'paid_amount' => $validated['paid_amount'] ?? 0,
+                    'notes' => $validated['notes'] ?? null,
+                    'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
+                    'bank_details' => $validated['bank_details'] ?? null,
+                ]);
 
-        foreach ($validated['items'] as $item) {
-            $amount = $item['quantity'] * $item['unit_price'];
-            $proforma->items()->create([
-                'item_name' => $item['item_name'],
-                'description' => $item['description'] ?? null,
-                'quantity' => $item['quantity'],
-                'unit' => $item['unit'] ?? 'hours',
-                'unit_price' => $item['unit_price'],
-                'amount' => $amount,
-                'tax_rate' => $item['tax_rate'] ?? null,
+                foreach ($validated['items'] as $item) {
+                    $qty = (float) ($item['quantity'] ?? 1);
+                    $unitPrice = (float) ($item['unit_price'] ?? 0);
+                    $amount = $qty * $unitPrice;
+                    $itemTaxRate = isset($item['tax_rate']) && $item['tax_rate'] !== null && $item['tax_rate'] !== ''
+                        ? (float) $item['tax_rate']
+                        : null;
+
+                    $proforma->items()->create([
+                        'item_name' => $item['item_name'],
+                        'description' => $item['description'] ?? null,
+                        'quantity' => $qty,
+                        'unit' => $item['unit'] ?? 'hours',
+                        'unit_price' => $unitPrice,
+                        'amount' => $amount,
+                        'tax_rate' => $itemTaxRate,
+                    ]);
+                }
+
+                $proforma->recalculateTotals();
+
+                return $proforma;
+            });
+
+            return response()->json([
+                'message' => 'Proforma Invoice generated successfully',
+                'proforma_invoice' => $proforma->fresh()->load(['items', 'project:id,name,code', 'creator:id,name,email']),
+            ], 201);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to create proforma invoice: ' . $e->getMessage(), [
+                'exception' => $e,
+                'validated' => $validated,
             ]);
+
+            return response()->json([
+                'message' => 'Failed to generate proforma invoice: ' . $e->getMessage(),
+            ], 422);
         }
-
-        $proforma->recalculateTotals();
-
-        return response()->json([
-            'message' => 'Proforma Invoice generated successfully',
-            'proforma_invoice' => $proforma->fresh()->load(['items', 'project:id,name,code', 'creator:id,name,email']),
-        ], 201);
     }
 
     /**
@@ -281,52 +303,70 @@ class ProformaInvoiceController extends Controller
             'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
             'items.*.unit' => ['nullable', 'string', 'max:50'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'items.*.tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]);
 
-        $proformaInvoice->update([
-            'proforma_number' => $validated['proforma_number'],
-            'project_id' => $validated['project_id'] ?? null,
-            'client_name' => $validated['client_name'],
-            'client_company' => $validated['client_company'] ?? null,
-            'client_email' => $validated['client_email'] ?? null,
-            'client_phone' => $validated['client_phone'] ?? null,
-            'client_address' => $validated['client_address'] ?? null,
-            'invoice_date' => $validated['invoice_date'],
-            'due_date' => $validated['due_date'] ?? null,
-            'status' => $validated['status'],
-            'currency' => $validated['currency'],
-            'tax_calculation_type' => $validated['tax_calculation_type'] ?? 'exclusive',
-            'tax_rate' => $validated['tax_rate'] ?? 0,
-            'discount_type' => $validated['discount_type'] ?? 'percentage',
-            'discount_rate' => $validated['discount_rate'] ?? 0,
-            'discount_amount' => $validated['discount_amount'] ?? 0,
-            'round_off' => $validated['round_off'] ?? 0,
-            'paid_amount' => $validated['paid_amount'] ?? 0,
-            'notes' => $validated['notes'] ?? null,
-            'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
-            'bank_details' => $validated['bank_details'] ?? null,
-        ]);
-
-        $proformaInvoice->items()->delete();
-        foreach ($validated['items'] as $item) {
-            $amount = $item['quantity'] * $item['unit_price'];
-            $proformaInvoice->items()->create([
-                'item_name' => $item['item_name'],
-                'description' => $item['description'] ?? null,
-                'quantity' => $item['quantity'],
-                'unit' => $item['unit'] ?? 'hours',
-                'unit_price' => $item['unit_price'],
-                'tax_rate' => $item['tax_rate'] ?? null,
-                'amount' => $amount,
+        try {
+            $proformaInvoice->update([
+                'proforma_number' => $validated['proforma_number'],
+                'project_id' => !empty($validated['project_id']) ? (int) $validated['project_id'] : null,
+                'client_name' => $validated['client_name'],
+                'client_company' => $validated['client_company'] ?? null,
+                'client_email' => $validated['client_email'] ?? null,
+                'client_phone' => $validated['client_phone'] ?? null,
+                'client_address' => $validated['client_address'] ?? null,
+                'invoice_date' => $validated['invoice_date'],
+                'due_date' => $validated['due_date'] ?? null,
+                'status' => $validated['status'],
+                'currency' => $validated['currency'],
+                'tax_calculation_type' => $validated['tax_calculation_type'] ?? 'exclusive',
+                'tax_rate' => $validated['tax_rate'] ?? 0,
+                'discount_type' => $validated['discount_type'] ?? 'percentage',
+                'discount_rate' => $validated['discount_rate'] ?? 0,
+                'discount_amount' => $validated['discount_amount'] ?? 0,
+                'round_off' => $validated['round_off'] ?? 0,
+                'paid_amount' => $validated['paid_amount'] ?? 0,
+                'notes' => $validated['notes'] ?? null,
+                'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
+                'bank_details' => $validated['bank_details'] ?? null,
             ]);
+
+            $proformaInvoice->items()->delete();
+            foreach ($validated['items'] as $item) {
+                $qty = (float) ($item['quantity'] ?? 1);
+                $unitPrice = (float) ($item['unit_price'] ?? 0);
+                $amount = $qty * $unitPrice;
+                $itemTaxRate = isset($item['tax_rate']) && $item['tax_rate'] !== null && $item['tax_rate'] !== ''
+                    ? (float) $item['tax_rate']
+                    : null;
+
+                $proformaInvoice->items()->create([
+                    'item_name' => $item['item_name'],
+                    'description' => $item['description'] ?? null,
+                    'quantity' => $qty,
+                    'unit' => $item['unit'] ?? 'hours',
+                    'unit_price' => $unitPrice,
+                    'tax_rate' => $itemTaxRate,
+                    'amount' => $amount,
+                ]);
+            }
+
+            $proformaInvoice->recalculateTotals();
+
+            return response()->json([
+                'message' => 'Proforma Invoice updated successfully',
+                'proforma_invoice' => $proformaInvoice->fresh()->load(['items', 'project:id,name,code', 'creator:id,name,email']),
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to update proforma invoice: ' . $e->getMessage(), [
+                'exception' => $e,
+                'validated' => $validated,
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to update proforma invoice: ' . $e->getMessage(),
+            ], 422);
         }
-
-        $proformaInvoice->recalculateTotals();
-
-        return response()->json([
-            'message' => 'Proforma Invoice updated successfully',
-            'proforma_invoice' => $proformaInvoice->fresh()->load(['items', 'project:id,name,code', 'creator:id,name,email']),
-        ]);
     }
 
     /**

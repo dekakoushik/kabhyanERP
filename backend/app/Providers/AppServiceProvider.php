@@ -56,7 +56,7 @@ class AppServiceProvider extends ServiceProvider
                 }
 
                 // 2. Auto-run pending database migrations (debounced every 5 minutes to keep requests fast)
-                $cacheKey = 'kabhyan_auto_migration_last_run_v8';
+                $cacheKey = 'kabhyan_auto_migration_last_run_v9';
                 if (!\Illuminate\Support\Facades\Cache::has($cacheKey)) {
                     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
                     try {
@@ -66,6 +66,43 @@ class AppServiceProvider extends ServiceProvider
                     } catch (\Throwable $e) {
                         // Safe ignore
                     }
+
+                    // Autonomous schema column guarantee across all document and line item tables
+                    try {
+                        $docTables = ['estimates', 'proforma_invoices', 'invoices'];
+                        foreach ($docTables as $tbl) {
+                            if (Schema::hasTable($tbl)) {
+                                Schema::table($tbl, function (\Illuminate\Database\Schema\Blueprint $table) use ($tbl) {
+                                    if (!Schema::hasColumn($tbl, 'tax_calculation_type')) {
+                                        $table->string('tax_calculation_type', 20)->default('exclusive')->nullable();
+                                    }
+                                    if (!Schema::hasColumn($tbl, 'discount_type')) {
+                                        $table->string('discount_type', 20)->default('percentage')->nullable();
+                                    }
+                                    if (!Schema::hasColumn($tbl, 'round_off')) {
+                                        $table->decimal('round_off', 14, 2)->default(0.00)->nullable();
+                                    }
+                                });
+                            }
+                        }
+
+                        $itemTables = ['estimate_items', 'proforma_invoice_items', 'invoice_items'];
+                        foreach ($itemTables as $itbl) {
+                            if (Schema::hasTable($itbl)) {
+                                Schema::table($itbl, function (\Illuminate\Database\Schema\Blueprint $table) use ($itbl) {
+                                    if (!Schema::hasColumn($itbl, 'tax_rate')) {
+                                        $table->decimal('tax_rate', 5, 2)->default(18.00)->nullable();
+                                    }
+                                    if (!Schema::hasColumn($itbl, 'tax_amount')) {
+                                        $table->decimal('tax_amount', 14, 2)->default(0.00)->nullable();
+                                    }
+                                });
+                            }
+                        }
+                    } catch (\Throwable $colEx) {
+                        \Illuminate\Support\Facades\Log::warning('Self-healing document columns: ' . $colEx->getMessage());
+                    }
+
                     try {
                         \Illuminate\Support\Facades\Artisan::call('route:clear');
                     } catch (\Throwable $t) {
