@@ -300,10 +300,10 @@ export default function DocumentItemsTable({
             <colgroup>
               <col className="w-8" />
               <col className="w-auto" />
-              <col className="w-28" />
-              <col className="w-28" />
               <col className="w-36" />
-              <col className="w-16" />
+              <col className="w-28" />
+              <col className="w-32" />
+              <col className="w-14" />
             </colgroup>
             <thead>
               <tr className="border-b border-slate-200/90 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500 select-none">
@@ -424,19 +424,19 @@ export default function DocumentItemsTable({
 
                               {/* Qty & Unit */}
                               <td className="py-2.5 px-3 text-right whitespace-nowrap align-top pt-3">
-                                <div className="flex items-center justify-end border border-slate-200 rounded-lg overflow-hidden bg-white">
+                                <div className="flex items-center justify-between border border-slate-200 rounded-lg overflow-hidden bg-white focus-within:ring-1 focus-within:ring-blue-500 w-full">
                                   <input
                                     type="number"
                                     step="any"
                                     min="0.01"
                                     value={item.quantity}
                                     onChange={(e) => onItemChange(idx, "quantity", e.target.value)}
-                                    className="w-14 h-8 px-1.5 text-right font-mono text-xs font-bold text-slate-800 focus:outline-none"
+                                    className="w-full min-w-0 flex-1 h-8 px-2 text-right font-mono text-xs font-bold text-slate-800 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                   />
                                   <select
                                     value={item.unit || "hrs"}
                                     onChange={(e) => onItemChange(idx, "unit", e.target.value)}
-                                    className="h-8 px-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border-l border-slate-200 focus:outline-none cursor-pointer"
+                                    className="h-8 px-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border-l border-slate-200 focus:outline-none cursor-pointer shrink-0"
                                   >
                                     <option value="hrs">hrs</option>
                                     <option value="days">days</option>
@@ -455,7 +455,7 @@ export default function DocumentItemsTable({
                                   min="0"
                                   value={item.unit_price}
                                   onChange={(e) => onItemChange(idx, "unit_price", e.target.value)}
-                                  className="w-full h-8 px-2 text-right font-mono text-xs font-bold text-slate-800 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                  className="w-full h-8 px-2 text-right font-mono text-xs font-bold text-slate-800 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                               </td>
 
@@ -737,7 +737,7 @@ export default function DocumentItemsTable({
                                     value={item.quantity}
                                     onChange={(e) => onItemChange(idx, "quantity", e.target.value)}
                                     required
-                                    className="w-full h-11 px-2.5 text-right font-mono font-bold text-xs text-slate-800 focus:outline-none"
+                                    className="w-full h-11 px-2.5 text-right font-mono font-bold text-xs text-slate-800 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                   />
                                   <select
                                     value={item.unit || "hrs"}
@@ -970,7 +970,7 @@ export default function DocumentItemsTable({
                       min="0.01"
                       value={activeModalItem.quantity}
                       onChange={(e) => onItemChange(editingItemIndex, "quantity", e.target.value)}
-                      className="w-full h-10 px-3 text-right font-mono font-bold text-xs text-slate-800 focus:outline-none"
+                      className="w-full h-10 px-3 text-right font-mono font-bold text-xs text-slate-800 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                     <select
                       value={activeModalItem.unit || "hrs"}
