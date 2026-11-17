@@ -18,6 +18,8 @@ class EstimateItem extends Model
         'unit',
         'unit_price',
         'amount',
+        'tax_rate',
+        'tax_amount',
     ];
 
     /**
@@ -31,6 +33,8 @@ class EstimateItem extends Model
             'quantity' => 'decimal:2',
             'unit_price' => 'decimal:2',
             'amount' => 'decimal:2',
+            'tax_rate' => 'decimal:2',
+            'tax_amount' => 'decimal:2',
         ];
     }
 

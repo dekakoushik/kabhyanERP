@@ -108,6 +108,7 @@ class EstimateController extends Controller
                     'unit' => $item['unit'] ?? 'hours',
                     'unit_price' => $item['unit_price'],
                     'amount' => $amount,
+                    'tax_rate' => $item['tax_rate'] ?? null,
                 ]);
             }
 
@@ -203,6 +204,7 @@ class EstimateController extends Controller
                 'unit' => $item['unit'] ?? 'hours',
                 'unit_price' => $item['unit_price'],
                 'amount' => $amount,
+                'tax_rate' => $item['tax_rate'] ?? null,
             ]);
         }
 

@@ -300,9 +300,13 @@ export interface EstimateItem {
   id?: number;
   item_name: string;
   description?: string | null;
+  sac_code?: string | null;
+  hsn_sac?: string | null;
   quantity: number;
   unit: string;
   unit_price: number;
+  tax_rate?: number | string | null;
+  tax_amount?: number | null;
   amount: number;
 }
 
@@ -352,9 +356,13 @@ export interface ProformaInvoiceItem {
   id?: number;
   item_name: string;
   description?: string | null;
+  sac_code?: string | null;
+  hsn_sac?: string | null;
   quantity: number;
   unit: string;
   unit_price: number;
+  tax_rate?: number | string | null;
+  tax_amount?: number | null;
   amount: number;
 }
 
@@ -417,6 +425,8 @@ export interface InvoiceItem {
   quantity: number;
   unit: string;
   unit_price: number;
+  tax_rate?: number | string | null;
+  tax_amount?: number | null;
   amount: number;
 }
 

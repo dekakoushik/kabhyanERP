@@ -383,13 +383,37 @@ export default function InvoiceCreateForm({
   const activeTaxRate = Number(formData.tax_rate) || 0;
   const isTaxInclusive = formData.tax_calculation_type === "inclusive";
 
-  const taxableAmount = isTaxInclusive
-    ? (activeTaxRate > 0 ? Number((grossAfterDiscount / (1 + activeTaxRate / 100)).toFixed(2)) : grossAfterDiscount)
-    : grossAfterDiscount;
+  // Multi-rate statutory GST calculation per item
+  let computedTaxable = 0;
+  let computedTax = 0;
 
-  const taxAmount = isTaxInclusive
-    ? Number((grossAfterDiscount - taxableAmount).toFixed(2))
-    : Number(((taxableAmount * (activeTaxRate / 100))).toFixed(2));
+  formData.items.forEach((item) => {
+    const itemSubtotal = Number(item.amount) || 0;
+    const lineDiscount = subtotal > 0 ? (itemSubtotal / subtotal) * discountAmount : 0;
+    const lineAfterDiscount = Math.max(0, itemSubtotal - lineDiscount);
+    const lineTaxRate =
+      item.tax_rate !== undefined && item.tax_rate !== null && item.tax_rate !== ""
+        ? Number(item.tax_rate)
+        : activeTaxRate;
+
+    if (isTaxInclusive) {
+      const lineTaxable =
+        lineTaxRate > 0
+          ? Number((lineAfterDiscount / (1 + lineTaxRate / 100)).toFixed(2))
+          : lineAfterDiscount;
+      const lineTax = Number((lineAfterDiscount - lineTaxable).toFixed(2));
+      computedTaxable += lineTaxable;
+      computedTax += lineTax;
+    } else {
+      const lineTaxable = lineAfterDiscount;
+      const lineTax = Number(((lineTaxable * lineTaxRate) / 100).toFixed(2));
+      computedTaxable += lineTaxable;
+      computedTax += lineTax;
+    }
+  });
+
+  const taxableAmount = Number(computedTaxable.toFixed(2));
+  const taxAmount = Number(computedTax.toFixed(2));
 
   const rawTotal = isTaxInclusive ? grossAfterDiscount : taxableAmount + taxAmount;
   const grandTotal = formData.is_round_off ? Math.round(rawTotal) : rawTotal;

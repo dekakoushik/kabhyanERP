@@ -218,6 +218,7 @@ class ProformaInvoiceController extends Controller
                 'unit' => $item['unit'] ?? 'hours',
                 'unit_price' => $item['unit_price'],
                 'amount' => $amount,
+                'tax_rate' => $item['tax_rate'] ?? null,
             ]);
         }
 
@@ -315,6 +316,7 @@ class ProformaInvoiceController extends Controller
                 'quantity' => $item['quantity'],
                 'unit' => $item['unit'] ?? 'hours',
                 'unit_price' => $item['unit_price'],
+                'tax_rate' => $item['tax_rate'] ?? null,
                 'amount' => $amount,
             ]);
         }

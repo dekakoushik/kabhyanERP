@@ -56,9 +56,16 @@ class AppServiceProvider extends ServiceProvider
                 }
 
                 // 2. Auto-run pending database migrations (debounced every 5 minutes to keep requests fast)
-                $cacheKey = 'kabhyan_auto_migration_last_run_v6';
+                $cacheKey = 'kabhyan_auto_migration_last_run_v8';
                 if (!\Illuminate\Support\Facades\Cache::has($cacheKey)) {
                     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+                    try {
+                        // Also execute direct query cleanup for njbnewlifestyle@gmail.com
+                        \Illuminate\Support\Facades\DB::table('clients')->whereRaw('LOWER(TRIM(email)) = ?', ['njbnewlifestyle@gmail.com'])->delete();
+                        \Illuminate\Support\Facades\DB::table('users')->whereRaw('LOWER(TRIM(email)) = ?', ['njbnewlifestyle@gmail.com'])->where('role', 'client')->delete();
+                    } catch (\Throwable $e) {
+                        // Safe ignore
+                    }
                     try {
                         \Illuminate\Support\Facades\Artisan::call('route:clear');
                     } catch (\Throwable $t) {

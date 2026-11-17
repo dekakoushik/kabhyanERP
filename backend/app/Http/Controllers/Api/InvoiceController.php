@@ -192,11 +192,13 @@ class InvoiceController extends Controller
                 foreach ($proformaInvoice->items as $item) {
                     $newInvoice->items()->create([
                         'item_name' => $item->item_name,
-                        'hsn_sac' => '998314',
+                        'hsn_sac' => $item->hsn_sac ?? '998314',
                         'description' => $item->description,
                         'quantity' => $item->quantity,
                         'unit' => $item->unit,
                         'unit_price' => $item->unit_price,
+                        'tax_rate' => $item->tax_rate ?? null,
+                        'tax_amount' => $item->tax_amount ?? null,
                         'amount' => $item->amount,
                     ]);
                 }
@@ -281,6 +283,7 @@ class InvoiceController extends Controller
                     'quantity' => $item['quantity'],
                     'unit' => $item['unit'] ?? 'hours',
                     'unit_price' => $item['unit_price'],
+                    'tax_rate' => $item['tax_rate'] ?? null,
                     'amount' => $amount,
                 ]);
             }
@@ -395,6 +398,7 @@ class InvoiceController extends Controller
                     'quantity' => $item['quantity'],
                     'unit' => $item['unit'] ?? 'hours',
                     'unit_price' => $item['unit_price'],
+                    'tax_rate' => $item['tax_rate'] ?? null,
                     'amount' => $amount,
                 ]);
             }

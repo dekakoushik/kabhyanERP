@@ -112,8 +112,43 @@ class Estimate extends Model
         $grossAfterDiscount = max(0, $subtotal - $discountAmount);
         $taxRate = (float) ($this->tax_rate ?? 0);
 
-        // 2. Calculate tax based on mode
-        if ($taxCalculationType === 'inclusive') {
+        // 2. Calculate tax based on mode and per-item tax rates
+        $items = $this->items()->get();
+        $hasCustomItemTaxes = $items->contains(function ($item) {
+            return $item->tax_rate !== null;
+        });
+
+        if ($hasCustomItemTaxes && $items->isNotEmpty()) {
+            $totalTaxable = 0;
+            $totalTax = 0;
+            $discountFactor = $subtotal > 0 ? max(0, ($subtotal - $discountAmount) / $subtotal) : 1;
+
+            foreach ($items as $item) {
+                $itemAmt = (float) $item->amount;
+                $itemDiscounted = $itemAmt * $discountFactor;
+                $itemRate = $item->tax_rate !== null ? (float) $item->tax_rate : $taxRate;
+
+                if ($taxCalculationType === 'inclusive') {
+                    $itemTaxable = $itemRate > 0 ? round($itemDiscounted / (1 + ($itemRate / 100)), 2) : $itemDiscounted;
+                    $itemTax = round($itemDiscounted - $itemTaxable, 2);
+                } else {
+                    $itemTaxable = $itemDiscounted;
+                    $itemTax = round(($itemTaxable * $itemRate) / 100, 2);
+                }
+
+                $item->updateQuietly([
+                    'tax_rate' => $itemRate,
+                    'tax_amount' => $itemTax,
+                ]);
+
+                $totalTaxable += $itemTaxable;
+                $totalTax += $itemTax;
+            }
+
+            $taxableAmount = round($totalTaxable, 2);
+            $taxAmount = round($totalTax, 2);
+            $rawTotal = $taxCalculationType === 'inclusive' ? $grossAfterDiscount : ($taxableAmount + $taxAmount);
+        } elseif ($taxCalculationType === 'inclusive') {
             $taxableAmount = $taxRate > 0 ? round($grossAfterDiscount / (1 + ($taxRate / 100)), 2) : $grossAfterDiscount;
             $taxAmount = round($grossAfterDiscount - $taxableAmount, 2);
             $rawTotal = $grossAfterDiscount;
