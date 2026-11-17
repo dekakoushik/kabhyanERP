@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AdminLayout from "@/components/AdminLayout";
 import { Permission, PermissionModuleGroup, api } from "@/lib/api";
+import { PERMISSION_DEFINITIONS } from "@/lib/humanize";
 import {
   Shield,
   ShieldPlus,
@@ -387,7 +388,6 @@ export default function CreateCustomRolePage() {
                     <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-slate-900">{mod.label}</span>
-                        <span className="text-[10px] font-mono text-slate-400">({mod.module})</span>
                         <span className="text-[11px] font-medium text-slate-500">
                           {countSelected} of {modSlugs.length} granted
                         </span>
@@ -428,8 +428,8 @@ export default function CreateCustomRolePage() {
                               <div className="text-xs font-bold leading-tight">
                                 {perm.name}
                               </div>
-                              <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                                {perm.slug}
+                              <div className="text-[10px] text-slate-500 mt-0.5 line-clamp-2">
+                                {PERMISSION_DEFINITIONS[perm.slug]?.description || perm.name}
                               </div>
                             </div>
                           </label>

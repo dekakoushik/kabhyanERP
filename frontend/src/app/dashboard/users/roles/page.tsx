@@ -160,8 +160,8 @@ export default function RolesManagementPage() {
               <span className="text-xs font-semibold">Total Permissions</span>
               <KeyRound className="w-4 h-4 text-indigo-600" />
             </div>
-            <div className="text-2xl font-bold text-slate-900">44</div>
-            <div className="text-[11px] text-slate-400 mt-0.5">Across all modules</div>
+            <div className="text-2xl font-bold text-slate-900">56</div>
+            <div className="text-[11px] text-slate-400 mt-0.5">Across 12 modules</div>
           </div>
         </div>
 
@@ -213,9 +213,6 @@ export default function RolesManagementPage() {
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${getRoleBadgeClasses(role.color)}`}>
                         {role.name}
-                      </span>
-                      <span className="text-[10px] font-mono font-medium text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
-                        {role.slug}
                       </span>
                     </div>
 
@@ -282,15 +279,12 @@ export default function RolesManagementPage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-bold text-slate-900">{role.name}</span>
-                        <span className="text-[10px] font-mono font-medium text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
-                          {role.slug}
-                        </span>
                         <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
-                          Default Role
+                          Built-in
                         </span>
                       </div>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        {role.description || "Core platform authority tier."}
+                        {role.description || "Standard system role for platform access."}
                       </p>
                     </div>
                   </div>
@@ -303,7 +297,7 @@ export default function RolesManagementPage() {
                     <div className="text-xs text-slate-600 flex items-center gap-1.5">
                       <KeyRound className="w-3.5 h-3.5 text-slate-400" />
                       <span className="font-semibold text-slate-900">
-                        {role.slug === "superadmin" ? "All (44/44)" : `${role.permissions?.length || 0} modular`}
+                        {role.slug === "superadmin" ? "Full Access (All Permissions)" : `${role.permissions?.length || 0} permissions`}
                       </span>
                     </div>
                     <span className="text-xs font-semibold text-slate-400 cursor-not-allowed flex items-center gap-1">

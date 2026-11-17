@@ -296,24 +296,74 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       const isCurrent = segments.length === 2;
       crumbs.push({ label: sectionLabel, href: sectionHref, isCurrent });
 
-      // Sub-segment (e.g. /clients/create or /settings/company or /invoices/[id])
+      // Sub-segment (e.g. /clients/create, /users/1, /users/roles/create, /invoices/5/edit)
       if (segments.length >= 3) {
         const sub = segments[2];
-        let subLabel = sub.charAt(0).toUpperCase() + sub.slice(1);
-        if (section === "users" && sub === "create") subLabel = "Add Member";
-        else if (sub === "create") subLabel = "New Record";
-        if (sub === "roles") subLabel = "Roles & Permissions";
-        if (sub === "departments") subLabel = "Departments";
-        if (sub === "numbering") subLabel = "Document Numbering";
-        if (sub === "company") subLabel = "Company & Brand";
-        if (sub === "gst") subLabel = "GST Compliance";
-        if (sub === "banking") subLabel = "Banking Details";
-        if (sub === "localization") subLabel = "Localization";
-        if (sub === "security") subLabel = "Security & Access";
-        if (sub === "email") subLabel = "Email Infrastructure";
-        if (sub === "system") subLabel = "System Health";
 
-        crumbs.push({ label: subLabel, href: pathname, isCurrent: true });
+        if (section === "users" && sub === "create") {
+          crumbs.push({ label: "Add Member", href: pathname, isCurrent: true });
+        } else if (sub === "create") {
+          crumbs.push({ label: "New Record", href: pathname, isCurrent: true });
+        } else if (sub === "roles") {
+          const isRolesIndex = segments.length === 3;
+          crumbs.push({ label: "Roles & Permissions", href: "/dashboard/users/roles", isCurrent: isRolesIndex });
+          if (segments.length >= 4) {
+            const roleAction = segments[3];
+            if (roleAction === "create") {
+              crumbs.push({ label: "New Role", href: pathname, isCurrent: true });
+            } else {
+              crumbs.push({ label: "Edit Role", href: pathname, isCurrent: true });
+            }
+          }
+        } else if (sub === "departments") {
+          crumbs.push({ label: "Departments", href: pathname, isCurrent: true });
+        } else if (sub === "numbering") {
+          crumbs.push({ label: "Document Numbering", href: pathname, isCurrent: true });
+        } else if (sub === "company") {
+          crumbs.push({ label: "Company & Brand", href: pathname, isCurrent: true });
+        } else if (sub === "gst") {
+          crumbs.push({ label: "GST Compliance", href: pathname, isCurrent: true });
+        } else if (sub === "banking") {
+          crumbs.push({ label: "Banking Details", href: pathname, isCurrent: true });
+        } else if (sub === "localization") {
+          crumbs.push({ label: "Localization", href: pathname, isCurrent: true });
+        } else if (sub === "security") {
+          crumbs.push({ label: "Security & Access", href: pathname, isCurrent: true });
+        } else if (sub === "email") {
+          crumbs.push({ label: "Email Infrastructure", href: pathname, isCurrent: true });
+        } else if (sub === "system") {
+          crumbs.push({ label: "System Health", href: pathname, isCurrent: true });
+        } else {
+          // Dynamic record identifier (e.g. /dashboard/users/1, /dashboard/invoices/5/edit)
+          const getEntityLabels = (sec: string) => {
+            switch (sec) {
+              case "users": return { record: "Member Profile", edit: "Edit Profile" };
+              case "estimates": return { record: "Estimate Details", edit: "Edit Estimate" };
+              case "proforma": return { record: "Proforma Details", edit: "Edit Proforma" };
+              case "invoices": return { record: "Tax Invoice Details", edit: "Edit Invoice" };
+              case "clients": return { record: "Client Profile", edit: "Edit Client" };
+              case "projects": return { record: "Project Details", edit: "Edit Project" };
+              case "tasks": return { record: "Task Details", edit: "Edit Task" };
+              case "tickets": return { record: "Ticket Details", edit: "Edit Ticket" };
+              case "expenses": return { record: "Expense Details", edit: "Edit Expense" };
+              default: return { record: "Record Details", edit: "Edit Record" };
+            }
+          };
+
+          const entityLabels = getEntityLabels(section);
+          const isDirectRecord = segments.length === 3;
+          const isEditPage = segments.length >= 4 && segments[3] === "edit";
+
+          if (isDirectRecord) {
+            crumbs.push({ label: entityLabels.record, href: pathname, isCurrent: true });
+          } else if (isEditPage) {
+            crumbs.push({ label: entityLabels.record, href: `/dashboard/${section}/${sub}`, isCurrent: false });
+            crumbs.push({ label: entityLabels.edit, href: pathname, isCurrent: true });
+          } else {
+            let fallbackLabel = sub.charAt(0).toUpperCase() + sub.slice(1);
+            crumbs.push({ label: fallbackLabel, href: pathname, isCurrent: true });
+          }
+        }
       }
     }
 

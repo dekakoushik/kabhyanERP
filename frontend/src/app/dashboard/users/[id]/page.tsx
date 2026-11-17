@@ -26,6 +26,11 @@ import {
   Activity,
   ShieldAlert,
 } from "lucide-react";
+import {
+  groupPermissionsByModule,
+  humanizeRole,
+  humanizeStatus,
+} from "@/lib/humanize";
 
 export default function StaffDossierPage({
   params,
@@ -95,7 +100,7 @@ export default function StaffDossierPage({
       <AdminLayout>
         <div className="py-24 flex flex-col items-center justify-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          <p className="text-xs font-semibold text-slate-500">Loading staff profile dossier...</p>
+          <p className="text-xs font-semibold text-slate-500">Loading member profile...</p>
         </div>
       </AdminLayout>
     );
@@ -137,9 +142,11 @@ export default function StaffDossierPage({
             </Link>
             <div>
               <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 mb-0.5">
-                <span>Team</span>
+                <Link href="/dashboard" className="hover:text-slate-600 transition">Workspace</Link>
                 <span>/</span>
-                <span className="font-mono text-slate-700">{user.employee_code || `ID-${user.id}`}</span>
+                <Link href="/dashboard/users" className="hover:text-slate-600 transition">Team</Link>
+                <span>/</span>
+                <span className="font-semibold text-slate-700">{user.name}</span>
               </div>
               <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
                 {user.name}
@@ -187,7 +194,7 @@ export default function StaffDossierPage({
                   <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${
                     user.status === "active" ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"
                   }`}>
-                    {user.status}
+                    {humanizeStatus(user.status)}
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 flex items-center gap-2">
@@ -215,7 +222,7 @@ export default function StaffDossierPage({
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center min-w-24">
                 <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Role</p>
                 <p className="text-xs font-bold text-blue-700 capitalize mt-0.5">
-                  {user.custom_role?.name || user.role}
+                  {user.custom_role?.name || humanizeRole(user.role)}
                 </p>
               </div>
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center min-w-24">
@@ -421,36 +428,92 @@ export default function StaffDossierPage({
         )}
 
         {/* Tab 4: Effective Permissions */}
-        {activeTab === "permissions" && (
-          <div className="p-6 bg-white border border-slate-200/80 rounded-2xl shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-blue-600" />
-                  Effective Permission Capabilities
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Permissions inherited from role <span className="font-semibold text-slate-700">{user.custom_role?.name || user.role}</span> with user-level overrides.
-                </p>
-              </div>
-              <span className="text-xs font-mono font-bold text-blue-600 px-2 py-1 bg-blue-50 rounded-lg">
-                {effectivePermissions.length} Active Privileges
-              </span>
-            </div>
+        {activeTab === "permissions" && (() => {
+          const permissionGroups = groupPermissionsByModule(effectivePermissions);
 
-            <div className="flex flex-wrap gap-2 pt-2">
-              {effectivePermissions.map((slug) => (
-                <span
-                  key={slug}
-                  className="font-mono text-[11px] font-medium px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 flex items-center gap-1.5"
-                >
-                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                  <span>{slug}</span>
-                </span>
-              ))}
+          return (
+            <div className="space-y-4">
+              <div className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-blue-600" />
+                    Role Capabilities & Permissions
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Active permissions for <span className="font-semibold text-slate-800">{user.name}</span> inherited from role <span className="font-semibold text-slate-800">{user.custom_role?.name || humanizeRole(user.role)}</span>.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-blue-700 px-3 py-1 bg-blue-50 border border-blue-200/60 rounded-full flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                    {effectivePermissions.length} Active Privileges
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {permissionGroups.map((group) => {
+                  const GroupIcon = group.icon;
+                  const isFullyActive = group.activeCount === group.totalCount && group.totalCount > 0;
+                  const isPartiallyActive = group.activeCount > 0 && group.activeCount < group.totalCount;
+
+                  return (
+                    <div
+                      key={group.module}
+                      className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-xs space-y-3.5 hover:border-slate-300 transition flex flex-col justify-between"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="p-2 rounded-xl bg-slate-50 border border-slate-100 text-slate-700">
+                              <GroupIcon className="w-4 h-4 text-blue-600" />
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-bold text-slate-900">{group.label}</h4>
+                              <p className="text-[11px] text-slate-500">{group.description}</p>
+                            </div>
+                          </div>
+                          <span
+                            className={`text-[11px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap ${
+                              isFullyActive
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                                : isPartiallyActive
+                                ? "bg-blue-50 text-blue-700 border border-blue-200/60"
+                                : "bg-slate-50 text-slate-400 border border-slate-200/60"
+                            }`}
+                          >
+                            {group.activeCount} / {group.totalCount} Active
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          {group.permissions.map((perm) => (
+                            <div
+                              key={perm.slug}
+                              title={`${perm.name} (${perm.slug})\n${perm.description}`}
+                              className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition ${
+                                perm.isGranted
+                                  ? "bg-emerald-50/70 border-emerald-200/80 text-emerald-900 font-medium"
+                                  : "bg-slate-50/50 border-slate-200/60 text-slate-400 opacity-60"
+                              }`}
+                            >
+                              <CheckCircle2
+                                className={`w-3.5 h-3.5 shrink-0 ${
+                                  perm.isGranted ? "text-emerald-600" : "text-slate-300"
+                                }`}
+                              />
+                              <span>{perm.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
     </AdminLayout>
   );
