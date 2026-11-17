@@ -173,11 +173,13 @@ export default function LeavesManagementPage() {
               className="text-xs rounded-lg border border-slate-200 px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               <option value="all">All Leave Types</option>
-              {safeLeaveTypes.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name} ({t.code})
-                </option>
-              ))}
+              {safeLeaveTypes
+                .filter((t) => t && t.id)
+                .map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name || "Leave"} {t.code ? `(${t.code})` : ""}
+                  </option>
+                ))}
             </select>
           </div>
 
@@ -220,8 +222,8 @@ export default function LeavesManagementPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {safeLeaves.map((l) => {
-                    if (!l) return null;
+                  {safeLeaves.map((l, index) => {
+                    if (!l || typeof l !== "object") return null;
                     const days = Number(l.total_days ?? l.days_count ?? 1);
                     const typeName = l.leave_type?.name ?? (l as any).leaveType?.name ?? "General Leave";
                     const isPaid = l.leave_type?.is_paid ?? (l as any).leaveType?.is_paid ?? true;
@@ -230,9 +232,10 @@ export default function LeavesManagementPage() {
                     const startDateStr = typeof l.start_date === "string" ? l.start_date.slice(0, 10) : String(l.start_date || "");
                     const endDateStr = typeof l.end_date === "string" ? l.end_date.slice(0, 10) : String(l.end_date || "");
                     const reasonStr = typeof l.reason === "string" ? l.reason : "General Leave";
+                    const itemKey = l.id ? `leave-${l.id}` : `leave-idx-${index}`;
 
                     return (
-                      <tr key={l.id || Math.random()} className="hover:bg-slate-50/50 transition-colors">
+                      <tr key={itemKey} className="hover:bg-slate-50/50 transition-colors">
                         <td className="py-3 px-4 font-semibold text-slate-900">
                           {userName}
                           {userEmail && <div className="text-[11px] font-normal text-slate-400">{userEmail}</div>}

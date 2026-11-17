@@ -454,4 +454,50 @@ class InvoiceController extends Controller
             'message' => 'Invoice deleted successfully',
         ]);
     }
+
+    /**
+     * Generate or retrieve Cashfree online payment link for an invoice.
+     */
+    public function generatePaymentLink(Request $request, Invoice $invoice, \App\Services\CashfreeService $cashfreeService): JsonResponse
+    {
+        try {
+            $returnUrl = $request->input('return_url');
+            $result = $cashfreeService->createPaymentLink($invoice, $returnUrl);
+
+            return response()->json([
+                'success' => true,
+                'payment_link' => $result,
+                'invoice' => $invoice->fresh(),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    /**
+     * Cashfree Webhook Listener.
+     */
+    public function cashfreeWebhook(Request $request, \App\Services\CashfreeService $cashfreeService): JsonResponse
+    {
+        $signature = $request->header('x-webhook-signature');
+        $timestamp = $request->header('x-webhook-timestamp');
+        $rawBody = $request->getContent();
+
+        if ($cashfreeService->isConfigured()) {
+            if (!$cashfreeService->verifyWebhookSignature($signature, $timestamp, $rawBody)) {
+                return response()->json(['error' => 'Invalid signature'], 401);
+            }
+        }
+
+        $payload = $request->json()->all();
+        $result = $cashfreeService->processWebhookPayload($payload);
+
+        return response()->json([
+            'status' => 'received',
+            'result' => $result,
+        ]);
+    }
 }

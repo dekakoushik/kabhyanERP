@@ -256,7 +256,7 @@ export default function SalaryStructuresListPage() {
                         <td className="py-3 px-4 text-right">
                           {isConfigured ? (
                             <Link
-                              href={`/dashboard/hrms/salary-structures/create?user_id=${staffId}`}
+                              href={`/dashboard/hrms/salary-structures/${staffId}/edit`}
                               className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-slate-200 text-slate-700 hover:bg-slate-100 text-[11px] font-medium transition-colors"
                             >
                               <Edit2 className="w-3 h-3" />
@@ -264,7 +264,7 @@ export default function SalaryStructuresListPage() {
                             </Link>
                           ) : (
                             <Link
-                              href={`/dashboard/hrms/salary-structures/create?user_id=${staffId}`}
+                              href={`/dashboard/hrms/salary-structures/${staffId}/edit`}
                               className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-medium shadow-2xs transition-colors"
                             >
                               <Plus className="w-3 h-3" />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition, Suspense } from "react";
+import Link from "next/link";
 import AdminLayout from "@/components/AdminLayout";
 import { api, Expense, ExpenseCategory, Project } from "@/lib/api";
 import {
@@ -43,10 +44,7 @@ function ExpensesContent() {
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  // Modals
-  const [modalOpen, setModalOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  // Deletion confirmation state
   const [deleteConfirm, setDeleteConfirm] = useState<Expense | null>(null);
 
   // Category Quick-Add and Manager Modals
@@ -58,26 +56,6 @@ function ExpensesContent() {
   const [catSaving, setCatSaving] = useState(false);
   const [catError, setCatError] = useState<string | null>(null);
 
-  // Form
-  const [formData, setFormData] = useState({
-    expense_category_id: "",
-    project_id: "",
-    title: "",
-    description: "",
-    vendor_name: "",
-    vendor_gstin: "",
-    expense_date: "",
-    amount: "",
-    tax_amount: "0",
-    currency: "INR",
-    payment_method: "bank_transfer",
-    transaction_reference: "",
-    status: "paid",
-    notes: "",
-  });
-
-  const [formError, setFormError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
   const [, startTransition] = useTransition();
 
   const fetchExpenses = async () => {
@@ -125,88 +103,7 @@ function ExpensesContent() {
     fetchProjects();
   }, []);
 
-  const openCreateModal = () => {
-    setIsEditing(false);
-    setEditingId(null);
-    setFormData({
-      expense_category_id: categories[0]?.id ? categories[0].id.toString() : "",
-      project_id: "",
-      title: "",
-      description: "",
-      vendor_name: "",
-      vendor_gstin: "",
-      expense_date: new Date().toISOString().split("T")[0],
-      amount: "",
-      tax_amount: "0",
-      currency: "INR",
-      payment_method: "bank_transfer",
-      transaction_reference: "",
-      status: "paid",
-      notes: "",
-    });
-    setFormError(null);
-    setModalOpen(true);
-  };
 
-  const openEditModal = (exp: Expense) => {
-    setIsEditing(true);
-    setEditingId(exp.id);
-    setFormData({
-      expense_category_id: exp.expense_category_id.toString(),
-      project_id: exp.project_id ? exp.project_id.toString() : "",
-      title: exp.title,
-      description: exp.description || "",
-      vendor_name: exp.vendor_name || "",
-      vendor_gstin: exp.vendor_gstin || "",
-      expense_date: typeof exp.expense_date === "string" ? exp.expense_date.split("T")[0] : "",
-      amount: exp.amount.toString(),
-      tax_amount: exp.tax_amount ? exp.tax_amount.toString() : "0",
-      currency: exp.currency,
-      payment_method: exp.payment_method,
-      transaction_reference: exp.transaction_reference || "",
-      status: exp.status,
-      notes: exp.notes || "",
-    });
-    setFormError(null);
-    setModalOpen(true);
-  };
-
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError(null);
-    setSaving(true);
-
-    try {
-      const endpoint = isEditing ? `/expenses/${editingId}` : "/expenses";
-      const method = isEditing ? "PUT" : "POST";
-
-      const payload = {
-        ...formData,
-        expense_category_id: Number(formData.expense_category_id),
-        project_id: formData.project_id ? Number(formData.project_id) : null,
-        amount: Number(formData.amount),
-        tax_amount: Number(formData.tax_amount) || 0,
-      };
-
-      await api.request(endpoint, {
-        method,
-        body: JSON.stringify(payload),
-      });
-
-      setModalOpen(false);
-      startTransition(() => {
-        fetchExpenses();
-      });
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setFormError(err.message);
-      } else {
-        setFormError("Failed to save expense.");
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleDelete = async () => {
     if (!deleteConfirm) return;
@@ -243,7 +140,6 @@ function ExpensesContent() {
 
       if (res && res.category) {
         setCategories((prev) => [...prev, res.category]);
-        setFormData((prev) => ({ ...prev, expense_category_id: res.category.id.toString() }));
         toast.success(`Category "${res.category.name}" created successfully`);
         setNewCatName("");
         setNewCatDescription("");
@@ -298,13 +194,13 @@ function ExpensesContent() {
             <span>Categories</span>
           </button>
 
-          <button
-            onClick={openCreateModal}
+          <Link
+            href="/dashboard/expenses/create"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide shadow-2xs hover:shadow-xs transition-all cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Expense</span>
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -416,13 +312,13 @@ function ExpensesContent() {
             <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-4">
               Record vendor payouts, software subscriptions, or team expenses.
             </p>
-            <button
-              onClick={openCreateModal}
+            <Link
+              href="/dashboard/expenses/create"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Add Expense</span>
-            </button>
+            </Link>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -504,13 +400,13 @@ function ExpensesContent() {
                     </td>
                     <td className="py-2.5 px-3.5 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => openEditModal(exp)}
+                        <Link
+                          href={`/dashboard/expenses/${exp.id}/edit`}
                           title="Edit Voucher"
                           className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
-                        </button>
+                        </Link>
                         <button
                           onClick={() => setDeleteConfirm(exp)}
                           title="Delete Voucher"
@@ -528,254 +424,7 @@ function ExpensesContent() {
         )}
       </div>
 
-      {/* Modal: Create / Edit Expense */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="bg-white w-full max-w-2xl rounded-2xl shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-red-100 text-red-700">
-                  <CreditCard className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">
-                    {isEditing ? "Edit Expense Voucher" : "Record Corporate Expense"}
-                  </h2>
-                  <p className="text-xs text-slate-500">Log business disbursement and GST input tax</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setModalOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <form onSubmit={handleFormSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto text-xs">
-              {formError && (
-                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-600">
-                  {formError}
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Expense Title / Purpose <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. AWS Production Infrastructure / Figma Team Subscription"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-bold text-slate-700">
-                      Category <span className="text-red-500">*</span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setCategoryModalOpen(true)}
-                      className="text-[11px] font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <FolderPlus className="w-3.5 h-3.5" />
-                      <span>+ New Category</span>
-                    </button>
-                  </div>
-                  <select
-                    required
-                    value={formData.expense_category_id}
-                    onChange={(e) => setFormData({ ...formData, expense_category_id: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                  >
-                    <option value="">Select Category</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Project Assignment</label>
-                  <select
-                    value={formData.project_id}
-                    onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                  >
-                    <option value="">General Corporate (No Project)</option>
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Vendor / Payee</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Amazon Web Services India Pvt Ltd"
-                    value={formData.vendor_name}
-                    onChange={(e) => setFormData({ ...formData, vendor_name: e.target.value })}
-                    className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Vendor GSTIN (For ITC Claim)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 27AAECF5398P1ZI"
-                    value={formData.vendor_gstin}
-                    onChange={(e) => setFormData({ ...formData, vendor_gstin: e.target.value.toUpperCase() })}
-                    className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Expense Date <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.expense_date}
-                    onChange={(e) => setFormData({ ...formData, expense_date: e.target.value })}
-                    className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Base Amount (₹) <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    required
-                    value={formData.amount}
-                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg font-mono font-bold text-slate-900 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">GST Tax Amount (₹)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.tax_amount}
-                    onChange={(e) => setFormData({ ...formData, tax_amount: e.target.value })}
-                    className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg font-mono text-emerald-700 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Payment Method</label>
-                  <select
-                    value={formData.payment_method}
-                    onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
-                    className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none cursor-pointer"
-                  >
-                    <option value="bank_transfer">Bank Transfer (NEFT/RTGS)</option>
-                    <option value="corporate_card">Corporate Card</option>
-                    <option value="upi">UPI / QR Code</option>
-                    <option value="cheque">Cheque</option>
-                    <option value="cash">Petty Cash</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">UTR / Transaction Ref</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. UTR-HDFC-991823"
-                    value={formData.transaction_reference}
-                    onChange={(e) => setFormData({ ...formData, transaction_reference: e.target.value })}
-                    className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg font-mono text-xs focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Status</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none cursor-pointer"
-                  >
-                    <option value="paid">Paid</option>
-                    <option value="pending">Pending</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Notes / Description</label>
-                <textarea
-                  rows={2}
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Specific purpose, approvals or comments"
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none"
-                />
-              </div>
-
-              {/* Total Calculation Preview */}
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex justify-between items-center">
-                <span className="text-slate-600 font-medium">Total Disbursement Value:</span>
-                <span className="font-mono font-bold text-base text-red-600">
-                  ₹{(Number(formData.amount || 0) + Number(formData.tax_amount || 0)).toLocaleString("en-IN", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-slate-200 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <span>{isEditing ? "Update Voucher" : "Save Expense"}</span>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Delete Confirmation */}
       {deleteConfirm && (

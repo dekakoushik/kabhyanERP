@@ -988,4 +988,53 @@ export const api = {
       myPayslips: () => api.request("/hrms/my-payslips"),
     },
   },
+
+  invoices: {
+    generatePaymentLink: (id: number | string, returnUrl?: string) =>
+      api.request(`/invoices/${id}/payment-link`, {
+        method: "POST",
+        body: JSON.stringify({ return_url: returnUrl }),
+      }),
+  },
+
+  portal: {
+    dashboard: () => api.request("/portal/dashboard"),
+    projects: () => api.request("/portal/projects"),
+    project: (id: number | string) => api.request(`/portal/projects/${id}`),
+    invoices: (params?: Record<string, any>) => {
+      const q = params ? "?" + new URLSearchParams(params).toString() : "";
+      return api.request(`/portal/invoices${q}`);
+    },
+    invoice: (id: number | string) => api.request(`/portal/invoices/${id}`),
+    invoicePaymentLink: (id: number | string, returnUrl?: string) =>
+      api.request(`/portal/invoices/${id}/payment-link`, {
+        method: "POST",
+        body: JSON.stringify({ return_url: returnUrl }),
+      }),
+    estimates: (params?: Record<string, any>) => {
+      const q = params ? "?" + new URLSearchParams(params).toString() : "";
+      return api.request(`/portal/estimates${q}`);
+    },
+    estimate: (id: number | string) => api.request(`/portal/estimates/${id}`),
+    respondEstimate: (id: number | string, data: { action: "accepted" | "declined"; feedback?: string }) =>
+      api.request(`/portal/estimates/${id}/respond`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    tickets: (params?: Record<string, any>) => {
+      const q = params ? "?" + new URLSearchParams(params).toString() : "";
+      return api.request(`/portal/tickets${q}`);
+    },
+    createTicket: (data: any) =>
+      api.request("/portal/tickets", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    ticket: (id: number | string) => api.request(`/portal/tickets/${id}`),
+    replyTicket: (id: number | string, message: string) =>
+      api.request(`/portal/tickets/${id}/reply`, {
+        method: "POST",
+        body: JSON.stringify({ message }),
+      }),
+  },
 };

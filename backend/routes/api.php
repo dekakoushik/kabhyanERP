@@ -41,6 +41,9 @@ Route::prefix('v1')->group(function () {
     Route::get('/auth/verify-invitation', [AuthController::class, 'verifyInvitation']);
     Route::post('/auth/activate-account', [AuthController::class, 'activateAccount']);
 
+    // Cashfree Autonomous Payment Webhook (Signature verified)
+    Route::post('/webhooks/cashfree', [InvoiceController::class, 'cashfreeWebhook']);
+
     // Protected Routes (Requires valid Sanctum Bearer Token)
     Route::middleware('auth:sanctum')->group(function () {
 
@@ -59,6 +62,12 @@ Route::prefix('v1')->group(function () {
             Route::get('dashboard', [ClientPortalController::class, 'dashboard']);
             Route::get('projects', [ClientPortalController::class, 'projects']);
             Route::get('projects/{project}', [ClientPortalController::class, 'showProject']);
+            Route::get('invoices', [ClientPortalController::class, 'invoices']);
+            Route::get('invoices/{invoice}', [ClientPortalController::class, 'showInvoice']);
+            Route::post('invoices/{invoice}/payment-link', [ClientPortalController::class, 'invoicePaymentLink']);
+            Route::get('estimates', [ClientPortalController::class, 'estimates']);
+            Route::get('estimates/{estimate}', [ClientPortalController::class, 'showEstimate']);
+            Route::post('estimates/{estimate}/respond', [ClientPortalController::class, 'respondEstimate']);
             Route::get('tickets', [ClientPortalController::class, 'tickets']);
             Route::post('tickets', [ClientPortalController::class, 'createTicket']);
             Route::get('tickets/{ticket}', [ClientPortalController::class, 'showTicket']);
@@ -109,6 +118,7 @@ Route::prefix('v1')->group(function () {
             // Tax Invoice Module & Flow (From Proforma Invoice)
             Route::get('invoices/{id}/pdf', [PdfController::class, 'downloadInvoice']);
             Route::post('proforma-invoices/{proformaInvoice}/convert-to-invoice', [InvoiceController::class, 'convertFromProforma']);
+            Route::post('invoices/{invoice}/payment-link', [InvoiceController::class, 'generatePaymentLink']);
             Route::apiResource('invoices', InvoiceController::class);
             Route::patch('invoices/{invoice}/status', [InvoiceController::class, 'updateStatus']);
             Route::post('invoices/{invoice}/payments', [InvoiceController::class, 'recordPayment']);

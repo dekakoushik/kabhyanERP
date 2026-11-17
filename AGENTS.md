@@ -47,3 +47,8 @@ This repository contains the enterprise ERP system for **Kabhyan Technologies Pr
 - **Automated Container Startup**: Containers must use `backend/docker-entrypoint.sh` to poll database readiness, run migrations, seed missing baseline roles, and cache configs automatically on boot.
 - **Reference**: See `.agents/rules/automated-migrations-and-deployment.md`.
 
+### 8. Pretty URLs & RESTful Path Architecture (Mandatory)
+- **Zero Query-String Routing**: Never use query strings for entity creation, modification, or record targeting (e.g. no `/dashboard/resource/create?user_id=2`).
+- **RESTful Dynamic Segments**: Always use semantic App Router dynamic bracket segments (`/dashboard/{resource}/[id]/edit` for editing, `/dashboard/{resource}/create` for general creation).
+- **Reference**: See `.agents/rules/pretty-urls-and-restful-routing.md`.
+

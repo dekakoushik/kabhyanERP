@@ -252,5 +252,116 @@ class ClientPortalController extends Controller
             'ticket' => $ticket,
         ]);
     }
+
+    /**
+     * Client's invoice list.
+     */
+    public function invoices(Request $request)
+    {
+        $client = $this->getClient($request);
+        $invoices = Invoice::where('client_email', $client->email)
+            ->with(['items', 'payments', 'project'])
+            ->orderBy('invoice_date', 'desc')
+            ->paginate($request->input('per_page', 20));
+
+        return response()->json(['invoices' => $invoices]);
+    }
+
+    /**
+     * Show single invoice for client.
+     */
+    public function showInvoice(Request $request, Invoice $invoice)
+    {
+        $client = $this->getClient($request);
+        if ($invoice->client_email !== $client->email) {
+            abort(403, 'Unauthorized access to this invoice.');
+        }
+
+        $invoice->load(['items', 'payments', 'project']);
+
+        return response()->json(['invoice' => $invoice]);
+    }
+
+    /**
+     * Client generates Cashfree payment link for an invoice.
+     */
+    public function invoicePaymentLink(Request $request, Invoice $invoice, \App\Services\CashfreeService $cashfreeService)
+    {
+        $client = $this->getClient($request);
+        if ($invoice->client_email !== $client->email) {
+            abort(403, 'Unauthorized access to this invoice.');
+        }
+
+        try {
+            $returnUrl = $request->input('return_url');
+            $result = $cashfreeService->createPaymentLink($invoice, $returnUrl);
+
+            return response()->json([
+                'success' => true,
+                'payment_link' => $result,
+                'invoice' => $invoice->fresh(),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    /**
+     * Client's estimates / quotations list.
+     */
+    public function estimates(Request $request)
+    {
+        $client = $this->getClient($request);
+        $estimates = \App\Models\Estimate::where('client_email', $client->email)
+            ->with(['items', 'project'])
+            ->orderBy('estimate_date', 'desc')
+            ->paginate($request->input('per_page', 20));
+
+        return response()->json(['estimates' => $estimates]);
+    }
+
+    /**
+     * Show single estimate for client.
+     */
+    public function showEstimate(Request $request, \App\Models\Estimate $estimate)
+    {
+        $client = $this->getClient($request);
+        if ($estimate->client_email !== $client->email) {
+            abort(403, 'Unauthorized access to this quotation.');
+        }
+
+        $estimate->load(['items', 'project']);
+
+        return response()->json(['estimate' => $estimate]);
+    }
+
+    /**
+     * Client responds to estimate (Accept or Decline).
+     */
+    public function respondEstimate(Request $request, \App\Models\Estimate $estimate)
+    {
+        $client = $this->getClient($request);
+        if ($estimate->client_email !== $client->email) {
+            abort(403, 'Unauthorized access to this quotation.');
+        }
+
+        $validated = $request->validate([
+            'action' => 'required|in:accepted,declined',
+            'feedback' => 'nullable|string|max:1000',
+        ]);
+
+        $estimate->update([
+            'status' => $validated['action'],
+            'notes' => $estimate->notes . ($validated['feedback'] ? "\nClient Feedback: " . $validated['feedback'] : ""),
+        ]);
+
+        return response()->json([
+            'message' => "Quotation has been {$validated['action']} successfully.",
+            'estimate' => $estimate->fresh(),
+        ]);
+    }
 }
 

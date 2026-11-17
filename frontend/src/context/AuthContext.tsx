@@ -57,7 +57,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (!user && !isPublic) {
         router.push("/login");
       } else if (user && isPublic) {
-        router.push("/dashboard");
+        if (user.role === "client") {
+          router.push("/portal");
+        } else {
+          router.push("/dashboard");
+        }
+      } else if (user && user.role === "client" && pathname.startsWith("/dashboard")) {
+        router.push("/portal");
       }
     }
   }, [user, loading, pathname, router]);
@@ -66,7 +72,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     api.setToken(token);
     api.setUser(userData);
     setUser(userData);
-    router.push("/dashboard");
+    if (userData.role === "client") {
+      router.push("/portal");
+    } else {
+      router.push("/dashboard");
+    }
   };
 
   const logout = async () => {
