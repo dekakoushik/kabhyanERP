@@ -20,7 +20,11 @@ class UpdateClientRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'company_name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'email', Rule::unique('clients', 'email')->ignore($clientId)],
+            'email' => [
+                'nullable',
+                'email',
+                Rule::unique('clients', 'email')->ignore($clientId)->whereNull('deleted_at'),
+            ],
             'phone' => ['nullable', 'string', 'max:20'],
             'gstin' => ['nullable', 'string', 'max:25'],
             'pan' => ['nullable', 'string', 'max:20'],

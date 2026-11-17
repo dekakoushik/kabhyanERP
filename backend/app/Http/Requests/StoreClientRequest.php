@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreClientRequest extends FormRequest
 {
@@ -16,7 +17,11 @@ class StoreClientRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'company_name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'unique:clients,email'],
+            'email' => [
+                'nullable',
+                'email',
+                Rule::unique('clients', 'email')->whereNull('deleted_at'),
+            ],
             'phone' => ['nullable', 'string', 'max:20'],
             'gstin' => ['nullable', 'string', 'max:25'],
             'pan' => ['nullable', 'string', 'max:20'],
