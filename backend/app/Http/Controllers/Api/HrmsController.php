@@ -87,41 +87,57 @@ class HrmsController extends Controller
      */
     public function leaves(Request $request): JsonResponse
     {
-        $user = $request->user();
-        $isHrOrAdmin = in_array($user->role, ['superadmin', 'admin', 'hr']);
+        try {
+            $user = $request->user();
+            $isHrOrAdmin = in_array($user->role, ['superadmin', 'admin', 'hr']);
 
-        $query = LeaveRequest::with(['user', 'leaveType', 'approver']);
+            $query = LeaveRequest::with(['user', 'leaveType', 'approver']);
 
-        if (!$isHrOrAdmin) {
-            $query->where('user_id', $user->id);
-        } else {
-            if ($request->filled('user_id')) {
-                $query->where('user_id', $request->input('user_id'));
+            if (!$isHrOrAdmin) {
+                $query->where('user_id', $user->id);
+            } else {
+                if ($request->filled('user_id')) {
+                    $query->where('user_id', $request->input('user_id'));
+                }
             }
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->input('status'));
+            }
+
+            if ($request->filled('year')) {
+                $query->whereYear('start_date', $request->input('year'));
+            }
+
+            $leaves = $query->latest()->paginate($request->input('per_page', 50));
+            $balances = $this->calculateUserLeaveBalances($request->input('user_id', $user->id), (int) ($request->input('year', now()->year)));
+
+            return response()->json([
+                'leaves' => $leaves->items(),
+                'data' => $leaves->items(),
+                'pagination' => [
+                    'current_page' => $leaves->currentPage(),
+                    'last_page' => $leaves->lastPage(),
+                    'per_page' => $leaves->perPage(),
+                    'total' => $leaves->total(),
+                ],
+                'balances' => $balances,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Leaves list error: ' . $e->getMessage());
+            return response()->json([
+                'leaves' => [],
+                'data' => [],
+                'pagination' => [
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => 50,
+                    'total' => 0,
+                ],
+                'balances' => [],
+                'error' => $e->getMessage(),
+            ], 200);
         }
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
-        }
-
-        if ($request->filled('year')) {
-            $query->whereYear('start_date', $request->input('year'));
-        }
-
-        $leaves = $query->latest()->paginate($request->input('per_page', 50));
-        $balances = $this->calculateUserLeaveBalances($request->input('user_id', $user->id), (int) ($request->input('year', now()->year)));
-
-        return response()->json([
-            'leaves' => $leaves->items(),
-            'data' => $leaves->items(),
-            'pagination' => [
-                'current_page' => $leaves->currentPage(),
-                'last_page' => $leaves->lastPage(),
-                'per_page' => $leaves->perPage(),
-                'total' => $leaves->total(),
-            ],
-            'balances' => $balances,
-        ]);
     }
 
     /**
@@ -995,32 +1011,45 @@ class HrmsController extends Controller
      */
     public function payrollOverview(Request $request): JsonResponse
     {
-        $batches = PayrollBatch::with(['finalizer', 'payslips.user'])
-            ->orderBy('year', 'desc')
-            ->orderBy('month', 'desc')
-            ->get();
+        try {
+            $batches = PayrollBatch::with(['finalizer', 'payslips.user'])
+                ->orderBy('year', 'desc')
+                ->orderBy('month', 'desc')
+                ->get();
 
-        $formattedBatches = $batches->map(function ($b) {
-            $monthStr = sprintf('%04d-%02d', $b->year, $b->month);
-            $arr = $b->toArray();
-            $arr['month'] = $monthStr;
-            $arr['formatted_month'] = $monthStr;
-            $arr['month_number'] = $b->month;
-            $arr['year_number'] = $b->year;
-            $arr['payslips_count'] = count($arr['payslips'] ?? []);
-            return $arr;
-        });
+            $formattedBatches = $batches->map(function ($b) {
+                $monthStr = sprintf('%04d-%02d', $b->year, $b->month);
+                $arr = $b->toArray();
+                $arr['month'] = $monthStr;
+                $arr['formatted_month'] = $monthStr;
+                $arr['month_number'] = $b->month;
+                $arr['year_number'] = $b->year;
+                $arr['payslips_count'] = count($arr['payslips'] ?? []);
+                return $arr;
+            });
 
-        $stats = [
-            'total_batches' => $batches->count(),
-            'total_disbursed' => $batches->where('status', 'paid')->sum('total_net'),
-            'pending_drafts' => $batches->where('status', 'draft')->count(),
-        ];
+            $stats = [
+                'total_batches' => $batches->count(),
+                'total_disbursed' => (float) $batches->where('status', 'paid')->sum('total_net'),
+                'pending_drafts' => $batches->where('status', 'draft')->count(),
+            ];
 
-        return response()->json([
-            'batches' => $formattedBatches,
-            'stats' => $stats,
-        ]);
+            return response()->json([
+                'batches' => $formattedBatches,
+                'stats' => $stats,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Payroll overview error: ' . $e->getMessage());
+            return response()->json([
+                'batches' => [],
+                'stats' => [
+                    'total_batches' => 0,
+                    'total_disbursed' => 0,
+                    'pending_drafts' => 0,
+                ],
+                'error' => $e->getMessage(),
+            ], 200);
+        }
     }
 
     /**

@@ -221,14 +221,18 @@ export default function LeavesManagementPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
                   {safeLeaves.map((l) => {
+                    if (!l) return null;
                     const days = Number(l.total_days ?? l.days_count ?? 1);
                     const typeName = l.leave_type?.name ?? (l as any).leaveType?.name ?? "General Leave";
                     const isPaid = l.leave_type?.is_paid ?? (l as any).leaveType?.is_paid ?? true;
                     const userName = l.user?.name || "Employee";
                     const userEmail = l.user?.email || "";
+                    const startDateStr = typeof l.start_date === "string" ? l.start_date.slice(0, 10) : String(l.start_date || "");
+                    const endDateStr = typeof l.end_date === "string" ? l.end_date.slice(0, 10) : String(l.end_date || "");
+                    const reasonStr = typeof l.reason === "string" ? l.reason : "General Leave";
 
                     return (
-                      <tr key={l.id} className="hover:bg-slate-50/50 transition-colors">
+                      <tr key={l.id || Math.random()} className="hover:bg-slate-50/50 transition-colors">
                         <td className="py-3 px-4 font-semibold text-slate-900">
                           {userName}
                           {userEmail && <div className="text-[11px] font-normal text-slate-400">{userEmail}</div>}
@@ -238,15 +242,15 @@ export default function LeavesManagementPage() {
                           <span className="text-[10px] text-slate-400 block">{isPaid ? "Paid Leave" : "Loss of Pay"}</span>
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap text-slate-600">
-                          <div>{l.start_date}</div>
-                          <div className="text-[11px] text-slate-400">to {l.end_date}</div>
+                          <div>{startDateStr}</div>
+                          <div className="text-[11px] text-slate-400">to {endDateStr}</div>
                         </td>
                         <td className="py-3 px-4 font-bold text-slate-800">
                           {days} {days === 1 ? "day" : "days"}
                         </td>
-                        <td className="py-3 px-4 max-w-xs text-slate-600 truncate" title={l.reason}>
-                          {l.reason}
-                          {l.admin_notes && (
+                        <td className="py-3 px-4 max-w-xs text-slate-600 truncate" title={reasonStr}>
+                          {reasonStr}
+                          {l.admin_notes && typeof l.admin_notes === "string" && (
                             <div className="text-[10px] text-amber-600 mt-0.5">Note: {l.admin_notes}</div>
                           )}
                         </td>
@@ -258,7 +262,7 @@ export default function LeavesManagementPage() {
                               ? "bg-rose-50 text-rose-700 border border-rose-200"
                               : "bg-amber-50 text-amber-700 border border-amber-200"
                           }`}>
-                            {l.status}
+                            {l.status || "pending"}
                           </span>
                         </td>
                         <td className="py-3 px-4 text-right">

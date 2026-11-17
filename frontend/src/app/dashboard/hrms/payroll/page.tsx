@@ -39,8 +39,16 @@ export default function PayrollBatchesPage() {
   const fetchPayroll = async () => {
     try {
       setLoading(true);
-      const res = await api.hrms.payroll.overview();
-      const list: PayrollBatch[] = res.batches || [];
+      const res = await api.hrms.payroll.overview().catch((err) => {
+        console.error("api.hrms.payroll.overview call failed:", err);
+        return { batches: [], stats: {} };
+      });
+      const rawBatches = res?.batches ?? res?.data ?? res ?? [];
+      const list: PayrollBatch[] = Array.isArray(rawBatches)
+        ? rawBatches
+        : Array.isArray(rawBatches?.data)
+        ? rawBatches.data
+        : [];
       setBatches(list);
 
       if (queryMonth) {
@@ -52,6 +60,7 @@ export default function PayrollBatchesPage() {
     } catch (err: unknown) {
       console.error("Failed to load payroll batches:", err);
       toast.error("Failed to load payroll records.");
+      setBatches([]);
     } finally {
       setLoading(false);
     }
@@ -237,28 +246,28 @@ export default function PayrollBatchesPage() {
                   <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
                     <div className="text-[11px] font-medium text-slate-500">Gross Outlay</div>
                     <div className="text-base sm:text-lg font-bold text-slate-900 mt-0.5">
-                      ₹{Number(selectedBatch.total_gross).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      ₹{Number(selectedBatch.total_gross || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </div>
                   </div>
 
                   <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
                     <div className="text-[11px] font-medium text-rose-600">LOP Wage Deductions</div>
                     <div className="text-base sm:text-lg font-bold text-rose-600 mt-0.5">
-                      ₹{Number(selectedBatch.total_lop_deductions).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      ₹{Number(selectedBatch.total_lop_deductions || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </div>
                   </div>
 
                   <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
                     <div className="text-[11px] font-medium text-slate-500">Statutory Deductions</div>
                     <div className="text-base sm:text-lg font-bold text-slate-900 mt-0.5">
-                      ₹{Number(selectedBatch.total_deductions).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      ₹{Number(selectedBatch.total_deductions || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </div>
                   </div>
 
                   <div className="p-3.5 bg-emerald-50/60 rounded-xl border border-emerald-200/80">
                     <div className="text-[11px] font-medium text-emerald-700">Net Disbursement</div>
                     <div className="text-base sm:text-lg font-bold text-emerald-800 mt-0.5">
-                      ₹{Number(selectedBatch.total_net).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      ₹{Number(selectedBatch.total_net || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </div>
                   </div>
                 </div>
@@ -295,30 +304,30 @@ export default function PayrollBatchesPage() {
                                 {slip.payslip_number}
                               </td>
                               <td className="py-3 px-4 font-semibold text-slate-900">
-                                {slip.user?.name}
+                                {slip.user?.name || "Employee"}
                                 <div className="text-[11px] font-normal text-slate-400">{slip.user?.department || "Staff"}</div>
                               </td>
                               <td className="py-3 px-4 text-center text-slate-600">
                                 {slip.paid_days} / {slip.working_days}
-                                {slip.lop_days > 0 && (
+                                {Number(slip.lop_days || 0) > 0 && (
                                   <span className="text-[10px] text-rose-600 block">({slip.lop_days} LOP)</span>
                                 )}
                               </td>
                               <td className="py-3 px-4 text-right font-medium text-slate-700">
-                                ₹{Number(slip.gross_salary).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                ₹{Number(slip.gross_salary || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                               </td>
                               <td className="py-3 px-4 text-right text-rose-600">
-                                {Number(slip.lop_deduction) > 0 ? (
-                                  `-₹${Number(slip.lop_deduction).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`
+                                {Number(slip.lop_deduction || 0) > 0 ? (
+                                  `-₹${Number(slip.lop_deduction || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`
                                 ) : (
                                   "₹0.00"
                                 )}
                               </td>
                               <td className="py-3 px-4 text-right text-slate-500">
-                                ₹{Number(slip.total_deductions).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                ₹{Number(slip.total_deductions || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                               </td>
                               <td className="py-3 px-4 text-right font-bold text-emerald-700">
-                                ₹{Number(slip.net_salary).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                ₹{Number(slip.net_salary || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                               </td>
                               <td className="py-3 px-4 text-right">
                                 <Link
