@@ -7,8 +7,11 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import ClientCombobox from "@/components/ClientCombobox";
 import ClientSnapshotCard from "@/components/ClientSnapshotCard";
-import DocumentItemsTable from "@/components/DocumentItemsTable";
+import DocumentItemsTable, { DELIVERABLE_PRESETS } from "@/components/DocumentItemsTable";
 import QuickAddProjectModal from "@/components/QuickAddProjectModal";
+import TermsPresetsChips from "@/components/TermsPresetsChips";
+import DocumentPreviewDrawer from "@/components/DocumentPreviewDrawer";
+import MobileCalculationDrawer from "@/components/MobileCalculationDrawer";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -32,6 +35,9 @@ import {
   AlertTriangle,
   ListPlus,
   ArrowUpRight,
+  Eye,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -50,6 +56,11 @@ export default function InvoiceCreateForm({
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Live Preview & Mobile Drawer States
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [metadataExpanded, setMetadataExpanded] = useState(false);
 
   // Proforma & Milestone Invoicing State
   const [linkedProforma, setLinkedProforma] = useState<ProformaInvoice | null>(null);
@@ -83,8 +94,8 @@ export default function InvoiceCreateForm({
     email: "",
     phone: "",
     tax_number: "",
-    city: "Kolkata",
-    state: "West Bengal",
+    city: "Guwahati",
+    state: "Assam",
     address: "",
   });
 
@@ -118,14 +129,16 @@ export default function InvoiceCreateForm({
         unit: "hours",
         unit_price: 2500,
         amount: 125000,
+        hsn_sac: "998314",
       },
       {
         item_name: "Corporate Portal Frontend with Next.js",
-        description: "Full-page administrative views, ShadCN components, Google Sans typography",
+        description: "Full-page administrative views, ShadCN components, responsive design",
         quantity: 75,
         unit: "hours",
         unit_price: 2000,
         amount: 150000,
+        hsn_sac: "998314",
       },
     ] as InvoiceItem[],
   });
@@ -193,10 +206,10 @@ export default function InvoiceCreateForm({
               email: p.client_email || "",
               phone: p.client_phone || "",
               address: p.client_address || "",
-              gstin: p.client_gstin || "19AAECK4829K1ZX",
-              tax_number: p.client_gstin || "19AAECK4829K1ZX",
-              city: "Kolkata",
-              state: "West Bengal",
+              gstin: p.client_gstin || "18AABCA1234F1Z",
+              tax_number: p.client_gstin || "18AABCA1234F1Z",
+              city: "Guwahati",
+              state: "Assam",
               portal_access_status: "active",
             };
 
@@ -239,7 +252,7 @@ export default function InvoiceCreateForm({
               client_email: activeClient.email || "",
               client_phone: activeClient.phone || "",
               client_address: fullAddress || activeClient.address || p.client_address || "",
-              client_gstin: activeClient.tax_number || p.client_gstin || "19AAECK4829K1ZX",
+              client_gstin: activeClient.tax_number || p.client_gstin || "18AABCA1234F1Z",
               project_id: p.project_id ? String(p.project_id) : prev.project_id,
               tax_rate: String(taxRate),
               notes: `Milestone Tax Invoice issued against accepted Proforma ${p.proforma_number}`,
@@ -254,6 +267,7 @@ export default function InvoiceCreateForm({
                   unit: "mile",
                   unit_price: taxable,
                   amount: taxable,
+                  hsn_sac: "998314",
                 },
               ],
             }));
@@ -269,8 +283,6 @@ export default function InvoiceCreateForm({
 
     initData();
   }, [proformaIdentifier]);
-
-
 
   // Client Selection Handler
   const handleSelectClient = (client: Client | null) => {
@@ -341,8 +353,8 @@ export default function InvoiceCreateForm({
         email: "",
         phone: "",
         tax_number: "",
-        city: "Kolkata",
-        state: "West Bengal",
+        city: "Guwahati",
+        state: "Assam",
         address: "",
       });
       toast.success(`Client ${newClient.company_name} registered successfully!`);
@@ -393,58 +405,52 @@ export default function InvoiceCreateForm({
   let calcGross = 0;
   let calcTaxable = 0;
   let calcGst = 0;
-  let calcEquivalentPct = 0;
 
   if (customMode === "amount") {
-    const val = parseFloat(customAmount) || 0;
+    const rawVal = parseFloat(customAmount) || 0;
     if (customAmountType === "gross") {
-      calcGross = val;
-      calcTaxable = Math.round((val / (1 + activeTaxRate / 100)) * 100) / 100;
-      calcGst = Math.round((calcGross - calcTaxable) * 100) / 100;
+      calcGross = rawVal;
+      calcTaxable = activeTaxRate > 0 ? Math.round((rawVal / (1 + activeTaxRate / 100)) * 100) / 100 : rawVal;
     } else {
-      calcTaxable = val;
-      calcGst = Math.round((calcTaxable * (activeTaxRate / 100)) * 100) / 100;
-      calcGross = Math.round((calcTaxable + calcGst) * 100) / 100;
+      calcTaxable = rawVal;
+      calcGross = Math.round(rawVal * (1 + activeTaxRate / 100) * 100) / 100;
     }
-    calcEquivalentPct = contractTotal > 0 ? Number(((calcGross / contractTotal) * 100).toFixed(1)) : 0;
+    calcGst = Math.round((calcGross - calcTaxable) * 100) / 100;
   } else {
     const pct = parseFloat(customPercent) || 0;
-    calcGross = Math.round((contractTotal * pct) / 100);
-    calcTaxable = Math.round((calcGross / (1 + activeTaxRate / 100)) * 100) / 100;
+    calcGross = Math.round(((contractTotal * pct) / 100) * 100) / 100;
+    calcTaxable = activeTaxRate > 0 ? Math.round((calcGross / (1 + activeTaxRate / 100)) * 100) / 100 : calcGross;
     calcGst = Math.round((calcGross - calcTaxable) * 100) / 100;
-    calcEquivalentPct = Number(pct.toFixed(1));
   }
 
-  const isExceeding = calcGross > remainingTotal + 1;
+  const calcEquivalentPct = contractTotal > 0 ? ((calcGross / contractTotal) * 100).toFixed(1) : "0.0";
+  const isExceeding = remainingTotal > 0 && calcGross > remainingTotal + 1;
 
-  const priorPercent = contractTotal > 0 ? Number(((invoicedTotal / contractTotal) * 100).toFixed(1)) : 0;
-  const currentPercent = contractTotal > 0 ? Number(((grandTotal / contractTotal) * 100).toFixed(1)) : 0;
-  const remainingPercent = Math.max(0, Number((100 - priorPercent - currentPercent).toFixed(1)));
-  const activeInvoicedPercent = Number((priorPercent + currentPercent).toFixed(1));
+  const priorPercent = contractTotal > 0 ? Math.min(100, Math.round((invoicedTotal / contractTotal) * 100)) : 0;
+  const currentPercent = contractTotal > 0 ? Math.min(100 - priorPercent, Math.round((grandTotal / contractTotal) * 100)) : 0;
+  const remainingPercent = Math.max(0, 100 - priorPercent - currentPercent);
+  const activeInvoicedPercent = Math.min(100, priorPercent + currentPercent);
 
-  const handleAmountChange = (valStr: string) => {
-    setCustomAmount(valStr);
-    const val = parseFloat(valStr) || 0;
+  const handleAmountChange = (val: string) => {
+    setCustomAmount(val);
+    const num = parseFloat(val) || 0;
+    const grossVal = customAmountType === "gross" ? num : num * (1 + activeTaxRate / 100);
     if (contractTotal > 0) {
-      const grossVal = customAmountType === "gross" ? val : val * (1 + activeTaxRate / 100);
-      const pct = (grossVal / contractTotal) * 100;
-      setCustomPercent(pct.toFixed(1));
+      setCustomPercent(((grossVal / contractTotal) * 100).toFixed(1));
     }
   };
 
-  const handlePercentChange = (valStr: string) => {
-    setCustomPercent(valStr);
-    const pct = parseFloat(valStr) || 0;
-    if (contractTotal > 0) {
-      const grossVal = Math.round((contractTotal * pct) / 100);
-      setCustomAmount(customAmountType === "gross" ? String(grossVal) : String(Math.round(grossVal / (1 + activeTaxRate / 100))));
-    }
+  const handlePercentChange = (val: string) => {
+    setCustomPercent(val);
+    const pct = parseFloat(val) || 0;
+    const gross = (contractTotal * pct) / 100;
+    setCustomAmount(customAmountType === "gross" ? String(Math.round(gross)) : String(Math.round(gross / (1 + activeTaxRate / 100))));
   };
 
   const handlePresetClick = (pct: number) => {
     if (!linkedProforma) return;
     setCustomPercent(String(pct));
-    const grossVal = Math.round((contractTotal * pct) / 100);
+    const grossVal = Math.round(((contractTotal * pct) / 100) * 100) / 100;
     setCustomAmount(customAmountType === "gross" ? String(grossVal) : String(Math.round(grossVal / (1 + activeTaxRate / 100))));
     setCustomTitle(`${pct}% Milestone Deliverable`);
 
@@ -459,6 +465,7 @@ export default function InvoiceCreateForm({
           unit: "mile",
           unit_price: taxable,
           amount: taxable,
+          hsn_sac: "998314",
         },
       ],
       notes: `${pct}% Milestone Tax Invoice issued against accepted Proforma ${linkedProforma.proforma_number}`,
@@ -485,6 +492,7 @@ export default function InvoiceCreateForm({
           unit: "mile",
           unit_price: taxable,
           amount: taxable,
+          hsn_sac: "998314",
         },
       ],
       notes: `Final settlement Tax Invoice issued against accepted Proforma ${linkedProforma.proforma_number}`,
@@ -513,6 +521,7 @@ export default function InvoiceCreateForm({
           unit: "mile",
           unit_price: calcTaxable,
           amount: calcTaxable,
+          hsn_sac: "998314",
         },
       ],
       notes: `Milestone Tax Invoice (${calcEquivalentPct}%) issued against accepted Proforma ${linkedProforma.proforma_number}`,
@@ -537,6 +546,7 @@ export default function InvoiceCreateForm({
         unit: it.unit || "units",
         unit_price: Number(it.unit_price) || 0,
         amount: Number(it.amount) || 0,
+        hsn_sac: "998314",
       })),
       notes: `Itemized Tax Invoice issued against Proforma ${linkedProforma.proforma_number}`,
     }));
@@ -570,9 +580,44 @@ export default function InvoiceCreateForm({
           unit: "hours",
           unit_price: 0,
           amount: 0,
+          hsn_sac: "998314",
         },
       ],
     });
+  };
+
+  const duplicateItem = (index: number) => {
+    const itemToCopy = formData.items[index];
+    if (!itemToCopy) return;
+    const newItems = [...formData.items];
+    newItems.splice(index + 1, 0, { ...itemToCopy });
+    setFormData({ ...formData, items: newItems });
+    toast.success("Line item duplicated");
+  };
+
+  const addPresetItem = (preset: typeof DELIVERABLE_PRESETS[0]) => {
+    const lastIndex = formData.items.length - 1;
+    const lastItem = formData.items[lastIndex];
+    const isBlank = lastItem && !lastItem.item_name && (!lastItem.unit_price || Number(lastItem.unit_price) === 0);
+
+    const newItem: InvoiceItem = {
+      item_name: preset.name,
+      description: preset.description,
+      quantity: preset.quantity,
+      unit: preset.unit,
+      unit_price: preset.unit_price,
+      amount: preset.quantity * preset.unit_price,
+      hsn_sac: preset.sac_code,
+    };
+
+    if (isBlank) {
+      const updated = [...formData.items];
+      updated[lastIndex] = newItem;
+      setFormData({ ...formData, items: updated });
+    } else {
+      setFormData({ ...formData, items: [...formData.items, newItem] });
+    }
+    toast.success(`Inserted preset: ${preset.name}`);
   };
 
   const removeItem = (index: number) => {
@@ -592,8 +637,18 @@ export default function InvoiceCreateForm({
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAppendTerm = (termText: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      payment_terms: prev.payment_terms
+        ? `${prev.payment_terms.trim()}\n\n${termText}`
+        : termText,
+    }));
+    toast.success("Appended statutory clause");
+  };
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setFormError(null);
     setLoading(true);
 
@@ -627,7 +682,7 @@ export default function InvoiceCreateForm({
         terms_and_conditions: formData.payment_terms || null,
         items: formData.items.map((it) => ({
           item_name: it.item_name,
-          hsn_sac: (it as any).hsn_sac || "998314",
+          hsn_sac: (it as any).hsn_sac || (it as any).sac_code || "998314",
           description: it.description || null,
           quantity: Number(it.quantity) || 1,
           unit: it.unit || "hours",
@@ -662,7 +717,7 @@ export default function InvoiceCreateForm({
 
   return (
     <AdminLayout>
-      <form onSubmit={handleSubmit} className="space-y-6 pb-12 font-sans">
+      <form onSubmit={handleSubmit} className="space-y-6 pb-24 lg:pb-12 font-sans">
         {/* Top Header */}
         <div className="space-y-2 pb-4 border-b border-slate-200">
           {linkedProforma && (
@@ -683,41 +738,45 @@ export default function InvoiceCreateForm({
             <div className="flex items-center gap-3">
               <Link
                 href={linkedProforma ? `/dashboard/proforma/${linkedProforma.proforma_number}` : "/dashboard/invoices"}
-                className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition shadow-xs"
+                className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition shadow-xs"
                 title={linkedProforma ? "Back to Proforma" : "Back to Invoices"}
               >
                 <ArrowLeft className="w-4 h-4" />
               </Link>
               <div>
-                <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5 flex-wrap">
-                  <span className={`p-2 rounded-xl shadow-2xs ${linkedProforma ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}`}>
+                <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2 flex-wrap">
+                  <span className={`p-1.5 rounded-xl ${linkedProforma ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}`}>
                     <FileCheck className="w-5 h-5" />
                   </span>
-                  <span>{linkedProforma ? "New Milestone Invoice" : "New Tax Invoice"}</span>
-                  {linkedProforma && (
-                    <Link
-                      href={`/dashboard/proforma/${linkedProforma.proforma_number}`}
-                      target="_blank"
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/80 font-mono text-xs font-bold transition shadow-2xs"
-                      title="View Source Proforma Agreement"
-                    >
-                      <span>{linkedProforma.proforma_number}</span>
-                      <ArrowUpRight className="w-3.5 h-3.5" />
-                    </Link>
-                  )}
+                  <span>{linkedProforma ? "Issue Milestone Tax Invoice" : "Generate Tax Invoice"}</span>
+                  <span className="font-mono text-2xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-bold">
+                    {formData.invoice_number || "INV-DRAFT"}
+                  </span>
                 </h1>
-                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   {linkedProforma
-                    ? `Bill a milestone or partial payment against Proforma ${linkedProforma.proforma_number}.`
+                    ? `Bill a milestone or partial contract drawdown against Proforma ${linkedProforma.proforma_number}.`
                     : "Generate an official GST-compliant tax invoice with automatic calculations."}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
+                onClick={() => setPreviewOpen(true)}
+                className="border-slate-200 text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Eye className="w-4 h-4 text-slate-500" />
+                <span>Preview Sheet</span>
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => router.push(linkedProforma ? `/dashboard/proforma/${linkedProforma.proforma_number}` : "/dashboard/invoices")}
                 disabled={loading}
               >
@@ -725,18 +784,19 @@ export default function InvoiceCreateForm({
               </Button>
               <Button
                 type="submit"
+                size="sm"
                 disabled={loading}
-                className={`${linkedProforma ? "bg-purple-600 hover:bg-purple-700" : "bg-blue-600 hover:bg-blue-700"} text-white font-medium shadow-xs`}
+                className={`${linkedProforma ? "bg-purple-600 hover:bg-purple-700" : "bg-blue-600 hover:bg-blue-700"} text-white font-semibold shadow-xs cursor-pointer`}
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
                     Saving...
                   </>
                 ) : (
                   <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Invoice
+                    <Save className="w-4 h-4 mr-1.5" />
+                    Issue Tax Invoice
                   </>
                 )}
               </Button>
@@ -745,18 +805,45 @@ export default function InvoiceCreateForm({
         </div>
 
         {formError && (
-          <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-medium">
+          <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-medium animate-in fade-in">
             {formError}
           </div>
         )}
 
-        {/* Two-Column Grid */}
+        {/* Two-Column Responsive Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Main Form (8 Columns) */}
           <div className="lg:col-span-8 space-y-6">
-            {/* Proforma Milestone & Custom Amount Controller Card */}
+            {/* 1. Client & Entity Information (Hero Position) */}
+            <ClientSnapshotCard
+              clients={clients}
+              selectedClient={
+                clients.find((c) => c.id === selectedClientId) ||
+                (formData.client_name
+                  ? ({
+                      id: selectedClientId || -1,
+                      client_code: "CLI-AUTO",
+                      name: formData.client_name,
+                      company_name: formData.client_company || formData.client_name,
+                      email: formData.client_email || "",
+                      phone: formData.client_phone || "",
+                      address: formData.client_address || "",
+                      gstin: formData.client_gstin || "18AABCA1234F1Z",
+                      tax_number: formData.client_gstin || "18AABCA1234F1Z",
+                      portal_access_status: "active",
+                    } as Client)
+                  : null)
+              }
+              onSelectClient={handleSelectClient}
+              onOpenQuickAdd={() => setQuickAddOpen(true)}
+              title="Client & Tax Entity"
+              subtitle="Select client to auto-load billing coordinates, GSTIN, and tax residency"
+              required={true}
+            />
+
+            {/* Proforma Milestone & Contract Drawdown Tracker */}
             {linkedProforma && (
-              <Card className="border-purple-200 bg-linear-to-br from-purple-50/40 via-white to-purple-50/20 shadow-xs overflow-hidden">
+              <Card className="rounded-2xl border-purple-200 bg-linear-to-br from-purple-50/40 via-white to-purple-50/20 shadow-xs overflow-hidden">
                 <CardHeader className="pb-3 border-b border-purple-100/80 bg-purple-50/60 flex flex-row items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="p-2 rounded-xl bg-purple-600 text-white shadow-2xs">
@@ -764,7 +851,7 @@ export default function InvoiceCreateForm({
                     </div>
                     <div>
                       <CardTitle className="text-sm font-bold text-slate-900 flex items-center gap-2 flex-wrap">
-                        <span>Milestone & Part Payment</span>
+                        <span>Milestone Contract Drawdown</span>
                         <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200 font-semibold">
                           Proforma #{linkedProforma.proforma_number}
                         </span>
@@ -779,7 +866,7 @@ export default function InvoiceCreateForm({
                     target="_blank"
                     className="text-xs font-semibold text-purple-700 hover:text-purple-900 bg-white hover:bg-purple-50 border border-purple-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-2xs shrink-0"
                   >
-                    <span>View Proforma</span>
+                    <span>View Agreement</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </Link>
                 </CardHeader>
@@ -788,28 +875,28 @@ export default function InvoiceCreateForm({
                   {/* 3 Metric Cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                     <div className="p-3 bg-white rounded-xl border border-purple-100 shadow-2xs">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Proforma Total</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Contract</span>
                       <p className="text-base font-bold text-slate-900 font-mono mt-0.5">
                         ₹{contractTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </p>
                       <span className="text-[10px] text-slate-400">100% Scope</span>
                     </div>
                     <div className="p-3 bg-white rounded-xl border border-purple-100 shadow-2xs">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Amount Billed</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Previously Billed</span>
                       <p className="text-base font-bold text-emerald-600 font-mono mt-0.5">
                         ₹{invoicedTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </p>
                       <span className="text-[10px] text-emerald-600 font-medium">
-                        {contractTotal > 0 ? ((invoicedTotal / contractTotal) * 100).toFixed(1) : 0}% Billed
+                        {contractTotal > 0 ? ((invoicedTotal / contractTotal) * 100).toFixed(1) : 0}% Realized
                       </span>
                     </div>
                     <div className="p-3 bg-white rounded-xl border border-purple-100 shadow-2xs">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Balance Due</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Remaining Balance</span>
                       <p className="text-base font-bold text-purple-700 font-mono mt-0.5">
                         ₹{remainingTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </p>
                       <span className="text-[10px] text-purple-600 font-medium">
-                        {contractTotal > 0 ? ((remainingTotal / contractTotal) * 100).toFixed(1) : 0}% Remaining
+                        {contractTotal > 0 ? ((remainingTotal / contractTotal) * 100).toFixed(1) : 0}% Pending
                       </span>
                     </div>
                   </div>
@@ -817,7 +904,7 @@ export default function InvoiceCreateForm({
                   {/* Visual Contract Progress Bar */}
                   <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200/60">
                     <div className="flex justify-between items-center text-[11px]">
-                      <span className="font-semibold text-slate-700">Invoicing Progress</span>
+                      <span className="font-semibold text-slate-700">Contract Drawdown Progress</span>
                       <span className="font-mono text-slate-600 font-semibold">
                         {activeInvoicedPercent}% Billed with this invoice
                       </span>
@@ -879,7 +966,7 @@ export default function InvoiceCreateForm({
 
                       {/* Quick Presets */}
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">Presets:</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Drawdown:</span>
                         {[10, 25, 30, 50].map((p) => (
                           <button
                             key={p}
@@ -887,7 +974,7 @@ export default function InvoiceCreateForm({
                             onClick={() => handlePresetClick(p)}
                             className="px-2 py-0.5 rounded-md border border-purple-200 bg-purple-50/70 hover:bg-purple-100 text-purple-700 font-semibold text-[11px] transition cursor-pointer"
                           >
-                            {p === 30 ? "30% Deposit" : `${p}%`}
+                            {p}%
                           </button>
                         ))}
                         <button
@@ -977,7 +1064,7 @@ export default function InvoiceCreateForm({
                           className="w-full h-9 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
                         >
                           <Sparkles className="w-3.5 h-3.5" />
-                          <span>Apply to Item Table</span>
+                          <span>Apply to Ledger</span>
                         </Button>
                       </div>
                     </div>
@@ -1003,7 +1090,7 @@ export default function InvoiceCreateForm({
                       </div>
                     </div>
 
-                    {/* Exceeding Warning if user enters more than remaining */}
+                    {/* Exceeding Warning */}
                     {isExceeding && (
                       <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
                         <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
@@ -1014,7 +1101,7 @@ export default function InvoiceCreateForm({
                     )}
                   </div>
 
-                  {/* Switch to full proforma itemized items if required */}
+                  {/* Switch to full proforma itemized items */}
                   <div className="flex items-center justify-between text-xs pt-1 flex-wrap gap-2">
                     <span className="text-slate-400 text-[11px]">
                       Need line-by-line deliverables from the original Proforma agreement instead?
@@ -1032,230 +1119,184 @@ export default function InvoiceCreateForm({
               </Card>
             )}
 
-            {/* 1. Identification Card */}
-            <Card>
-              <CardHeader className="pb-3 border-b border-slate-100">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            {/* 2. Secondary Document Parameters Toolbar (Collapsible / Compact) */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setMetadataExpanded(!metadataExpanded)}
+                className="w-full px-5 py-3.5 flex items-center justify-between text-left hover:bg-slate-50/50 transition cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
                   <Receipt className="w-4 h-4 text-blue-600" />
-                  Invoice Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    Invoice# <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    value={formData.invoice_number}
-                    onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
-                    required
-                  />
+                  <span className="text-xs sm:text-sm font-bold text-slate-800">
+                    Tax Invoice Parameters & Dates
+                  </span>
+                  <span className="text-2xs text-slate-400 font-mono hidden sm:inline">
+                    ({formData.invoice_number} • {formData.currency} • {formData.status.toUpperCase()})
+                  </span>
                 </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Currency</label>
-                  <select
-                    value={formData.currency}
-                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                    className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="INR">INR (₹)</option>
-                    <option value="USD">USD ($)</option>
-                    <option value="EUR">EUR (€)</option>
-                    <option value="GBP">GBP (£)</option>
-                  </select>
+                <div className="flex items-center gap-1 text-2xs font-bold text-blue-600">
+                  <span>{metadataExpanded ? "Collapse" : "Edit Details"}</span>
+                  {metadataExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 </div>
+              </button>
 
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700">Link to Project</label>
-                    <button
-                      type="button"
-                      onClick={() => setQuickAddProjectOpen(true)}
-                      className="text-[11px] font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <Plus className="w-3 h-3" />
-                      <span>Quick Add</span>
-                    </button>
+              {metadataExpanded && (
+                <div className="p-5 border-t border-slate-100 bg-slate-50/40 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 text-xs animate-in fade-in duration-150">
+                  <div>
+                    <label className="text-2xs font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                      Invoice Number <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      value={formData.invoice_number}
+                      onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
+                      required
+                      className="h-9 bg-white"
+                    />
                   </div>
-                  <select
-                    value={formData.project_id}
-                    onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
-                    className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                  >
-                    <option value="">-- No Direct Project Link --</option>
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        [{p.code}] {p.name}
-                      </option>
-                    ))}
-                  </select>
+
+                  <div>
+                    <label className="text-2xs font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                      Currency
+                    </label>
+                    <select
+                      value={formData.currency}
+                      onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                      className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-semibold shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="INR">INR (₹)</option>
+                      <option value="USD">USD ($)</option>
+                      <option value="EUR">EUR (€)</option>
+                      <option value="GBP">GBP (£)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-2xs font-bold uppercase tracking-wider text-slate-600">
+                        Link to Project
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setQuickAddProjectOpen(true)}
+                        className="text-[11px] font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Quick Add</span>
+                      </button>
+                    </div>
+                    <select
+                      value={formData.project_id}
+                      onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
+                      className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-semibold shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                    >
+                      <option value="">-- No Direct Project Link --</option>
+                      {projects.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          [{p.code}] {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-2xs font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                      Invoice Date <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="date"
+                      value={formData.invoice_date}
+                      onChange={(e) => setFormData({ ...formData, invoice_date: e.target.value })}
+                      required
+                      className="h-9 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-2xs font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                      Payment Due Date <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="date"
+                      value={formData.due_date}
+                      onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                      required
+                      className="h-9 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-2xs font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                      Billing Status
+                    </label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-semibold shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="unpaid">Unpaid / Awaiting Payment</option>
+                      <option value="partially_paid">Partially Paid</option>
+                      <option value="paid">Paid</option>
+                    </select>
+                  </div>
                 </div>
+              )}
+            </div>
 
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    Invoice Date <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    type="date"
-                    value={formData.invoice_date}
-                    onChange={(e) => setFormData({ ...formData, invoice_date: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    Payment Due Date <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    type="date"
-                    value={formData.due_date}
-                    onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Payment Status</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="unpaid">Unpaid</option>
-                    <option value="partially_paid">Partially Paid</option>
-                    <option value="paid">Paid</option>
-                  </select>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 2. Client & GST Details (Replaced with Auto-Fetch ClientSnapshotCard) */}
-            <ClientSnapshotCard
-              clients={clients}
-              selectedClient={
-                clients.find((c) => c.id === selectedClientId) ||
-                (formData.client_name
-                  ? ({
-                      id: selectedClientId || -1,
-                      client_code: "CLI-AUTO",
-                      name: formData.client_name,
-                      company_name: formData.client_company || formData.client_name,
-                      email: formData.client_email || "",
-                      phone: formData.client_phone || "",
-                      address: formData.client_address || "",
-                      gstin: formData.client_gstin || "19AAECK4829K1ZX",
-                      tax_number: formData.client_gstin || "19AAECK4829K1ZX",
-                      portal_access_status: "active",
-                    } as Client)
-                  : null)
-              }
-              onSelectClient={handleSelectClient}
-              onOpenQuickAdd={() => setQuickAddOpen(true)}
-              title="Bill To"
-              subtitle="Select a customer or add a new one to auto-populate billing and tax details"
-              required={true}
-            />
-
-            {/* 3. Line Items & Billable Deliverables Ledger Table */}
+            {/* 3. High-Velocity Deliverables Ledger 2.0 with SAC Code support */}
             <DocumentItemsTable
               items={formData.items}
               currency={formData.currency}
               taxRate={formData.tax_rate}
               taxCalculationType={formData.tax_calculation_type}
-              title="Item Table"
+              title="Deliverables & Statutory Ledger"
+              allowSacCode={true}
               onItemChange={handleItemChange}
               onAddItem={addItem}
+              onDuplicateItem={duplicateItem}
+              onAddPresetItem={addPresetItem}
               onRemoveItem={removeItem}
               onReorderItems={handleReorderItems}
             />
 
-            {/* 4. Payment Terms & Notes */}
-            <Card>
-              <CardHeader className="pb-3 border-b border-slate-100">
-                <CardTitle className="text-sm font-semibold">Payment Terms & Notes</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4 space-y-4">
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    Payment Terms
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={formData.payment_terms}
-                    onChange={(e) => setFormData({ ...formData, payment_terms: e.target.value })}
-                    className="w-full rounded-md border border-slate-200 bg-white p-2.5 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    Customer Notes
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    className="w-full rounded-md border border-slate-200 bg-white p-2.5 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 5. Instant Payment Settlement & Receipt */}
-            <Card className="border-emerald-200/80 bg-linear-to-br from-emerald-50/30 to-white shadow-xs">
-              <CardHeader className="pb-3 border-b border-emerald-100 flex flex-row items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-lg bg-emerald-100 text-emerald-800">
-                    <ShieldCheck className="w-4 h-4" />
-                  </div>
-                  <div>
+            {/* 4. Instant Payment Settlement Option (Optional Recording upon Issuance) */}
+            <Card className="rounded-2xl border-slate-200/90 shadow-2xs overflow-hidden">
+              <CardHeader className="pb-3 border-b border-slate-100 bg-slate-50/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className={`w-4 h-4 ${isPaidReceived ? "text-emerald-600" : "text-slate-400"}`} />
                     <CardTitle className="text-sm font-bold text-slate-900">
-                      Payment Received
+                      Payment Reconciliation & Immediate Settlement
                     </CardTitle>
-                    <p className="text-[11px] text-slate-500">
-                      Record payment and generate receipt voucher upon saving
-                    </p>
                   </div>
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={isPaidReceived}
+                      onChange={(e) => setIsPaidReceived(e.target.checked)}
+                      className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                    />
+                    <span className="text-xs font-bold text-slate-700">
+                      Mark as Settled / Paid Now
+                    </span>
+                  </label>
                 </div>
               </CardHeader>
               <CardContent className="pt-4 space-y-4">
-                <label className="flex items-start gap-3 p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={isPaidReceived}
-                    onChange={(e) => {
-                      setIsPaidReceived(e.target.checked);
-                      if (e.target.checked && !paymentDate) {
-                        setPaymentDate(formData.invoice_date || new Date().toISOString().split("T")[0]);
-                      }
-                    }}
-                    className="w-4 h-4 rounded text-emerald-600 border-slate-300 mt-0.5"
-                  />
-                  <div>
-                    <p className="text-xs font-bold text-slate-900">
-                      I have already received payment for this invoice
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Records payment in the financial ledger, issues a receipt voucher, and marks this invoice as Paid.
-                    </p>
-                  </div>
-                </label>
-
-                {isPaidReceived && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-2">
+                {isPaidReceived ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 p-3.5 rounded-xl bg-emerald-50/60 border border-emerald-200 text-xs animate-in fade-in duration-150">
                     <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">
-                        Payment Mode <span className="text-red-500">*</span>
+                      <label className="text-2xs font-bold uppercase tracking-wider text-emerald-900 block mb-1">
+                        Settlement Method
                       </label>
                       <select
                         value={paymentMethod}
                         onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        className="w-full h-9 rounded-md border border-emerald-200 bg-white px-3 py-1 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
                       >
                         <option value="bank_transfer">Bank Transfer (IMPS / Direct)</option>
-                        <option value="neft">NEFT Transfer</option>
-                        <option value="rtgs">RTGS Transfer</option>
+                        <option value="neft">NEFT Remittance</option>
+                        <option value="rtgs">RTGS Remittance</option>
                         <option value="upi">UPI / QR Code</option>
                         <option value="cheque">Cheque</option>
                         <option value="card">Corporate Card</option>
@@ -1264,71 +1305,121 @@ export default function InvoiceCreateForm({
                     </div>
 
                     <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">
-                        Reference / UTR #
+                      <label className="text-2xs font-bold uppercase tracking-wider text-emerald-900 block mb-1">
+                        Bank UTR / Transaction Ref #
                       </label>
                       <Input
                         placeholder="e.g. UTR1938472910"
                         value={paymentReference}
                         onChange={(e) => setPaymentReference(e.target.value)}
-                        className="h-9 text-xs"
+                        className="h-9 text-xs bg-white border-emerald-200 font-mono"
                       />
                     </div>
 
                     <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">
+                      <label className="text-2xs font-bold uppercase tracking-wider text-emerald-900 block mb-1">
                         Payment Date
                       </label>
                       <Input
                         type="date"
                         value={paymentDate || formData.invoice_date}
                         onChange={(e) => setPaymentDate(e.target.value)}
-                        className="h-9 text-xs"
+                        className="h-9 text-xs bg-white border-emerald-200"
                       />
                     </div>
                   </div>
+                ) : (
+                  <p className="text-2xs text-slate-400">
+                    Invoice will be created with status <strong>Unpaid</strong>. You can record offline or online client payments later from the invoice details dashboard.
+                  </p>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* 5. Statutory Terms & Client Notes */}
+            <Card className="rounded-2xl border-slate-200/90 shadow-2xs">
+              <CardHeader className="pb-3 border-b border-slate-100">
+                <CardTitle className="text-sm font-bold flex items-center justify-between">
+                  <span>Statutory Notes & Legal Payment Terms</span>
+                  <span className="text-2xs text-slate-400 font-normal">Appears on Tax Invoice PDF</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-4 space-y-4">
+                <div>
+                  <label className="text-2xs font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                    Notes for Client
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Thank you for your business. Please quote the invoice number when making payment..."
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-2xs font-bold uppercase tracking-wider text-slate-600">
+                      Payment Terms & Statutory Declarations
+                    </label>
+                  </div>
+
+                  {/* Standard Invoice Terms Preset Chips */}
+                  <TermsPresetsChips
+                    documentType="invoice"
+                    onSelectTerm={handleAppendTerm}
+                  />
+
+                  <textarea
+                    rows={3}
+                    placeholder="Payment terms, late interest penalties, bank remittance details..."
+                    value={formData.payment_terms}
+                    onChange={(e) => setFormData({ ...formData, payment_terms: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Sticky Summary Card (4 Columns) */}
+          {/* Sticky 4-Tier Commercial Settlement Console (4 Columns) */}
           <div className="lg:col-span-4 sticky top-20 space-y-4">
-            {/* Proforma Summary */}
+            {/* Proforma Summary if linked */}
             {linkedProforma && (
-              <Card className="border-purple-200 shadow-xs bg-linear-to-br from-purple-50/60 via-white to-purple-50/30 overflow-hidden">
+              <Card className="rounded-2xl border-purple-200 shadow-xs bg-linear-to-br from-purple-50/60 via-white to-purple-50/30 overflow-hidden">
                 <CardHeader className="pb-2.5 border-b border-purple-100 bg-purple-50/50 rounded-t-xl">
                   <CardTitle className="text-xs font-bold text-slate-800 flex items-center justify-between">
                     <span className="flex items-center gap-1.5 text-purple-900">
                       <Receipt className="w-3.5 h-3.5 text-purple-600" />
-                      <span>Proforma Summary</span>
+                      <span>Proforma Context</span>
                     </span>
                     <span className="font-mono text-[10px] text-purple-700 bg-purple-100/90 border border-purple-200 px-2 py-0.5 rounded-md font-bold">
                       {linkedProforma.proforma_number}
                     </span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-3 space-y-2.5 text-xs">
+                <CardContent className="pt-3 space-y-2 text-xs">
                   <div className="flex justify-between items-center text-slate-500">
-                    <span>Proforma Total:</span>
+                    <span>Agreement Total:</span>
                     <span className="font-mono font-semibold text-slate-900">
                       ₹{contractTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-slate-500">
-                    <span>Amount Billed So Far:</span>
+                    <span>Previously Billed:</span>
                     <span className="font-mono font-semibold text-emerald-600">
                       ₹{invoicedTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center text-purple-950 pt-2 border-t border-purple-100">
+                  <div className="flex justify-between items-center text-purple-950 pt-1.5 border-t border-purple-100">
                     <span className="font-bold">This Invoice:</span>
-                    <span className="font-mono font-black text-purple-700 text-sm">
+                    <span className="font-mono font-black text-purple-700">
                       ₹{grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-slate-600 pt-1 border-t border-purple-100">
-                    <span>Balance Due on Proforma:</span>
+                    <span>Balance on Contract:</span>
                     <span className="font-mono font-bold text-slate-700">
                       ₹{Math.max(0, remainingTotal - grandTotal).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </span>
@@ -1337,11 +1428,14 @@ export default function InvoiceCreateForm({
               </Card>
             )}
 
-            <Card className="border-blue-200/80 shadow-sm">
-              <CardHeader className="pb-3 border-b border-slate-100 bg-blue-50/40 rounded-t-xl">
+            <Card className="rounded-2xl border-blue-200/90 shadow-sm overflow-hidden">
+              <CardHeader className="pb-3 border-b border-slate-100 bg-blue-50/50">
                 <CardTitle className="text-sm font-bold text-slate-900 flex items-center justify-between">
-                  <span>Invoice Summary</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-600 text-white uppercase font-bold">
+                  <span className="flex items-center gap-1.5">
+                    <Calculator className="w-4 h-4 text-blue-600" />
+                    <span>Invoice Settlement</span>
+                  </span>
+                  <span className="text-2xs font-mono px-2 py-0.5 rounded bg-blue-600 text-white uppercase font-bold">
                     {formData.currency}
                   </span>
                 </CardTitle>
@@ -1351,7 +1445,7 @@ export default function InvoiceCreateForm({
                 <div className="space-y-1.5 pb-3 border-b border-slate-100">
                   <div className="flex items-center justify-between">
                     <span className="text-2xs font-bold uppercase tracking-wider text-slate-500">Tax Mode</span>
-                    <span className={`text-2xs font-semibold px-2 py-0.5 rounded-full border ${linkedProforma ? "bg-purple-50 text-purple-700 border-purple-100" : "bg-blue-50 text-blue-700 border-blue-100"}`}>
+                    <span className="text-3xs font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                       {isTaxInclusive ? "GST Included" : "GST Added on Top"}
                     </span>
                   </div>
@@ -1359,9 +1453,9 @@ export default function InvoiceCreateForm({
                     <button
                       type="button"
                       onClick={() => setFormData((prev) => ({ ...prev, tax_calculation_type: "exclusive" }))}
-                      className={`py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                      className={`py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
                         !isTaxInclusive
-                          ? `bg-white ${linkedProforma ? "text-purple-700" : "text-blue-700"} shadow-xs`
+                          ? "bg-white text-blue-700 shadow-xs"
                           : "text-slate-600 hover:text-slate-900"
                       }`}
                     >
@@ -1370,9 +1464,9 @@ export default function InvoiceCreateForm({
                     <button
                       type="button"
                       onClick={() => setFormData((prev) => ({ ...prev, tax_calculation_type: "inclusive" }))}
-                      className={`py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                      className={`py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
                         isTaxInclusive
-                          ? `bg-white ${linkedProforma ? "text-purple-700" : "text-blue-700"} shadow-xs`
+                          ? "bg-white text-blue-700 shadow-xs"
                           : "text-slate-600 hover:text-slate-900"
                       }`}
                     >
@@ -1381,15 +1475,15 @@ export default function InvoiceCreateForm({
                   </div>
                 </div>
 
-                {/* 2. Sub Total */}
+                {/* 2. Subtotal */}
                 <div className="flex justify-between items-center text-slate-600">
-                  <span>Sub Total {isTaxInclusive ? "(Gross)" : "(Net)"}</span>
+                  <span>Deliverables Turnover {isTaxInclusive ? "(Gross)" : "(Net)"}</span>
                   <span className="font-mono font-semibold text-slate-900">
                     ₹{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
 
-                {/* 3. Discount Controls (Percentage vs Fixed Amount) */}
+                {/* 3. Discount Controls */}
                 <div className="space-y-1.5 pb-3 border-b border-slate-100">
                   <div className="flex items-center justify-between">
                     <span className="text-2xs font-bold uppercase tracking-wider text-slate-500">Discount</span>
@@ -1398,7 +1492,7 @@ export default function InvoiceCreateForm({
                         type="button"
                         onClick={() => setFormData((prev) => ({ ...prev, discount_type: "percentage" }))}
                         className={`px-2 py-0.5 rounded-md transition cursor-pointer ${
-                          !isFixedDiscount ? `bg-white ${linkedProforma ? "text-purple-700" : "text-blue-700"} shadow-xs` : "text-slate-500 hover:text-slate-800"
+                          !isFixedDiscount ? "bg-white text-blue-700 shadow-xs" : "text-slate-500 hover:text-slate-800"
                         }`}
                       >
                         % Percent
@@ -1407,7 +1501,7 @@ export default function InvoiceCreateForm({
                         type="button"
                         onClick={() => setFormData((prev) => ({ ...prev, discount_type: "fixed" }))}
                         className={`px-2 py-0.5 rounded-md transition cursor-pointer ${
-                          isFixedDiscount ? `bg-white ${linkedProforma ? "text-purple-700" : "text-blue-700"} shadow-xs` : "text-slate-500 hover:text-slate-800"
+                          isFixedDiscount ? "bg-white text-blue-700 shadow-xs" : "text-slate-500 hover:text-slate-800"
                         }`}
                       >
                         ₹ Flat
@@ -1457,7 +1551,7 @@ export default function InvoiceCreateForm({
                   </div>
                 </div>
 
-                {/* 4. Taxable Turnover if Inclusive */}
+                {/* 4. Taxable Base if Inclusive */}
                 {isTaxInclusive && (
                   <div className="flex justify-between items-center text-slate-600">
                     <span className="text-slate-500">Taxable Turnover</span>
@@ -1470,7 +1564,7 @@ export default function InvoiceCreateForm({
                 {/* 5. GST Rate & Amount */}
                 <div className="flex justify-between items-center text-slate-600">
                   <span className="flex items-center gap-1.5">
-                    GST ({formData.tax_rate}%)
+                    GST Rate (%)
                     <input
                       type="number"
                       min="0"
@@ -1485,77 +1579,152 @@ export default function InvoiceCreateForm({
                   </span>
                 </div>
 
+                {/* 6. Round Off Adjustment */}
                 <div className="flex justify-between items-center text-slate-600 pt-2 border-t border-slate-100">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={formData.is_round_off}
-                      onChange={(e) => setFormData({ ...formData, is_round_off: e.target.checked })}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, is_round_off: e.target.checked }))}
                       className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span>Round Off</span>
+                    <span>Round Off Adjustment</span>
                   </label>
                   <span className="font-mono text-slate-500">
                     {roundOffAmount >= 0 ? `+₹${roundOffAmount}` : `-₹${Math.abs(roundOffAmount)}`}
                   </span>
                 </div>
 
-                <div className={`p-3 rounded-lg text-white flex justify-between items-center ${linkedProforma ? "bg-purple-600" : "bg-blue-600"}`}>
+                {/* 7. Total Payable Amount */}
+                <div className={`p-3.5 rounded-xl text-white flex justify-between items-center shadow-md ${linkedProforma ? "bg-purple-600" : "bg-blue-600"}`}>
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-purple-100">
-                      Total ({formData.currency})
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-blue-100">
+                      Net Invoice Total
                     </p>
                     <p className="text-xl font-mono font-black mt-0.5">
-                      ₹{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      ₹{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
-                  <Sparkles className="w-6 h-6 text-purple-200 opacity-80" />
+                  <Sparkles className="w-6 h-6 text-blue-200 opacity-80" />
                 </div>
               </CardContent>
             </Card>
 
+            {/* Quick Actions */}
             <div className="space-y-2">
               <Button
                 type="submit"
                 disabled={loading}
-                className={`w-full ${linkedProforma ? "bg-purple-600 hover:bg-purple-700" : "bg-blue-600 hover:bg-blue-700"} text-white py-2.5 font-medium shadow-xs`}
+                className={`w-full ${linkedProforma ? "bg-purple-600 hover:bg-purple-700" : "bg-blue-600 hover:bg-blue-700"} text-white py-2.5 font-semibold shadow-xs cursor-pointer`}
               >
                 {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                Save Invoice
+                Issue Tax Invoice
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push(linkedProforma ? `/dashboard/proforma/${linkedProforma.proforma_number}` : "/dashboard/invoices")}
-                className="w-full"
+                onClick={() => setPreviewOpen(true)}
+                className="w-full border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
               >
-                Cancel
+                <Eye className="w-4 h-4 mr-2 text-slate-500" />
+                Preview Invoice Document
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Sticky Mobile Quick Submit Bar */}
-        <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 sm:p-4 shadow-lg flex items-center justify-between gap-3 lg:hidden">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Total ({formData.currency})
-            </p>
-            <p className="font-mono text-base sm:text-lg font-black text-slate-900 leading-tight">
+        {/* Sticky Mobile Action Bar */}
+        <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 shadow-lg flex items-center justify-between gap-3 lg:hidden pb-[calc(env(safe-area-inset-bottom)+12px)]">
+          <div
+            onClick={() => setMobileDrawerOpen(true)}
+            className="cursor-pointer"
+          >
+            <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <span>Total ({formData.currency})</span>
+              <span className="text-blue-600 font-bold underline text-2xs">Breakdown ^</span>
+            </div>
+            <p className="font-mono text-base font-black text-slate-900 leading-tight">
               ₹{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </p>
           </div>
 
-          <Button
-            type="submit"
-            disabled={loading}
-            className={`${linkedProforma ? "bg-purple-600 hover:bg-purple-700" : "bg-blue-600 hover:bg-blue-700"} text-white font-semibold text-xs sm:text-sm px-5 py-2.5 shadow-md flex items-center gap-1.5 cursor-pointer`}
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            <span>Save Invoice</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPreviewOpen(true)}
+              className="h-11 px-3 text-xs border-slate-200 font-semibold"
+            >
+              <Eye className="w-4 h-4" />
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading}
+              className={`h-11 px-5 ${linkedProforma ? "bg-purple-600 hover:bg-purple-700" : "bg-blue-600 hover:bg-blue-700"} text-white font-semibold text-xs shadow-md flex items-center gap-1.5 cursor-pointer`}
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              <span>Save Invoice</span>
+            </Button>
+          </div>
         </div>
       </form>
+
+      {/* Live Document Preview Drawer */}
+      <DocumentPreviewDrawer
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        documentType="Tax Invoice"
+        documentNumber={formData.invoice_number}
+        issueDate={formData.invoice_date}
+        dueDate={formData.due_date}
+        clientName={formData.client_name}
+        clientCompany={formData.client_company}
+        clientEmail={formData.client_email}
+        clientPhone={formData.client_phone}
+        clientAddress={formData.client_address}
+        clientGstin={formData.client_gstin}
+        currency={formData.currency}
+        items={formData.items}
+        subtotal={subtotal}
+        discountType={formData.discount_type}
+        discountAmount={discountAmount}
+        discountRate={effectiveDiscountRate}
+        taxCalculationType={formData.tax_calculation_type}
+        taxRate={activeTaxRate}
+        taxAmount={taxAmount}
+        roundOff={roundOffAmount}
+        grandTotal={grandTotal}
+        notes={formData.notes}
+        termsAndConditions={formData.payment_terms}
+        onConfirmSave={handleSubmit}
+      />
+
+      {/* Mobile Swipe-Up Financial Settlement Drawer */}
+      <MobileCalculationDrawer
+        open={mobileDrawerOpen}
+        onClose={() => setMobileDrawerOpen(false)}
+        currency={formData.currency}
+        subtotal={subtotal}
+        discountType={formData.discount_type}
+        discountAmount={discountAmount}
+        discountRate={effectiveDiscountRate}
+        effectiveDiscountRate={effectiveDiscountRate}
+        discountAmountInput={formData.discount_amount_input}
+        onChangeDiscountType={(t) => setFormData((prev) => ({ ...prev, discount_type: t }))}
+        onChangeDiscountRate={(r) => setFormData((prev) => ({ ...prev, discount_rate: r }))}
+        onChangeDiscountAmountInput={(a) => setFormData((prev) => ({ ...prev, discount_amount_input: a }))}
+        taxCalculationType={formData.tax_calculation_type}
+        onChangeTaxMode={(m) => setFormData((prev) => ({ ...prev, tax_calculation_type: m }))}
+        taxRate={formData.tax_rate}
+        onChangeTaxRate={(r) => setFormData((prev) => ({ ...prev, tax_rate: r }))}
+        taxableAmount={taxableAmount}
+        taxAmount={taxAmount}
+        isRoundOff={formData.is_round_off}
+        onChangeRoundOff={(c) => setFormData((prev) => ({ ...prev, is_round_off: c }))}
+        roundOffAmount={roundOffAmount}
+        grandTotal={grandTotal}
+      />
 
       {/* Quick Add Client Modal */}
       {quickAddOpen && (
@@ -1659,7 +1828,7 @@ export default function InvoiceCreateForm({
                   </label>
                   <input
                     type="text"
-                    placeholder="Kolkata"
+                    placeholder="Guwahati"
                     value={quickAddData.city}
                     onChange={(e) => setQuickAddData({ ...quickAddData, city: e.target.value })}
                     className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
@@ -1672,7 +1841,7 @@ export default function InvoiceCreateForm({
                   </label>
                   <input
                     type="text"
-                    placeholder="West Bengal"
+                    placeholder="Assam"
                     value={quickAddData.state}
                     onChange={(e) => setQuickAddData({ ...quickAddData, state: e.target.value })}
                     className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
@@ -1730,4 +1899,3 @@ export default function InvoiceCreateForm({
     </AdminLayout>
   );
 }
-

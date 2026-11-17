@@ -413,6 +413,7 @@ export interface InvoiceItem {
   item_name: string;
   description?: string | null;
   sac_code?: string | null;
+  hsn_sac?: string | null;
   quantity: number;
   unit: string;
   unit_price: number;

@@ -50,6 +50,18 @@ export default function ClientSnapshotCard({
         .join(", ")
     : "";
 
+  // Tax Residency Detection (Assam Code: 18)
+  const gstin = selectedClient?.gstin || selectedClient?.tax_number || "";
+  const clientState = (selectedClient?.state || "").trim().toLowerCase();
+  const isAssam = gstin.startsWith("18") || clientState.includes("assam");
+  const isInternational = selectedClient?.country && selectedClient.country.toLowerCase() !== "india" && selectedClient.country.toLowerCase() !== "in";
+  
+  const taxTreatmentLabel = isInternational
+    ? "Export / Zero-Rated"
+    : isAssam
+    ? "Intra-State (9% CGST + 9% SGST)"
+    : "Inter-State (18% IGST)";
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
       {/* Header */}
@@ -117,6 +129,10 @@ export default function ClientSnapshotCard({
                     }`}
                   >
                     {selectedClient.portal_access_status === "active" ? "Mobile Ready" : "Standard Client"}
+                  </span>
+                  <span className="text-3xs font-extrabold uppercase px-2 py-0.5 rounded-full border bg-purple-50 text-purple-700 border-purple-200 flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-purple-600" />
+                    <span>{taxTreatmentLabel}</span>
                   </span>
                 </div>
                 <p className="text-2xs text-slate-500 flex items-center gap-1 font-medium">

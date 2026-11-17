@@ -6,8 +6,11 @@ import { api, Client, ProformaInvoiceItem, Project } from "@/lib/api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ClientSnapshotCard from "@/components/ClientSnapshotCard";
-import DocumentItemsTable from "@/components/DocumentItemsTable";
+import DocumentItemsTable, { DELIVERABLE_PRESETS } from "@/components/DocumentItemsTable";
 import QuickAddProjectModal from "@/components/QuickAddProjectModal";
+import TermsPresetsChips from "@/components/TermsPresetsChips";
+import DocumentPreviewDrawer from "@/components/DocumentPreviewDrawer";
+import MobileCalculationDrawer from "@/components/MobileCalculationDrawer";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -20,6 +23,9 @@ import {
   Loader2,
   Sparkles,
   X,
+  Eye,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -33,6 +39,11 @@ export default function CreateProformaPage() {
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Live Preview & Mobile Drawer States
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [metadataExpanded, setMetadataExpanded] = useState(false);
+
   // Quick Add Client Modal State
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [quickAddSaving, setQuickAddSaving] = useState(false);
@@ -44,8 +55,8 @@ export default function CreateProformaPage() {
     company_name: "",
     email: "",
     phone: "",
-    city: "Kolkata",
-    state: "West Bengal",
+    city: "Guwahati",
+    state: "Assam",
     address: "",
   });
 
@@ -69,7 +80,7 @@ export default function CreateProformaPage() {
     round_off: 0,
     is_round_off: true,
     payment_terms: "100% advance payment requested prior to milestone sprint release.",
-    notes: "Proforma Invoice for advance commercial processing.",
+    notes: "Proforma Invoice issued for advance commercial processing and mobilization.",
     items: [
       {
         item_name: "",
@@ -121,6 +132,7 @@ export default function CreateProformaPage() {
     initData();
   }, []);
 
+  // Client Selection Handler
   const handleSelectClient = (client: Client | null) => {
     if (!client) {
       setSelectedClientId(null);
@@ -158,6 +170,7 @@ export default function CreateProformaPage() {
     toast.success(`Loaded details for ${client.company_name}`);
   };
 
+  // Quick Client Registration
   const handleQuickAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickAddData.company_name.trim() || !quickAddData.name.trim()) {
@@ -185,8 +198,8 @@ export default function CreateProformaPage() {
         company_name: "",
         email: "",
         phone: "",
-        city: "Kolkata",
-        state: "West Bengal",
+        city: "Guwahati",
+        state: "Assam",
         address: "",
       });
       toast.success(`Client ${newClient.company_name} registered successfully!`);
@@ -198,7 +211,7 @@ export default function CreateProformaPage() {
     }
   };
 
-  // Calculations
+  // Recalculate totals
   const subtotal = formData.items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
   const isFixedDiscount = formData.discount_type === "fixed";
   const rawDiscountInput = isFixedDiscount ? Number(formData.discount_amount_input) || 0 : Number(formData.discount_rate) || 0;
@@ -258,6 +271,39 @@ export default function CreateProformaPage() {
     });
   };
 
+  const duplicateItem = (index: number) => {
+    const itemToCopy = formData.items[index];
+    if (!itemToCopy) return;
+    const newItems = [...formData.items];
+    newItems.splice(index + 1, 0, { ...itemToCopy });
+    setFormData({ ...formData, items: newItems });
+    toast.success("Line item duplicated");
+  };
+
+  const addPresetItem = (preset: typeof DELIVERABLE_PRESETS[0]) => {
+    const lastIndex = formData.items.length - 1;
+    const lastItem = formData.items[lastIndex];
+    const isBlank = lastItem && !lastItem.item_name && (!lastItem.unit_price || Number(lastItem.unit_price) === 0);
+
+    const newItem: ProformaInvoiceItem = {
+      item_name: preset.name,
+      description: preset.description,
+      quantity: preset.quantity,
+      unit: preset.unit,
+      unit_price: preset.unit_price,
+      amount: preset.quantity * preset.unit_price,
+    };
+
+    if (isBlank) {
+      const updated = [...formData.items];
+      updated[lastIndex] = newItem;
+      setFormData({ ...formData, items: updated });
+    } else {
+      setFormData({ ...formData, items: [...formData.items, newItem] });
+    }
+    toast.success(`Inserted preset: ${preset.name}`);
+  };
+
   const removeItem = (index: number) => {
     if (formData.items.length <= 1) return;
     setFormData({
@@ -275,17 +321,27 @@ export default function CreateProformaPage() {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAppendTerm = (termText: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      payment_terms: prev.payment_terms
+        ? `${prev.payment_terms.trim()}\n\n${termText}`
+        : termText,
+    }));
+    toast.success("Appended advance terms clause");
+  };
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setFormError(null);
     setLoading(true);
 
     try {
       if (!selectedClientId || !formData.client_name) {
-        throw new Error("Please select a client from the dropdown or click Add New Client");
+        throw new Error("Please select a client from the directory or quick-register one");
       }
       if (!formData.proforma_number) {
-        throw new Error("Proforma number is required");
+        throw new Error("Proforma invoice number is required");
       }
 
       await api.request("/proforma-invoices", {
@@ -303,6 +359,7 @@ export default function CreateProformaPage() {
         }),
       });
 
+      toast.success("Proforma Invoice saved successfully!");
       router.push("/dashboard/proforma");
     } catch (err: any) {
       setFormError(err.message || "Failed to create proforma invoice");
@@ -313,49 +370,68 @@ export default function CreateProformaPage() {
 
   return (
     <AdminLayout>
-      <form onSubmit={handleSubmit} className="space-y-6 pb-12 font-sans">
-        {/* Top Header */}
+      <form onSubmit={handleSubmit} className="space-y-6 pb-24 lg:pb-12 font-sans">
+        {/* Top Header Navigation */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
           <div className="flex items-center gap-3">
             <Link
               href="/dashboard/proforma"
-              className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition shadow-xs"
+              className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition shadow-xs"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
             <div>
-              <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-blue-600" />
-                Generate Proforma Invoice
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                  <Receipt className="w-5 h-5 text-blue-600" />
+                  Generate Proforma Invoice
+                </h1>
+                <span className="font-mono text-2xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-bold">
+                  {formData.proforma_number || "PI-DRAFT"}
+                </span>
+              </div>
               <p className="text-xs text-slate-500">
-                Issue a formal advance billing invoice prior to deliverable commencement.
+                Draft an advance commercial invoice for project retainers, phase deposits, and mobilization.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               type="button"
               variant="outline"
+              size="sm"
+              onClick={() => setPreviewOpen(true)}
+              className="border-slate-200 text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
+            >
+              <Eye className="w-4 h-4 text-slate-500" />
+              <span>Preview Sheet</span>
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
               onClick={() => router.push("/dashboard/proforma")}
               disabled={loading}
             >
               Cancel
             </Button>
+
             <Button
               type="submit"
+              size="sm"
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-xs"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-xs cursor-pointer"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Generating...
+                  <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                  Saving...
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4 mr-2" />
+                  <Save className="w-4 h-4 mr-1.5" />
                   Save Proforma
                 </>
               )}
@@ -364,174 +440,222 @@ export default function CreateProformaPage() {
         </div>
 
         {formError && (
-          <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-medium">
+          <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-medium animate-in fade-in">
             {formError}
           </div>
         )}
 
-        {/* Two-Column Form */}
+        {/* Two-Column Responsive Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Main Form Fields (8 Columns) */}
           <div className="lg:col-span-8 space-y-6">
-            {/* 1. Identification */}
-            <Card>
-              <CardHeader className="pb-3 border-b border-slate-100">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <Receipt className="w-4 h-4 text-blue-600" />
-                  Proforma Identification
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    Proforma Number <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    value={formData.proforma_number}
-                    onChange={(e) => setFormData({ ...formData, proforma_number: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Currency</label>
-                  <select
-                    value={formData.currency}
-                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                    className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="INR">INR (₹)</option>
-                    <option value="USD">USD ($)</option>
-                    <option value="EUR">EUR (€)</option>
-                    <option value="GBP">GBP (£)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700">Linked Project</label>
-                    <button
-                      type="button"
-                      onClick={() => setQuickAddProjectOpen(true)}
-                      className="text-[11px] font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <Plus className="w-3 h-3" />
-                      <span>Quick Add</span>
-                    </button>
-                  </div>
-                  <select
-                    value={formData.project_id}
-                    onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
-                    className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                  >
-                    <option value="">-- No Direct Project Link --</option>
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        [{p.code}] {p.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    Invoice Date <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    type="date"
-                    value={formData.invoice_date}
-                    onChange={(e) => setFormData({ ...formData, invoice_date: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    Due Date <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    type="date"
-                    value={formData.due_date}
-                    onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Status</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="unpaid">Unpaid</option>
-                    <option value="partially_paid">Partially Paid</option>
-                    <option value="paid">Paid</option>
-                  </select>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 2. Client Profile Card */}
+            {/* 1. Client & Commercial Entity (Primary Focus) */}
             <ClientSnapshotCard
               clients={clients}
               selectedClient={clients.find((c) => c.id === selectedClientId) || null}
               onSelectClient={handleSelectClient}
               onOpenQuickAdd={() => setQuickAddOpen(true)}
-              title="Client & Entity Information"
-              subtitle="Select an existing client to auto-populate company, billing, and GST details"
+              title="Client & Commercial Entity"
+              subtitle="Select an existing client to auto-load billing coordinates, GSTIN, and tax residency"
               required={true}
             />
 
-            {/* 3. Deliverables & Milestones Ledger Table */}
+            {/* 2. Secondary Document Metadata Toolbar (Collapsible / Compact) */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setMetadataExpanded(!metadataExpanded)}
+                className="w-full px-5 py-3.5 flex items-center justify-between text-left hover:bg-slate-50/50 transition cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Calculator className="w-4 h-4 text-blue-600" />
+                  <span className="text-xs sm:text-sm font-bold text-slate-800">
+                    Proforma Document Parameters & Project Linkage
+                  </span>
+                  <span className="text-2xs text-slate-400 font-mono hidden sm:inline">
+                    ({formData.proforma_number} • {formData.currency} • {formData.status.toUpperCase()})
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 text-2xs font-bold text-blue-600">
+                  <span>{metadataExpanded ? "Collapse" : "Edit Details"}</span>
+                  {metadataExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </div>
+              </button>
+
+              {metadataExpanded && (
+                <div className="p-5 border-t border-slate-100 bg-slate-50/40 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 text-xs animate-in fade-in duration-150">
+                  <div>
+                    <label className="text-2xs font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                      Proforma Number <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      value={formData.proforma_number}
+                      onChange={(e) => setFormData({ ...formData, proforma_number: e.target.value })}
+                      required
+                      className="h-9 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-2xs font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                      Currency
+                    </label>
+                    <select
+                      value={formData.currency}
+                      onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                      className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-semibold shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="INR">INR (₹)</option>
+                      <option value="USD">USD ($)</option>
+                      <option value="EUR">EUR (€)</option>
+                      <option value="GBP">GBP (£)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-2xs font-bold uppercase tracking-wider text-slate-600">
+                        Link to Project
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setQuickAddProjectOpen(true)}
+                        className="text-[11px] font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Quick Add</span>
+                      </button>
+                    </div>
+                    <select
+                      value={formData.project_id}
+                      onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
+                      className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-semibold shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                    >
+                      <option value="">-- No Direct Project Link --</option>
+                      {projects.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          [{p.code}] {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-2xs font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                      Invoice Date <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="date"
+                      value={formData.invoice_date}
+                      onChange={(e) => setFormData({ ...formData, invoice_date: e.target.value })}
+                      required
+                      className="h-9 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-2xs font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                      Due Date <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="date"
+                      value={formData.due_date}
+                      onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                      required
+                      className="h-9 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-2xs font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                      Initial Status
+                    </label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-semibold shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="unpaid">Unpaid (Awaiting Advance)</option>
+                      <option value="paid">Paid</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 3. High-Velocity Deliverables Ledger 2.0 */}
             <DocumentItemsTable
               items={formData.items}
               currency={formData.currency}
               taxRate={formData.tax_rate}
               taxCalculationType={formData.tax_calculation_type}
-              title="Item Table"
+              title="Deliverables & Services Ledger"
               onItemChange={handleItemChange}
               onAddItem={addItem}
+              onDuplicateItem={duplicateItem}
+              onAddPresetItem={addPresetItem}
               onRemoveItem={removeItem}
               onReorderItems={handleReorderItems}
             />
 
-            {/* 4. Terms */}
-            <Card>
+            {/* 4. Terms of Engagement & Client Notes */}
+            <Card className="rounded-2xl border-slate-200/90 shadow-2xs">
               <CardHeader className="pb-3 border-b border-slate-100">
-                <CardTitle className="text-sm font-semibold">Terms & Conditions</CardTitle>
+                <CardTitle className="text-sm font-bold flex items-center justify-between">
+                  <span>Advance Payment Terms & Notes</span>
+                  <span className="text-2xs text-slate-400 font-normal">Appears on Proforma PDF</span>
+                </CardTitle>
               </CardHeader>
               <CardContent className="pt-4 space-y-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
-                    Advance Payment Terms
+                  <label className="text-2xs font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                    Notes for Client
                   </label>
                   <textarea
                     rows={2}
-                    value={formData.payment_terms}
-                    onChange={(e) => setFormData({ ...formData, payment_terms: e.target.value })}
-                    className="w-full rounded-md border border-slate-200 bg-white p-2.5 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Notes</label>
-                  <textarea
-                    rows={2}
+                    placeholder="Advance commercial note, bank transfer instructions, or reference details..."
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    className="w-full rounded-md border border-slate-200 bg-white p-2.5 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-2xs font-bold uppercase tracking-wider text-slate-600">
+                      Payment Terms & Bank Coordinates
+                    </label>
+                  </div>
+
+                  {/* Standard Proforma Terms Preset Chips */}
+                  <TermsPresetsChips
+                    documentType="proforma"
+                    onSelectTerm={handleAppendTerm}
+                  />
+
+                  <textarea
+                    rows={3}
+                    placeholder="Advance payment requirements, NEFT/RTGS bank coordinates, milestone releases..."
+                    value={formData.payment_terms}
+                    onChange={(e) => setFormData({ ...formData, payment_terms: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Sticky Breakdown Card */}
+          {/* Sticky 4-Tier Commercial Settlement Console (4 Columns) */}
           <div className="lg:col-span-4 sticky top-20 space-y-4">
-            <Card className="border-blue-200/80 shadow-sm">
-              <CardHeader className="pb-3 border-b border-slate-100 bg-blue-50/40 rounded-t-xl">
+            <Card className="rounded-2xl border-blue-200/90 shadow-sm overflow-hidden">
+              <CardHeader className="pb-3 border-b border-slate-100 bg-blue-50/50">
                 <CardTitle className="text-sm font-bold text-slate-900 flex items-center justify-between">
-                  <span>Proforma Total</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-600 text-white uppercase font-bold">
+                  <span className="flex items-center gap-1.5">
+                    <Calculator className="w-4 h-4 text-blue-600" />
+                    <span>Commercial Summary</span>
+                  </span>
+                  <span className="text-2xs font-mono px-2 py-0.5 rounded bg-blue-600 text-white uppercase font-bold">
                     {formData.currency}
                   </span>
                 </CardTitle>
@@ -541,7 +665,7 @@ export default function CreateProformaPage() {
                 <div className="space-y-1.5 pb-3 border-b border-slate-100">
                   <div className="flex items-center justify-between">
                     <span className="text-2xs font-bold uppercase tracking-wider text-slate-500">Tax Mode</span>
-                    <span className="text-2xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                    <span className="text-3xs font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                       {isTaxInclusive ? "GST Included" : "GST Added on Top"}
                     </span>
                   </div>
@@ -549,7 +673,7 @@ export default function CreateProformaPage() {
                     <button
                       type="button"
                       onClick={() => setFormData((prev) => ({ ...prev, tax_calculation_type: "exclusive" }))}
-                      className={`py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                      className={`py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
                         !isTaxInclusive
                           ? "bg-white text-blue-700 shadow-xs"
                           : "text-slate-600 hover:text-slate-900"
@@ -560,7 +684,7 @@ export default function CreateProformaPage() {
                     <button
                       type="button"
                       onClick={() => setFormData((prev) => ({ ...prev, tax_calculation_type: "inclusive" }))}
-                      className={`py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                      className={`py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
                         isTaxInclusive
                           ? "bg-white text-blue-700 shadow-xs"
                           : "text-slate-600 hover:text-slate-900"
@@ -573,13 +697,13 @@ export default function CreateProformaPage() {
 
                 {/* 2. Subtotal */}
                 <div className="flex justify-between items-center text-slate-600">
-                  <span>Subtotal {isTaxInclusive ? "(Gross)" : "(Net)"}</span>
+                  <span>Deliverables Turnover {isTaxInclusive ? "(Gross)" : "(Net)"}</span>
                   <span className="font-mono font-semibold text-slate-900">
                     ₹{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
 
-                {/* 3. Discount Controls (Percentage vs Fixed Amount) */}
+                {/* 3. Discount Controls */}
                 <div className="space-y-1.5 pb-3 border-b border-slate-100">
                   <div className="flex items-center justify-between">
                     <span className="text-2xs font-bold uppercase tracking-wider text-slate-500">Discount</span>
@@ -647,7 +771,7 @@ export default function CreateProformaPage() {
                   </div>
                 </div>
 
-                {/* 4. Taxable Turnover if Inclusive */}
+                {/* 4. Taxable Base if Inclusive */}
                 {isTaxInclusive && (
                   <div className="flex justify-between items-center text-slate-600">
                     <span className="text-slate-500">Taxable Turnover</span>
@@ -675,28 +799,30 @@ export default function CreateProformaPage() {
                   </span>
                 </div>
 
+                {/* 6. Round Off Adjustment */}
                 <div className="flex justify-between items-center text-slate-600 pt-2 border-t border-slate-100">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={formData.is_round_off}
-                      onChange={(e) => setFormData({ ...formData, is_round_off: e.target.checked })}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, is_round_off: e.target.checked }))}
                       className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span>Round Off</span>
+                    <span>Round Off Adjustment</span>
                   </label>
                   <span className="font-mono text-slate-500">
                     {roundOffAmount >= 0 ? `+₹${roundOffAmount}` : `-₹${Math.abs(roundOffAmount)}`}
                   </span>
                 </div>
 
-                <div className="p-3 rounded-lg bg-blue-600 text-white flex justify-between items-center">
+                {/* 7. Total Payable Amount */}
+                <div className="p-3.5 rounded-xl bg-blue-600 text-white flex justify-between items-center shadow-md">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-blue-100">
                       Total Advance Payable
                     </p>
                     <p className="text-xl font-mono font-black mt-0.5">
-                      ₹{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      ₹{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                   <Sparkles className="w-6 h-6 text-blue-200 opacity-80" />
@@ -704,48 +830,120 @@ export default function CreateProformaPage() {
               </CardContent>
             </Card>
 
+            {/* Quick Actions */}
             <div className="space-y-2">
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 font-medium shadow-xs"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 font-semibold shadow-xs cursor-pointer"
               >
                 {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                Save Proforma
+                Save Proforma Invoice
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push("/dashboard/proforma")}
-                className="w-full"
+                onClick={() => setPreviewOpen(true)}
+                className="w-full border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
               >
-                Return to Proformas
+                <Eye className="w-4 h-4 mr-2 text-slate-500" />
+                Preview Proforma Sheet
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Sticky Mobile Quick Submit Bar */}
-        <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 sm:p-4 shadow-lg flex items-center justify-between gap-3 lg:hidden">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Total ({formData.currency})
-            </p>
-            <p className="font-mono text-base sm:text-lg font-black text-slate-900 leading-tight">
+        {/* Sticky Mobile Action Bar */}
+        <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 shadow-lg flex items-center justify-between gap-3 lg:hidden pb-[calc(env(safe-area-inset-bottom)+12px)]">
+          <div
+            onClick={() => setMobileDrawerOpen(true)}
+            className="cursor-pointer"
+          >
+            <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <span>Total ({formData.currency})</span>
+              <span className="text-blue-600 font-bold underline text-2xs">Breakdown ^</span>
+            </div>
+            <p className="font-mono text-base font-black text-slate-900 leading-tight">
               ₹{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </p>
           </div>
 
-          <Button
-            type="submit"
-            disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm px-5 py-2.5 shadow-md flex items-center gap-1.5 cursor-pointer"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            <span>Issue Proforma</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPreviewOpen(true)}
+              className="h-11 px-3 text-xs border-slate-200 font-semibold"
+            >
+              <Eye className="w-4 h-4" />
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="h-11 px-5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-md flex items-center gap-1.5 cursor-pointer"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              <span>Save Proforma</span>
+            </Button>
+          </div>
         </div>
       </form>
+
+      {/* Live Document Preview Drawer */}
+      <DocumentPreviewDrawer
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        documentType="Proforma Invoice"
+        documentNumber={formData.proforma_number}
+        issueDate={formData.invoice_date}
+        dueDate={formData.due_date}
+        clientName={formData.client_name}
+        clientCompany={formData.client_company}
+        clientEmail={formData.client_email}
+        clientPhone={formData.client_phone}
+        clientAddress={formData.client_address}
+        currency={formData.currency}
+        items={formData.items}
+        subtotal={subtotal}
+        discountType={formData.discount_type}
+        discountAmount={discountAmount}
+        discountRate={effectiveDiscountRate}
+        taxCalculationType={formData.tax_calculation_type}
+        taxRate={activeTaxRate}
+        taxAmount={taxAmount}
+        roundOff={roundOffAmount}
+        grandTotal={grandTotal}
+        notes={formData.notes}
+        termsAndConditions={formData.payment_terms}
+        onConfirmSave={handleSubmit}
+      />
+
+      {/* Mobile Swipe-Up Financial Settlement Drawer */}
+      <MobileCalculationDrawer
+        open={mobileDrawerOpen}
+        onClose={() => setMobileDrawerOpen(false)}
+        currency={formData.currency}
+        subtotal={subtotal}
+        discountType={formData.discount_type}
+        discountAmount={discountAmount}
+        discountRate={effectiveDiscountRate}
+        effectiveDiscountRate={effectiveDiscountRate}
+        discountAmountInput={formData.discount_amount_input}
+        onChangeDiscountType={(t) => setFormData((prev) => ({ ...prev, discount_type: t }))}
+        onChangeDiscountRate={(r) => setFormData((prev) => ({ ...prev, discount_rate: r }))}
+        onChangeDiscountAmountInput={(a) => setFormData((prev) => ({ ...prev, discount_amount_input: a }))}
+        taxCalculationType={formData.tax_calculation_type}
+        onChangeTaxMode={(m) => setFormData((prev) => ({ ...prev, tax_calculation_type: m }))}
+        taxRate={formData.tax_rate}
+        onChangeTaxRate={(r) => setFormData((prev) => ({ ...prev, tax_rate: r }))}
+        taxableAmount={taxableAmount}
+        taxAmount={taxAmount}
+        isRoundOff={formData.is_round_off}
+        onChangeRoundOff={(c) => setFormData((prev) => ({ ...prev, is_round_off: c }))}
+        roundOffAmount={roundOffAmount}
+        grandTotal={grandTotal}
+      />
 
       {/* QUICK ADD CLIENT MODAL */}
       {quickAddOpen && (
@@ -838,7 +1036,7 @@ export default function CreateProformaPage() {
                   </label>
                   <input
                     type="text"
-                    placeholder="Kolkata"
+                    placeholder="Guwahati"
                     value={quickAddData.city}
                     onChange={(e) => setQuickAddData({ ...quickAddData, city: e.target.value })}
                     className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none font-medium"
@@ -851,7 +1049,7 @@ export default function CreateProformaPage() {
                   </label>
                   <input
                     type="text"
-                    placeholder="West Bengal"
+                    placeholder="Assam"
                     value={quickAddData.state}
                     onChange={(e) => setQuickAddData({ ...quickAddData, state: e.target.value })}
                     className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none font-medium"
@@ -909,4 +1107,3 @@ export default function CreateProformaPage() {
     </AdminLayout>
   );
 }
-
