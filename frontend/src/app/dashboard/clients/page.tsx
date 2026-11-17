@@ -597,7 +597,7 @@ function ClientsContent() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-2xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 mb-1">
                       Company / Organization Name <span className="text-rose-500">*</span>
                     </label>
                     <input
@@ -611,7 +611,7 @@ function ClientsContent() {
                   </div>
 
                   <div>
-                    <label className="block text-2xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 mb-1">
                       Primary Contact Person <span className="text-rose-500">*</span>
                     </label>
                     <input
@@ -627,7 +627,7 @@ function ClientsContent() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-2xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 mb-1">
                       Email Address (Optional)
                     </label>
                     <input
@@ -680,7 +680,7 @@ function ClientsContent() {
                   </div>
 
                   <div>
-                    <label className="block text-2xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 mb-1">
                       Permanent Account Number (PAN)
                     </label>
                     <input
@@ -697,7 +697,7 @@ function ClientsContent() {
                 {/* Address & Geo */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-2xs font-bold uppercase tracking-wider text-slate-700 mb-1">City</label>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 mb-1">City</label>
                     <input
                       type="text"
                       value={formData.city}
@@ -707,7 +707,7 @@ function ClientsContent() {
                   </div>
 
                   <div>
-                    <label className="block text-2xs font-bold uppercase tracking-wider text-slate-700 mb-1">State</label>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 mb-1">State</label>
                     <input
                       type="text"
                       value={formData.state}
@@ -717,7 +717,7 @@ function ClientsContent() {
                   </div>
 
                   <div>
-                    <label className="block text-2xs font-bold uppercase tracking-wider text-slate-700 mb-1">PIN / Postal Code</label>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 mb-1">PIN / Postal Code</label>
                     <input
                       type="text"
                       maxLength={6}
@@ -730,7 +730,7 @@ function ClientsContent() {
                 </div>
 
                 <div>
-                  <label className="block text-2xs font-bold uppercase tracking-wider text-slate-700 mb-1">Full Billing Address</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 mb-1">Full Billing Address</label>
                   <input
                     type="text"
                     placeholder="Office suite, Tech park, Sector V, Salt Lake, Kolkata 700091"
@@ -743,7 +743,7 @@ function ClientsContent() {
                 {/* Commercial Terms */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-2xs font-bold uppercase tracking-wider text-slate-700 mb-1">Currency</label>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 mb-1">Currency</label>
                     <select
                       value={formData.currency}
                       onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
@@ -758,7 +758,7 @@ function ClientsContent() {
                   </div>
 
                   <div>
-                    <label className="block text-2xs font-bold uppercase tracking-wider text-slate-700 mb-1">Payment Terms</label>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 mb-1">Payment Terms</label>
                     <select
                       value={formData.payment_terms}
                       onChange={(e) => setFormData({ ...formData, payment_terms: e.target.value })}
@@ -809,7 +809,7 @@ function ClientsContent() {
                 )}
 
                 <div>
-                  <label className="block text-2xs font-bold uppercase tracking-wider text-slate-700 mb-1">Internal Notes</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 mb-1">Internal Notes</label>
                   <textarea
                     rows={2}
                     value={formData.notes}

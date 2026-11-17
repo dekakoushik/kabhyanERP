@@ -76,7 +76,7 @@ export default function ClientCombobox({
                     <span className="text-slate-400 font-normal">
                       ({selectedClient.name})
                     </span>{" "}
-                    <span className="font-mono text-2xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                    <span className="font-mono text-[11px] font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
                       {selectedClient.client_code}
                     </span>
                   </span>
@@ -136,7 +136,7 @@ export default function ClientCombobox({
                 <p className="text-xs font-semibold text-slate-600">
                   No matching clients found
                 </p>
-                <p className="text-2xs text-slate-400">
+                <p className="text-xs text-slate-500">
                   You can register a new client profile right away.
                 </p>
               </div>
@@ -163,11 +163,11 @@ export default function ClientCombobox({
                         <span className="font-bold text-xs truncate">
                           {cli.company_name}
                         </span>
-                        <span className="font-mono text-3xs font-bold text-blue-700 bg-blue-100/70 px-1.5 py-0.5 rounded border border-blue-200">
+                        <span className="font-mono text-[10px] font-semibold text-blue-700 bg-blue-100/70 px-1.5 py-0.5 rounded border border-blue-200">
                           {cli.client_code}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 text-2xs text-slate-500 font-normal">
+                      <div className="flex items-center gap-3 text-xs text-slate-500 font-normal">
                         <span className="flex items-center gap-1 truncate">
                           <User className="w-3 h-3 text-slate-400 shrink-0" />
                           <span className="truncate">{cli.name}</span>
@@ -191,7 +191,7 @@ export default function ClientCombobox({
 
           {/* FOOTER: ADD NEW CLIENT */}
           <div className="p-2 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-2">
-            <span className="text-2xs text-slate-500 font-medium px-2">
+            <span className="text-xs text-slate-500 font-medium px-2">
               {clients.length} corporate clients registered
             </span>
             <button

@@ -264,7 +264,7 @@ export default function DocumentItemsTable({
                       >
                         <div className="flex items-center justify-between text-xs font-bold text-slate-800 group-hover:text-blue-700">
                           <span>{preset.name}</span>
-                          <span className="font-mono text-2xs text-slate-500 font-semibold">
+                          <span className="font-mono text-[11px] text-slate-500 font-semibold">
                             ₹{preset.unit_price.toLocaleString("en-IN")}/{preset.unit}
                           </span>
                         </div>
@@ -434,7 +434,7 @@ export default function DocumentItemsTable({
                                   <select
                                     value={item.unit || "hrs"}
                                     onChange={(e) => onItemChange(idx, "unit", e.target.value)}
-                                    className="h-8 px-1.5 text-2xs font-semibold text-slate-600 bg-slate-50 border-l border-slate-200 focus:outline-none cursor-pointer"
+                                    className="h-8 px-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border-l border-slate-200 focus:outline-none cursor-pointer"
                                   >
                                     <option value="hrs">hrs</option>
                                     <option value="days">days</option>
@@ -737,7 +737,7 @@ export default function DocumentItemsTable({
                                   <select
                                     value={item.unit || "hrs"}
                                     onChange={(e) => onItemChange(idx, "unit", e.target.value)}
-                                    className="h-11 px-2 text-2xs font-semibold text-slate-600 bg-slate-50 border-l border-slate-200 focus:outline-none cursor-pointer"
+                                    className="h-11 px-2 text-xs font-semibold text-slate-600 bg-slate-50 border-l border-slate-200 focus:outline-none cursor-pointer"
                                   >
                                     <option value="hrs">hrs</option>
                                     <option value="days">days</option>

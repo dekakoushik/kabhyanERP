@@ -96,7 +96,7 @@ export default function QuickAddProjectModal({
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900">Quick Add Project</h3>
-              <p className="text-2xs text-slate-500">
+              <p className="text-xs text-slate-500">
                 Register project and link directly to this document
               </p>
             </div>
@@ -121,7 +121,7 @@ export default function QuickAddProjectModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="sm:col-span-2">
-              <label className="block text-2xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 mb-1">
                 Project Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -135,7 +135,7 @@ export default function QuickAddProjectModal({
             </div>
 
             <div>
-              <label className="block text-2xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 mb-1">
                 Project Code <span className="text-red-500">*</span>
               </label>
               <input
@@ -151,7 +151,7 @@ export default function QuickAddProjectModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-2xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 mb-1">
                 Status
               </label>
               <select
@@ -166,7 +166,7 @@ export default function QuickAddProjectModal({
             </div>
 
             <div>
-              <label className="block text-2xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 mb-1">
                 Priority
               </label>
               <select
@@ -182,7 +182,7 @@ export default function QuickAddProjectModal({
             </div>
 
             <div>
-              <label className="block text-2xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 mb-1">
                 Budget (Optional)
               </label>
               <input
@@ -198,7 +198,7 @@ export default function QuickAddProjectModal({
           </div>
 
           <div>
-            <label className="block text-2xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 mb-1">
               Scope / Description (Optional)
             </label>
             <textarea

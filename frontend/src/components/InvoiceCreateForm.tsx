@@ -773,7 +773,7 @@ export default function InvoiceCreateForm({
                     <FileCheck className="w-5 h-5" />
                   </span>
                   <span>{linkedProforma ? "Issue Milestone Tax Invoice" : "Generate Tax Invoice"}</span>
-                  <span className="font-mono text-2xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-bold">
+                  <span className="font-mono text-[11px] px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
                     {formData.invoice_number || "INV-DRAFT"}
                   </span>
                 </h1>
@@ -1155,11 +1155,11 @@ export default function InvoiceCreateForm({
                   <span className="text-xs sm:text-sm font-bold text-slate-800">
                     Tax Invoice Parameters & Dates
                   </span>
-                  <span className="text-2xs text-slate-400 font-mono hidden sm:inline">
+                  <span className="text-xs text-slate-400 font-mono hidden sm:inline">
                     ({formData.invoice_number} • {formData.currency} • {formData.status.toUpperCase()})
                   </span>
                 </div>
-                <div className="flex items-center gap-1 text-2xs font-bold text-blue-600">
+                <div className="flex items-center gap-1 text-xs font-semibold text-blue-600">
                   <span>{metadataExpanded ? "Collapse" : "Edit Details"}</span>
                   {metadataExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 </div>
@@ -1168,7 +1168,7 @@ export default function InvoiceCreateForm({
               {metadataExpanded && (
                 <div className="p-5 border-t border-slate-100 bg-slate-50/40 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 text-xs animate-in fade-in duration-150">
                   <div>
-                    <label className="text-2xs font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 block mb-1">
                       Invoice Number <span className="text-red-500">*</span>
                     </label>
                     <Input
@@ -1180,7 +1180,7 @@ export default function InvoiceCreateForm({
                   </div>
 
                   <div>
-                    <label className="text-2xs font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 block mb-1">
                       Currency
                     </label>
                     <select
@@ -1197,7 +1197,7 @@ export default function InvoiceCreateForm({
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="text-2xs font-bold uppercase tracking-wider text-slate-600">
+                      <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                         Link to Project
                       </label>
                       <button
@@ -1224,7 +1224,7 @@ export default function InvoiceCreateForm({
                   </div>
 
                   <div>
-                    <label className="text-2xs font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 block mb-1">
                       Invoice Date <span className="text-red-500">*</span>
                     </label>
                     <Input
@@ -1237,7 +1237,7 @@ export default function InvoiceCreateForm({
                   </div>
 
                   <div>
-                    <label className="text-2xs font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 block mb-1">
                       Payment Due Date <span className="text-red-500">*</span>
                     </label>
                     <Input
@@ -1250,7 +1250,7 @@ export default function InvoiceCreateForm({
                   </div>
 
                   <div>
-                    <label className="text-2xs font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 block mb-1">
                       Billing Status
                     </label>
                     <select
@@ -1459,7 +1459,7 @@ export default function InvoiceCreateForm({
                     <Calculator className="w-4 h-4 text-blue-600" />
                     <span>Invoice Settlement</span>
                   </span>
-                  <span className="text-2xs font-mono px-2 py-0.5 rounded bg-blue-600 text-white uppercase font-bold">
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-blue-600 text-white uppercase font-semibold">
                     {formData.currency}
                   </span>
                 </CardTitle>
@@ -1468,8 +1468,8 @@ export default function InvoiceCreateForm({
                 {/* 1. Tax Treatment: Exclusive vs Inclusive */}
                 <div className="space-y-1.5 pb-3 border-b border-slate-100">
                   <div className="flex items-center justify-between">
-                    <span className="text-2xs font-bold uppercase tracking-wider text-slate-500">Tax Mode</span>
-                    <span className="text-3xs font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Tax Mode</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                       {isTaxInclusive ? "GST Included" : "GST Added on Top"}
                     </span>
                   </div>
@@ -1510,8 +1510,8 @@ export default function InvoiceCreateForm({
                 {/* 3. Discount Controls */}
                 <div className="space-y-1.5 pb-3 border-b border-slate-100">
                   <div className="flex items-center justify-between">
-                    <span className="text-2xs font-bold uppercase tracking-wider text-slate-500">Discount</span>
-                    <div className="inline-flex p-0.5 bg-slate-100 rounded-lg text-2xs font-bold">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Discount</span>
+                    <div className="inline-flex p-0.5 bg-slate-100 rounded-lg text-[11px] font-semibold">
                       <button
                         type="button"
                         onClick={() => setFormData((prev) => ({ ...prev, discount_type: "percentage" }))}
@@ -1547,11 +1547,11 @@ export default function InvoiceCreateForm({
                             onChange={(e) => setFormData((prev) => ({ ...prev, discount_rate: e.target.value }))}
                             className="w-16 h-7 text-right pr-5 text-xs font-bold border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                           />
-                          <span className="absolute right-1.5 text-2xs font-bold text-slate-400 select-none">%</span>
+                          <span className="absolute right-1.5 text-xs font-medium text-slate-400 select-none">%</span>
                         </div>
                       ) : (
                         <div className="relative inline-flex items-center">
-                          <span className="absolute left-2 text-2xs font-bold text-slate-400 select-none">₹</span>
+                          <span className="absolute left-2 text-xs font-medium text-slate-400 select-none">₹</span>
                           <input
                             type="number"
                             min="0"
@@ -1564,7 +1564,7 @@ export default function InvoiceCreateForm({
                         </div>
                       )}
                       {discountAmount > 0 && isFixedDiscount && (
-                        <span className="text-2xs font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                        <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
                           {effectiveDiscountRate}% off
                         </span>
                       )}
@@ -1622,10 +1622,10 @@ export default function InvoiceCreateForm({
                 {/* 7. Total Payable Amount */}
                 <div className={`p-3.5 rounded-xl text-white flex justify-between items-center shadow-md ${linkedProforma ? "bg-purple-600" : "bg-blue-600"}`}>
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-blue-100">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-100">
                       Net Invoice Total
                     </p>
-                    <p className="text-xl font-mono font-black mt-0.5">
+                    <p className="text-lg font-mono font-bold mt-0.5">
                       ₹{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
