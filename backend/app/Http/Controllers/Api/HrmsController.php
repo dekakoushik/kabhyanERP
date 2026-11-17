@@ -752,21 +752,39 @@ class HrmsController extends Controller
                     'designation' => $u->designation,
                 ],
                 'ctc_annual' => (float) ($struct?->ctc_annual ?? 0),
+                'city_tier' => $struct?->city_tier ?? 'non_metro',
                 'gross_monthly' => (float) ($struct?->gross_monthly ?? 0),
                 'basic_monthly' => (float) ($struct?->basic_monthly ?? 0),
                 'hra_monthly' => (float) ($struct?->hra_monthly ?? 0),
+                'has_hra' => (bool) ($struct?->has_hra ?? true),
                 'special_allowance_monthly' => (float) ($struct?->special_allowance ?? 0),
+                'has_special_allowance' => (bool) ($struct?->has_special_allowance ?? true),
                 'conveyance_monthly' => (float) ($struct?->conveyance_allowance ?? 0),
+                'has_conveyance' => (bool) ($struct?->has_conveyance ?? true),
+                'has_epf' => (bool) ($struct?->has_epf ?? true),
+                'epf_mode' => $struct?->epf_mode ?? 'statutory_capped',
                 'epf_employee' => (float) ($struct?->pf_employee ?? 0),
+                'epf_employer' => (float) ($struct?->epf_employer ?? 0),
+                'has_esi' => (bool) ($struct?->has_esi ?? false),
+                'esi_employee' => (float) ($struct?->esi_employee ?? 0),
+                'esi_employer' => (float) ($struct?->esi_employer ?? 0),
+                'has_professional_tax' => (bool) ($struct?->has_professional_tax ?? true),
                 'professional_tax' => (float) ($struct?->professional_tax ?? 200),
+                'pt_state' => $struct?->pt_state ?? 'Assam',
+                'has_gratuity' => (bool) ($struct?->has_gratuity ?? true),
+                'gratuity_monthly' => (float) ($struct?->gratuity_monthly ?? 0),
+                'has_tds' => (bool) ($struct?->has_tds ?? false),
                 'tds_monthly' => (float) ($struct?->tds_monthly ?? 0),
+                'tax_regime' => $struct?->tax_regime ?? 'new',
                 'net_monthly' => (float) ($struct?->net_monthly ?? 0),
+                'total_employer_cost' => (float) ($struct?->total_employer_cost ?? 0),
                 'effective_from' => $struct?->effective_from?->format('Y-m-d') ?? null,
                 'bank_name' => $u->bank_name ?? null,
                 'account_number' => $u->account_number ?? null,
                 'ifsc_code' => $u->ifsc_code ?? null,
                 'pan_number' => $u->pan_number ?? null,
                 'uan_number' => $u->uan_number ?? null,
+                'esic_number' => $u->esic_number ?? null,
             ];
         });
 
@@ -781,14 +799,27 @@ class HrmsController extends Controller
     public function getSalaryStructure(User $user): JsonResponse
     {
         $structure = SalaryStructure::where('user_id', $user->id)->first();
+        $payload = null;
+
+        if ($structure) {
+            $payload = array_merge($structure->toArray(), [
+                'bank_name' => $user->bank_name,
+                'account_number' => $user->account_number,
+                'ifsc_code' => $user->ifsc_code,
+                'pan_number' => $user->pan_number,
+                'uan_number' => $user->uan_number,
+                'esic_number' => $user->esic_number,
+            ]);
+        }
+
         return response()->json([
             'user' => $user->load(['customRole']),
-            'salary_structure' => $structure,
+            'salary_structure' => $payload,
         ]);
     }
 
     /**
-     * Store or update salary structure (CTC breakdown).
+     * Store or update salary structure (CTC breakdown with Indian statutory rules & toggles).
      */
     public function storeSalaryStructure(Request $request): JsonResponse
     {
@@ -808,53 +839,136 @@ class HrmsController extends Controller
         $validated = validator($input, [
             'user_id' => 'required|exists:users,id',
             'ctc_annual' => 'required|numeric|min:0',
+            'city_tier' => 'nullable|string|in:non_metro,metro',
             'basic_monthly' => 'nullable|numeric|min:0',
+            'has_hra' => 'nullable|boolean',
             'hra_monthly' => 'nullable|numeric|min:0',
+            'has_special_allowance' => 'nullable|boolean',
             'special_allowance' => 'nullable|numeric|min:0',
+            'has_conveyance' => 'nullable|boolean',
             'conveyance_allowance' => 'nullable|numeric|min:0',
+            'has_epf' => 'nullable|boolean',
+            'epf_mode' => 'nullable|string|in:statutory_capped,actual,exempt',
             'pf_employee' => 'nullable|numeric|min:0',
+            'epf_employer' => 'nullable|numeric|min:0',
+            'has_esi' => 'nullable|boolean',
+            'esi_employee' => 'nullable|numeric|min:0',
+            'esi_employer' => 'nullable|numeric|min:0',
+            'has_professional_tax' => 'nullable|boolean',
             'professional_tax' => 'nullable|numeric|min:0',
+            'pt_state' => 'nullable|string|max:50',
+            'has_gratuity' => 'nullable|boolean',
+            'gratuity_monthly' => 'nullable|numeric|min:0',
+            'has_tds' => 'nullable|boolean',
             'tds_monthly' => 'nullable|numeric|min:0',
+            'tax_regime' => 'nullable|string|in:new,old',
             'effective_from' => 'nullable|date',
             'bank_name' => 'nullable|string|max:100',
             'account_number' => 'nullable|string|max:50',
             'ifsc_code' => 'nullable|string|max:20',
             'pan_number' => 'nullable|string|max:20',
             'uan_number' => 'nullable|string|max:30',
+            'esic_number' => 'nullable|string|max:30',
         ])->validate();
 
         $ctcAnnual = (float) $validated['ctc_annual'];
         $grossMonthly = $ctcAnnual / 12;
 
-        // Auto-calculate statutory standard breakdown if components are zero or not provided
-        $basic = !empty($validated['basic_monthly']) ? (float) $validated['basic_monthly'] : round($grossMonthly * 0.50, 2);
-        $hra = !empty($validated['hra_monthly']) ? (float) $validated['hra_monthly'] : round($grossMonthly * 0.25, 2);
-        $conveyance = !empty($validated['conveyance_allowance']) ? (float) $validated['conveyance_allowance'] : 1600.00;
-        $special = !empty($validated['special_allowance']) ? (float) $validated['special_allowance'] : max(0, round($grossMonthly - $basic - $hra - $conveyance, 2));
+        // Extract component toggles
+        $hasHra = filter_var($validated['has_hra'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $hasConv = filter_var($validated['has_conveyance'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $hasSpec = filter_var($validated['has_special_allowance'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $hasEpf = filter_var($validated['has_epf'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $hasEsi = filter_var($validated['has_esi'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $hasPt = filter_var($validated['has_professional_tax'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $hasGratuity = filter_var($validated['has_gratuity'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $hasTds = filter_var($validated['has_tds'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-        // Deductions
-        $pf = !empty($validated['pf_employee']) ? (float) $validated['pf_employee'] : round(min($basic * 0.12, 1800), 2);
-        $pt = isset($validated['professional_tax']) ? (float) $validated['professional_tax'] : 200.00;
-        $tds = !empty($validated['tds_monthly']) ? (float) $validated['tds_monthly'] : 0.00;
+        // Earnings
+        $basic = !empty($validated['basic_monthly']) ? (float) $validated['basic_monthly'] : round($grossMonthly * 0.50, 2);
+        $hra = $hasHra ? (!empty($validated['hra_monthly']) ? (float) $validated['hra_monthly'] : round($basic * 0.40, 2)) : 0.0;
+        $conveyance = $hasConv ? (!empty($validated['conveyance_allowance']) ? (float) $validated['conveyance_allowance'] : 1600.00) : 0.0;
+        $special = $hasSpec ? (!empty($validated['special_allowance']) ? (float) $validated['special_allowance'] : max(0, round($grossMonthly - $basic - $hra - $conveyance, 2))) : 0.0;
+
+        // Deductions & Statutory Contributions
+        $epfMode = $validated['epf_mode'] ?? 'statutory_capped';
+        if ($hasEpf && $epfMode !== 'exempt') {
+            $pf = !empty($validated['pf_employee']) ? (float) $validated['pf_employee'] : ($epfMode === 'statutory_capped' ? min(1800.00, round($basic * 0.12, 2)) : round($basic * 0.12, 2));
+            $epfEmployer = !empty($validated['epf_employer']) ? (float) $validated['epf_employer'] : $pf;
+        } else {
+            $pf = 0.0;
+            $epfEmployer = 0.0;
+        }
+
+        // ESIC: 0.75% employee & 3.25% employer if gross <= 21,000
+        $effectiveGross = $basic + $hra + $conveyance + $special;
+        if ($hasEsi && $effectiveGross <= 21000) {
+            $esiEmployee = !empty($validated['esi_employee']) ? (float) $validated['esi_employee'] : round($effectiveGross * 0.0075, 2);
+            $esiEmployer = !empty($validated['esi_employer']) ? (float) $validated['esi_employer'] : round($effectiveGross * 0.0325, 2);
+        } else {
+            $esiEmployee = 0.0;
+            $esiEmployer = 0.0;
+        }
+
+        // Professional Tax (Assam slabs by default)
+        if ($hasPt) {
+            if (isset($validated['professional_tax'])) {
+                $pt = (float) $validated['professional_tax'];
+            } else {
+                if ($effectiveGross <= 10000) {
+                    $pt = 0.0;
+                } elseif ($effectiveGross <= 15000) {
+                    $pt = 150.0;
+                } elseif ($effectiveGross <= 25000) {
+                    $pt = 180.0;
+                } else {
+                    $pt = 208.0;
+                }
+            }
+        } else {
+            $pt = 0.0;
+        }
+
+        // Gratuity: 4.81% of basic
+        $gratuityMonthly = $hasGratuity ? (!empty($validated['gratuity_monthly']) ? (float) $validated['gratuity_monthly'] : round((15 / 26) * ($basic / 12), 2)) : 0.0;
+
+        // TDS
+        $tds = $hasTds ? (!empty($validated['tds_monthly']) ? (float) $validated['tds_monthly'] : 0.0) : 0.0;
 
         $structure = SalaryStructure::updateOrCreate(
             ['user_id' => $validated['user_id']],
             [
                 'ctc_annual' => $ctcAnnual,
+                'city_tier' => $validated['city_tier'] ?? 'non_metro',
                 'basic_monthly' => $basic,
+                'has_hra' => $hasHra,
                 'hra_monthly' => $hra,
+                'has_special_allowance' => $hasSpec,
                 'special_allowance' => $special,
+                'has_conveyance' => $hasConv,
                 'conveyance_allowance' => $conveyance,
+                'has_epf' => $hasEpf,
+                'epf_mode' => $epfMode,
                 'pf_employee' => $pf,
+                'epf_employer' => $epfEmployer,
+                'has_esi' => $hasEsi,
+                'esi_employee' => $esiEmployee,
+                'esi_employer' => $esiEmployer,
+                'has_professional_tax' => $hasPt,
                 'professional_tax' => $pt,
+                'pt_state' => $validated['pt_state'] ?? 'Assam',
+                'has_gratuity' => $hasGratuity,
+                'gratuity_monthly' => $gratuityMonthly,
+                'has_tds' => $hasTds,
                 'tds_monthly' => $tds,
+                'tax_regime' => $validated['tax_regime'] ?? 'new',
                 'effective_from' => $validated['effective_from'] ?? now()->toDateString(),
             ]
         );
 
-        // Update banking/PAN fields on User if provided
+        // Update banking/PAN/UAN/ESIC fields on User if provided
         $userUpdate = [];
-        foreach (['bank_name', 'account_number', 'ifsc_code', 'pan_number', 'uan_number'] as $field) {
+        foreach (['bank_name', 'account_number', 'ifsc_code', 'pan_number', 'uan_number', 'esic_number'] as $field) {
             if (isset($validated[$field])) {
                 $userUpdate[$field] = $validated[$field];
             }
@@ -865,7 +979,14 @@ class HrmsController extends Controller
 
         return response()->json([
             'message' => 'Salary structure saved successfully.',
-            'salary_structure' => $structure->fresh(),
+            'salary_structure' => array_merge($structure->fresh()->toArray(), [
+                'bank_name' => $userUpdate['bank_name'] ?? null,
+                'account_number' => $userUpdate['account_number'] ?? null,
+                'ifsc_code' => $userUpdate['ifsc_code'] ?? null,
+                'pan_number' => $userUpdate['pan_number'] ?? null,
+                'uan_number' => $userUpdate['uan_number'] ?? null,
+                'esic_number' => $userUpdate['esic_number'] ?? null,
+            ]),
         ]);
     }
 
@@ -980,13 +1101,21 @@ class HrmsController extends Controller
             $lopDays = $att ? (float) $att->lop_days : 0;
             $paidDays = max(0, $workingDays - $lopDays);
 
-            $grossMonthly = (float) ($structure->basic_monthly + $structure->hra_monthly + $structure->special_allowance + $structure->conveyance_allowance);
+            $hra = ($structure->has_hra ?? true) ? (float) $structure->hra_monthly : 0.0;
+            $special = ($structure->has_special_allowance ?? true) ? (float) $structure->special_allowance : 0.0;
+            $conveyance = ($structure->has_conveyance ?? true) ? (float) $structure->conveyance_allowance : 0.0;
+            $grossMonthly = round((float) $structure->basic_monthly + $hra + $special + $conveyance, 2);
             
             // Daily wage calculation for Loss of Pay (LOP)
             $dailyWage = $totalDaysInMonth > 0 ? $grossMonthly / $totalDaysInMonth : 0;
             $lopDeduction = round($dailyWage * $lopDays, 2);
 
-            $statutoryDeductions = (float) ($structure->pf_employee + $structure->professional_tax + $structure->tds_monthly);
+            $pf = ($structure->has_epf ?? true) ? (float) $structure->pf_employee : 0.0;
+            $esi = ($structure->has_esi ?? false) ? (float) ($structure->esi_employee ?? 0) : 0.0;
+            $pt = ($structure->has_professional_tax ?? true) ? (float) $structure->professional_tax : 0.0;
+            $tds = ($structure->has_tds ?? false) ? (float) $structure->tds_monthly : 0.0;
+
+            $statutoryDeductions = round($pf + $esi + $pt + $tds, 2);
             $userTotalDeductions = round($statutoryDeductions + $lopDeduction, 2);
             $netPay = max(0, round($grossMonthly - $userTotalDeductions, 2));
 
@@ -1005,18 +1134,20 @@ class HrmsController extends Controller
                 'has_salary_structure' => true,
                 'basic' => (float) $structure->basic_monthly,
                 'basic_monthly' => (float) $structure->basic_monthly,
-                'hra' => (float) $structure->hra_monthly,
-                'hra_monthly' => (float) $structure->hra_monthly,
-                'allowances' => (float) ($structure->special_allowance + $structure->conveyance_allowance),
-                'special_allowance' => (float) $structure->special_allowance,
-                'conveyance' => (float) $structure->conveyance_allowance,
+                'hra' => $hra,
+                'hra_monthly' => $hra,
+                'allowances' => round($special + $conveyance, 2),
+                'special_allowance' => $special,
+                'conveyance' => $conveyance,
                 'gross' => $grossMonthly,
                 'gross_monthly' => $grossMonthly,
-                'pf' => (float) $structure->pf_employee,
-                'epf_employee' => (float) $structure->pf_employee,
-                'pt' => (float) $structure->professional_tax,
-                'professional_tax' => (float) $structure->professional_tax,
-                'tds' => (float) $structure->tds_monthly,
+                'pf' => $pf,
+                'epf_employee' => $pf,
+                'esi' => $esi,
+                'esi_employee' => $esi,
+                'pt' => $pt,
+                'professional_tax' => $pt,
+                'tds' => $tds,
                 'lop_days' => $lopDays,
                 'lop_deduction' => $lopDeduction,
                 'total_deductions' => $userTotalDeductions,
@@ -1112,6 +1243,7 @@ class HrmsController extends Controller
                         'bonus' => 0.00,
                         'gross_earnings' => $record['gross'],
                         'pf_deduction' => $record['pf'],
+                        'esi_deduction' => $record['esi'] ?? 0.00,
                         'pt_deduction' => $record['pt'],
                         'tds_deduction' => $record['tds'],
                         'lop_deduction' => $record['lop_deduction'],
