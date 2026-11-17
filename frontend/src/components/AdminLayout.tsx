@@ -8,6 +8,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import NotificationBell from "@/components/NotificationBell";
 import GlobalCommandPalette from "@/components/GlobalCommandPalette";
+import MobileAppHeader from "@/components/mobile/MobileAppHeader";
+import MobileAppTabBar from "@/components/mobile/MobileAppTabBar";
+import QuickActionBottomSheet from "@/components/mobile/QuickActionBottomSheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -91,8 +94,35 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [quickActionOpen, setQuickActionOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [canInstall, setCanInstall] = useState(false);
   const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({});
   const pathname = usePathname();
+
+  // PWA Install Prompt Listener
+  useEffect(() => {
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setCanInstall(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstall);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+    };
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") {
+      setCanInstall(false);
+    }
+    setDeferredPrompt(null);
+  };
 
   // Load saved collapse state on mount
   useEffect(() => {
@@ -606,8 +636,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <div className={`flex-1 flex flex-col min-w-0 print:w-full print:block print:p-0 transition-all duration-200 ${
         isCollapsed ? "lg:pl-20" : "lg:pl-64"
       }`}>
-        {/* Top Navbar */}
-        <header className="h-16 bg-white border-b border-slate-200/80 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30 print:hidden">
+        {/* Mobile Native App Header */}
+        <MobileAppHeader
+          user={user}
+          onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+          onInstallClick={handleInstallApp}
+          canInstall={canInstall}
+        />
+
+        {/* Desktop Top Navbar */}
+        <header className="hidden md:flex h-16 bg-white border-b border-slate-200/80 px-4 sm:px-8 items-center justify-between sticky top-0 z-30 print:hidden">
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => setMobileMenuOpen(true)}
@@ -751,10 +789,22 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </header>
 
         {/* Content Body */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto print:p-0 print:max-w-full print:m-0 print:w-full print:block">
+        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto pb-24 md:pb-8 print:p-0 print:max-w-full print:m-0 print:w-full print:block">
           {children}
         </main>
       </div>
+
+      {/* Mobile App Fixed Bottom Tab Bar */}
+      <MobileAppTabBar
+        onOpenQuickAction={() => setQuickActionOpen(true)}
+        onOpenMenuDrawer={() => setMobileMenuOpen(true)}
+      />
+
+      {/* Mobile Slide-Up Quick Action Bottom Sheet */}
+      <QuickActionBottomSheet
+        isOpen={quickActionOpen}
+        onClose={() => setQuickActionOpen(false)}
+      />
 
       {/* Global Command Palette (Ctrl+K / Cmd+K) */}
       <GlobalCommandPalette

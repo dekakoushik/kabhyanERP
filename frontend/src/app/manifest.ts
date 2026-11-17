@@ -1,0 +1,75 @@
+import type { MetadataRoute } from "next";
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: "Kabhyan ERP — Enterprise Management",
+    short_name: "Kabhyan ERP",
+    description: "Enterprise Operations, IT Delivery, HRMS, and Client Management Platform",
+    start_url: "/dashboard",
+    display: "standalone",
+    background_color: "#0f172a",
+    theme_color: "#0066FF",
+    orientation: "portrait-primary",
+    icons: [
+      {
+        src: "/icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icon-maskable-192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "maskable",
+      },
+      {
+        src: "/icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icon-maskable-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
+      {
+        src: "/icon.svg",
+        sizes: "any",
+        type: "image/svg+xml",
+      },
+    ],
+    shortcuts: [
+      {
+        name: "Dashboard",
+        short_name: "Dashboard",
+        description: "Open executive overview and KPI widgets",
+        url: "/dashboard",
+        icons: [{ src: "/icon-192.png", sizes: "192x192" }],
+      },
+      {
+        name: "Attendance & ESS",
+        short_name: "Attendance",
+        description: "Punch attendance and view leave balances",
+        url: "/dashboard/hrms/attendance",
+        icons: [{ src: "/icon-192.png", sizes: "192x192" }],
+      },
+      {
+        name: "Tax Invoices",
+        short_name: "Invoices",
+        description: "View and manage enterprise invoices",
+        url: "/dashboard/invoices",
+        icons: [{ src: "/icon-192.png", sizes: "192x192" }],
+      },
+      {
+        name: "Support Tickets",
+        short_name: "Tickets",
+        description: "Track customer deliverables and support tickets",
+        url: "/dashboard/tickets",
+        icons: [{ src: "/icon-192.png", sizes: "192x192" }],
+      },
+    ],
+  };
+}

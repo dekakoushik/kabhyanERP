@@ -5,6 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useBrand } from "@/context/BrandContext";
+import MobileAppHeader from "@/components/mobile/MobileAppHeader";
+import MobileAppTabBar from "@/components/mobile/MobileAppTabBar";
+import QuickActionBottomSheet from "@/components/mobile/QuickActionBottomSheet";
 import {
   Building2,
   FileText,
@@ -23,6 +26,32 @@ export default function ClientPortalLayout({ children }: { children: React.React
   const { user, logout } = useAuth();
   const { brand } = useBrand();
   const pathname = usePathname();
+  const [quickActionOpen, setQuickActionOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [canInstall, setCanInstall] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setCanInstall(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstall);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+    };
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") {
+      setCanInstall(false);
+    }
+    setDeferredPrompt(null);
+  };
 
   const navItems = [
     { name: "Overview", href: "/portal", icon: LayoutDashboard },
@@ -34,8 +63,15 @@ export default function ClientPortalLayout({ children }: { children: React.React
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Top Client Navigation Bar */}
-      <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-2xs">
+      {/* Mobile App Header */}
+      <MobileAppHeader
+        user={user}
+        onInstallClick={handleInstallApp}
+        canInstall={canInstall}
+      />
+
+      {/* Desktop Top Client Navigation Bar */}
+      <header className="hidden md:block sticky top-0 z-40 bg-white border-b border-slate-200 shadow-2xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <Link href="/portal" className="flex items-center gap-2.5">
@@ -128,9 +164,23 @@ export default function ClientPortalLayout({ children }: { children: React.React
       </header>
 
       {/* Main Page Canvas */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-8">
         {children}
       </main>
+
+      {/* Mobile Bottom Tab Bar */}
+      <MobileAppTabBar
+        isPortal={true}
+        onOpenQuickAction={() => setQuickActionOpen(true)}
+        onOpenMenuDrawer={() => {}}
+      />
+
+      {/* Quick Action Bottom Sheet */}
+      <QuickActionBottomSheet
+        isPortal={true}
+        isOpen={quickActionOpen}
+        onClose={() => setQuickActionOpen(false)}
+      />
 
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white py-6">
