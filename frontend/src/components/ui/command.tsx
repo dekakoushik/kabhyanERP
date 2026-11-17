@@ -40,7 +40,9 @@ const CommandDialog = ({
         onClick={() => onOpenChange(false)}
       />
       <div className="relative w-full max-w-xl z-10">
-        {children}
+        <Command className="overflow-hidden rounded-2xl bg-white text-slate-900 shadow-2xl border border-slate-200/90">
+          {children}
+        </Command>
       </div>
     </div>
   );
