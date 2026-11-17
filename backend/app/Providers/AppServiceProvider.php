@@ -56,15 +56,121 @@ class AppServiceProvider extends ServiceProvider
                 }
 
                 // 2. Auto-run pending database migrations (debounced every 5 minutes to keep requests fast)
-                $cacheKey = 'kabhyan_auto_migration_last_run_v9';
+                $cacheKey = 'kabhyan_auto_migration_last_run_v10';
                 if (!\Illuminate\Support\Facades\Cache::has($cacheKey)) {
                     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-                    try {
-                        // Also execute direct query cleanup for njbnewlifestyle@gmail.com
-                        \Illuminate\Support\Facades\DB::table('clients')->whereRaw('LOWER(TRIM(email)) = ?', ['njbnewlifestyle@gmail.com'])->delete();
-                        \Illuminate\Support\Facades\DB::table('users')->whereRaw('LOWER(TRIM(email)) = ?', ['njbnewlifestyle@gmail.com'])->where('role', 'client')->delete();
-                    } catch (\Throwable $e) {
-                        // Safe ignore
+
+                    // One-time autonomous live-mode database reset and dummy data purge
+                    $liveModePurgeKey = 'kabhyan_live_mode_reset_v1';
+                    if (!\Illuminate\Support\Facades\Cache::has($liveModePurgeKey)) {
+                        try {
+                            if (Schema::hasTable('personal_access_tokens')) {
+                                \Illuminate\Support\Facades\DB::table('personal_access_tokens')->delete();
+                            }
+                            if (Schema::hasTable('invoice_payments')) {
+                                \Illuminate\Support\Facades\DB::table('invoice_payments')->delete();
+                            }
+                            if (Schema::hasTable('invoice_items')) {
+                                \Illuminate\Support\Facades\DB::table('invoice_items')->delete();
+                            }
+                            if (Schema::hasTable('invoices')) {
+                                \Illuminate\Support\Facades\DB::table('invoices')->delete();
+                            }
+                            if (Schema::hasTable('proforma_invoice_items')) {
+                                \Illuminate\Support\Facades\DB::table('proforma_invoice_items')->delete();
+                            }
+                            if (Schema::hasTable('proforma_invoices')) {
+                                \Illuminate\Support\Facades\DB::table('proforma_invoices')->delete();
+                            }
+                            if (Schema::hasTable('estimate_items')) {
+                                \Illuminate\Support\Facades\DB::table('estimate_items')->delete();
+                            }
+                            if (Schema::hasTable('estimates')) {
+                                \Illuminate\Support\Facades\DB::table('estimates')->delete();
+                            }
+                            if (Schema::hasTable('tasks')) {
+                                \Illuminate\Support\Facades\DB::table('tasks')->delete();
+                            }
+                            if (Schema::hasTable('project_members')) {
+                                \Illuminate\Support\Facades\DB::table('project_members')->delete();
+                            }
+                            if (Schema::hasTable('projects')) {
+                                \Illuminate\Support\Facades\DB::table('projects')->delete();
+                            }
+                            if (Schema::hasTable('ticket_replies')) {
+                                \Illuminate\Support\Facades\DB::table('ticket_replies')->delete();
+                            }
+                            if (Schema::hasTable('tickets')) {
+                                \Illuminate\Support\Facades\DB::table('tickets')->delete();
+                            }
+                            if (Schema::hasTable('clients')) {
+                                \Illuminate\Support\Facades\DB::table('clients')->delete();
+                            }
+                            if (Schema::hasTable('expenses')) {
+                                \Illuminate\Support\Facades\DB::table('expenses')->delete();
+                            }
+                            if (Schema::hasTable('payslips')) {
+                                \Illuminate\Support\Facades\DB::table('payslips')->delete();
+                            }
+                            if (Schema::hasTable('payroll_batches')) {
+                                \Illuminate\Support\Facades\DB::table('payroll_batches')->delete();
+                            }
+                            if (Schema::hasTable('salary_structures')) {
+                                \Illuminate\Support\Facades\DB::table('salary_structures')->delete();
+                            }
+                            if (Schema::hasTable('leave_requests')) {
+                                \Illuminate\Support\Facades\DB::table('leave_requests')->delete();
+                            }
+                            if (Schema::hasTable('daily_attendances')) {
+                                \Illuminate\Support\Facades\DB::table('daily_attendances')->delete();
+                            }
+                            if (Schema::hasTable('monthly_attendances')) {
+                                \Illuminate\Support\Facades\DB::table('monthly_attendances')->delete();
+                            }
+                            if (Schema::hasTable('system_notifications')) {
+                                \Illuminate\Support\Facades\DB::table('system_notifications')->delete();
+                            }
+                            if (Schema::hasTable('users')) {
+                                \Illuminate\Support\Facades\DB::table('users')
+                                    ->whereRaw('LOWER(TRIM(email)) != ?', ['superadmin@kabhyan.com'])
+                                    ->delete();
+                            }
+
+                            // Reset numbering sequences to 1
+                            if (Schema::hasTable('system_settings')) {
+                                foreach (['estimate_next_number', 'proforma_next_number', 'invoice_next_number', 'client_next_number', 'expense_next_number'] as $seqKey) {
+                                    \Illuminate\Support\Facades\DB::table('system_settings')->updateOrInsert(
+                                        ['key' => $seqKey],
+                                        ['value' => '1', 'group' => 'document_numbering', 'type' => 'integer', 'updated_at' => now()]
+                                    );
+                                }
+
+                                \Illuminate\Support\Facades\DB::table('system_settings')->updateOrInsert(
+                                    ['key' => 'live_mode_purged_at'],
+                                    ['value' => now()->toIso8601String(), 'group' => 'system_lifecycle', 'type' => 'string', 'description' => 'Timestamp of live mode purge', 'updated_at' => now()]
+                                );
+                            }
+
+                            if (\Illuminate\Support\Facades\DB::getDriverName() === 'pgsql') {
+                                $tbls = [
+                                    'clients', 'projects', 'tasks', 'estimates', 'estimate_items',
+                                    'proforma_invoices', 'proforma_invoice_items', 'invoices',
+                                    'invoice_items', 'invoice_payments', 'expenses', 'tickets',
+                                    'ticket_replies', 'daily_attendances', 'monthly_attendances',
+                                    'leave_requests', 'salary_structures', 'payroll_batches',
+                                    'payslips', 'system_notifications',
+                                ];
+                                foreach ($tbls as $t) {
+                                    try {
+                                        \Illuminate\Support\Facades\DB::statement("ALTER SEQUENCE IF EXISTS {$t}_id_seq RESTART WITH 1");
+                                    } catch (\Throwable $seqE) {}
+                                }
+                            }
+
+                            \Illuminate\Support\Facades\Cache::forever($liveModePurgeKey, now()->toIso8601String());
+                        } catch (\Throwable $purgeEx) {
+                            \Illuminate\Support\Facades\Log::warning('Live mode purge: ' . $purgeEx->getMessage());
+                        }
                     }
 
                     // Autonomous schema column guarantee across all document and line item tables
