@@ -12,15 +12,13 @@ import {
   ArrowRight,
   ShieldAlert,
   Loader2,
-  Sparkles,
-  KeyRound,
 } from "lucide-react";
 
 export default function LoginPage() {
   const { login } = useAuth();
   const { brand } = useBrand();
-  const [email, setEmail] = useState("superadmin@kabhyan.com");
-  const [password, setPassword] = useState("Kabhyan@2026");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -45,11 +43,6 @@ export default function LoginPage() {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const fillQuick = (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword("Kabhyan@2026");
   };
 
   return (
@@ -159,53 +152,6 @@ export default function LoginPage() {
               </button>
             </div>
           </form>
-
-          {/* Quick Demo Autofill Pills */}
-          <div className="mt-8 pt-6 border-t border-slate-100">
-            <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 mb-2.5">
-              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-              <span>Quick Login (Demo Accounts):</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                type="button"
-                onClick={() => fillQuick("superadmin@kabhyan.com")}
-                className="text-xs px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium transition cursor-pointer"
-              >
-                SuperAdmin
-              </button>
-              <button
-                type="button"
-                onClick={() => fillQuick("admin@kabhyan.com")}
-                className="text-xs px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium transition cursor-pointer"
-              >
-                Admin
-              </button>
-              <button
-                type="button"
-                onClick={() => fillQuick("hr@kabhyan.com")}
-                className="text-xs px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium transition cursor-pointer"
-              >
-                HR
-              </button>
-              <button
-                type="button"
-                onClick={() => fillQuick("dev@kabhyan.com")}
-                className="text-xs px-2.5 py-1 rounded-md bg-amber-50 text-amber-700 hover:bg-amber-100 font-medium transition cursor-pointer"
-              >
-                Employee
-              </button>
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 mt-3 pt-2">
-              <span className="inline-flex items-center gap-1 text-slate-400">
-                <KeyRound className="w-3.5 h-3.5 shrink-0" />
-                <span>Default password for all accounts:</span>
-              </span>
-              <code className="bg-slate-100 border border-slate-200/80 px-1.5 py-0.5 rounded text-slate-700 font-mono font-medium">
-                Kabhyan@2026
-              </code>
-            </div>
-          </div>
         </div>
 
         {/* Footer */}

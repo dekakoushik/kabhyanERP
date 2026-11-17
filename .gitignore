@@ -39,3 +39,7 @@ Thumbs.db
 *.sln
 *.sw?
 
+# Sensitive Credentials
+pass.md
+
+
