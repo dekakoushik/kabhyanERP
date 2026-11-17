@@ -68,14 +68,20 @@ export default function StaffEditPage({
 
         if (userRes?.user) {
           const u: User = userRes.user;
+          const availableRoles: Role[] = rolesRes?.roles || [];
+          const matchedRole = availableRoles.find((r) =>
+            u.role_id ? r.id === u.role_id : r.slug === u.role
+          );
+          const initialRoleId = matchedRole ? String(matchedRole.id) : (u.role_id ? String(u.role_id) : "");
+
           setFormData({
             name: u.name,
             email: u.email,
             phone: u.phone || "",
             emergency_contact: u.emergency_contact || "",
             employee_code: u.employee_code || "",
-            role_id: u.role_id ? String(u.role_id) : "",
-            role: u.role,
+            role_id: initialRoleId,
+            role: matchedRole ? matchedRole.slug : u.role,
             department: u.department || "General",
             designation: u.designation || "Staff Member",
             date_of_joining: u.date_of_joining ? u.date_of_joining.split("T")[0] : "",
@@ -138,10 +144,18 @@ export default function StaffEditPage({
         payload.password = formData.password.trim();
       }
 
-      await api.request(`/users/${resolvedParams.id}`, {
+      const updateRes = await api.request(`/users/${resolvedParams.id}`, {
         method: "PUT",
         body: JSON.stringify(payload),
       });
+
+      // Synchronize client session in localStorage if the user edited their own profile
+      const currentUser = api.getUser();
+      if (currentUser && String(currentUser.id) === String(resolvedParams.id)) {
+        if (updateRes?.user) {
+          api.setUser(updateRes.user);
+        }
+      }
 
       toast.success("Staff profile updated successfully.");
       router.push(`/dashboard/users/${resolvedParams.id}`);

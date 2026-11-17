@@ -132,6 +132,7 @@ class AppServiceProvider extends ServiceProvider
                             }
                             if (Schema::hasTable('users')) {
                                 \Illuminate\Support\Facades\DB::table('users')
+                                    ->where('role', '!=', 'superadmin')
                                     ->whereRaw('LOWER(TRIM(email)) != ?', ['superadmin@kabhyan.com'])
                                     ->delete();
                             }

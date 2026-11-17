@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -10,8 +11,9 @@ class DatabaseSeeder extends Seeder
 {
     /**
      * Seed the application's database for Live Production mode.
-     * Retains ONLY official system roles, permissions, corporate settings,
-     * and the primary SuperAdmin account.
+     * Retains official system roles, permissions, corporate settings,
+     * and ensures at least one active SuperAdmin account exists without
+     * overwriting custom credentials.
      */
     public function run(): void
     {
@@ -21,19 +23,26 @@ class DatabaseSeeder extends Seeder
         // 2. Official Corporate System Settings (Idempotent)
         $this->call(SystemSettingSeeder::class);
 
-        // 3. Primary Super Admin Authority (Sole Preserved System User)
-        User::firstOrCreate(
-            ['email' => 'superadmin@kabhyan.com'],
-            [
+        // 3. Ensure a SuperAdmin account exists (Never overwrite existing user's custom email/password)
+        $hasSuperAdmin = User::where('role', 'superadmin')
+            ->orWhereHas('customRole', fn ($q) => $q->where('slug', 'superadmin'))
+            ->exists();
+
+        if (! $hasSuperAdmin) {
+            $superadminRole = Role::where('slug', 'superadmin')->first();
+
+            User::create([
                 'name' => 'Kabhyan Super Admin',
+                'email' => 'superadmin@kabhyan.com',
                 'phone' => '+91 9876543210',
                 'role' => 'superadmin',
+                'role_id' => $superadminRole?->id,
                 'department' => 'Executive Office',
                 'designation' => 'Chief Technology Officer',
                 'status' => 'active',
                 'password' => Hash::make('Kabhyan@2026'),
                 'email_verified_at' => now(),
-            ]
-        );
+            ]);
+        }
     }
 }
