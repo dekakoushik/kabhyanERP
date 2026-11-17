@@ -19,6 +19,8 @@ export default function GlobalError({
       <head>
         <title>Kabhyan ERP - System Notice</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <link rel="alternate icon" href="/favicon.ico" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap"
