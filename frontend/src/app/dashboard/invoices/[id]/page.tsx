@@ -164,8 +164,13 @@ function InvoiceDetailContent({ invoiceParam }: { invoiceParam: string }) {
 
   const dueDateInfo = getDueDateStatus(invoice.due_date);
 
+  const isTaxInclusive = (invoice as any).tax_calculation_type === "inclusive";
+  const taxableBase = isTaxInclusive
+    ? Math.max(0, Number(invoice.total_amount) - Number(invoice.round_off || 0) - Number(invoice.tax_amount))
+    : Math.max(0, (Number(invoice.subtotal) || 0) - (Number(invoice.discount_amount) || 0));
+
   const gstSplit = calculateGSTSplit({
-    subtotal: Number(invoice.subtotal) || 0,
+    subtotal: taxableBase,
     taxRate: Number(invoice.tax_rate) || 18,
     supplierGstin: "18AAGCK2934D1Z2",
     recipientGstin: invoice.client_gstin,
@@ -413,16 +418,36 @@ function InvoiceDetailContent({ invoiceParam }: { invoiceParam: string }) {
 
             <div className="sm:w-72 space-y-2 text-xs">
               <div className="flex justify-between text-slate-600">
-                <span>Subtotal:</span>
+                <span>Subtotal ({isTaxInclusive ? "Gross" : "Net"}):</span>
                 <span className="font-mono font-semibold">
                   ₹{Number(invoice.subtotal).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </span>
               </div>
+              {Number(invoice.discount_amount || 0) > 0 && (
+                <div className="flex justify-between text-slate-600">
+                  <span>
+                    {(invoice as any).discount_type === "fixed"
+                      ? "Discount (Flat):"
+                      : `Discount (${invoice.discount_rate}%):`}
+                  </span>
+                  <span className="font-mono text-emerald-600 font-semibold">
+                    -₹{Number(invoice.discount_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+              {isTaxInclusive && (
+                <div className="flex justify-between text-slate-600">
+                  <span>Taxable Turnover:</span>
+                  <span className="font-mono font-semibold">
+                    ₹{taxableBase.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
 
               {/* Statutory GST Dissection */}
               {gstSplit.isInterState ? (
                 <div className="flex justify-between text-slate-600">
-                  <span>IGST ({gstSplit.igstRate}%):</span>
+                  <span>IGST ({gstSplit.igstRate}%{isTaxInclusive ? " Incl." : ""}):</span>
                   <span className="font-mono font-semibold">
                     ₹{gstSplit.igstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </span>
@@ -430,18 +455,26 @@ function InvoiceDetailContent({ invoiceParam }: { invoiceParam: string }) {
               ) : (
                 <>
                   <div className="flex justify-between text-slate-600">
-                    <span>CGST ({gstSplit.cgstRate}%):</span>
+                    <span>CGST ({gstSplit.cgstRate}%{isTaxInclusive ? " Incl." : ""}):</span>
                     <span className="font-mono font-semibold">
                       ₹{gstSplit.cgstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="flex justify-between text-slate-600">
-                    <span>SGST ({gstSplit.sgstRate}%):</span>
+                    <span>SGST ({gstSplit.sgstRate}%{isTaxInclusive ? " Incl." : ""}):</span>
                     <span className="font-mono font-semibold">
                       ₹{gstSplit.sgstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                 </>
+              )}
+              {Number(invoice.round_off || 0) !== 0 && (
+                <div className="flex justify-between text-slate-600">
+                  <span>Round Off:</span>
+                  <span className="font-mono font-semibold">
+                    {Number(invoice.round_off) > 0 ? "+" : ""}₹{Number(invoice.round_off).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
               )}
 
               <div className="flex justify-between text-base font-bold text-slate-900 border-t border-slate-200 pt-2">

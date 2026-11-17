@@ -130,7 +130,7 @@
             <td style="width: 48%; vertical-align: top;">
                 <table class="totals-table">
                     <tr>
-                        <td style="width: 55%; color: #64748b;">Subtotal:</td>
+                        <td style="width: 55%; color: #64748b;">Subtotal ({{ ($invoice->tax_calculation_type ?? 'exclusive') === 'inclusive' ? 'Gross' : 'Net' }}):</td>
                         <td style="width: 45%; text-align: right; color: #0f172a;">
                             &#8377;{{ number_format($invoice->subtotal, 2) }}
                         </td>
@@ -138,31 +138,51 @@
                     @if((float)$invoice->discount_amount > 0)
                     <tr>
                         <td style="color: #059669;">
-                            Discount ({{ number_format((float)$invoice->discount_rate, 2) }}%):
+                            @if(($invoice->discount_type ?? 'percentage') === 'fixed')
+                                Discount (Fixed Amount):
+                            @else
+                                Discount ({{ number_format((float)$invoice->discount_rate, 2) }}%):
+                            @endif
                         </td>
                         <td style="text-align: right; color: #059669;">
                             -&#8377;{{ number_format((float)$invoice->discount_amount, 2) }}
                         </td>
                     </tr>
                     @endif
+                    @if(($invoice->tax_calculation_type ?? 'exclusive') === 'inclusive')
+                    <tr>
+                        <td style="color: #64748b;">Taxable Turnover:</td>
+                        <td style="text-align: right; color: #0f172a;">
+                            &#8377;{{ number_format(max(0, (float)$invoice->total_amount - (float)($invoice->round_off ?? 0) - (float)$invoice->tax_amount), 2) }}
+                        </td>
+                    </tr>
+                    @endif
                     @if($isInterState)
                     <tr>
-                        <td style="color: #64748b;">IGST (18.00%):</td>
+                        <td style="color: #64748b;">IGST ({{ number_format((float)($invoice->tax_rate ?? 18), 2) }}%{{ ($invoice->tax_calculation_type ?? 'exclusive') === 'inclusive' ? ' Incl.' : '' }}):</td>
                         <td style="text-align: right; color: #0f172a;">
                             &#8377;{{ number_format($igstAmount, 2) }}
                         </td>
                     </tr>
                     @else
                     <tr>
-                        <td style="color: #64748b;">CGST (9.00%):</td>
+                        <td style="color: #64748b;">CGST ({{ number_format(((float)($invoice->tax_rate ?? 18)) / 2, 2) }}%{{ ($invoice->tax_calculation_type ?? 'exclusive') === 'inclusive' ? ' Incl.' : '' }}):</td>
                         <td style="text-align: right; color: #0f172a;">
                             &#8377;{{ number_format($cgstAmount, 2) }}
                         </td>
                     </tr>
                     <tr>
-                        <td style="color: #64748b;">SGST (9.00%):</td>
+                        <td style="color: #64748b;">SGST ({{ number_format(((float)($invoice->tax_rate ?? 18)) / 2, 2) }}%{{ ($invoice->tax_calculation_type ?? 'exclusive') === 'inclusive' ? ' Incl.' : '' }}):</td>
                         <td style="text-align: right; color: #0f172a;">
                             &#8377;{{ number_format($sgstAmount, 2) }}
+                        </td>
+                    </tr>
+                    @endif
+                    @if((float)($invoice->round_off ?? 0) != 0)
+                    <tr>
+                        <td style="color: #64748b;">Round Off:</td>
+                        <td style="text-align: right; color: #0f172a;">
+                            {{ (float)$invoice->round_off > 0 ? '+' : '' }}&#8377;{{ number_format((float)$invoice->round_off, 2) }}
                         </td>
                     </tr>
                     @endif

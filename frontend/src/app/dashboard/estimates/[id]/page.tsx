@@ -378,27 +378,56 @@ function EstimateDetailContent({
               )}
             </div>
 
-            <div className="w-full sm:w-64 space-y-2 text-xs font-medium">
+            <div className="w-full sm:w-72 space-y-2 text-xs font-medium">
               <div className="flex justify-between text-slate-500">
-                <span>Subtotal:</span>
+                <span>Subtotal ({(estimate as any).tax_calculation_type === "inclusive" ? "Gross" : "Net"}):</span>
                 <span className="font-mono text-slate-800">
                   ₹{Number(estimate.subtotal).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </span>
               </div>
               {Number(estimate.discount_amount || 0) > 0 && (
                 <div className="flex justify-between text-slate-500">
-                  <span>Discount ({estimate.discount_rate}%):</span>
-                  <span className="font-mono text-emerald-600">
+                  <span>
+                    {(estimate as any).discount_type === "fixed"
+                      ? "Discount (Flat):"
+                      : `Discount (${estimate.discount_rate}%):`}
+                  </span>
+                  <span className="font-mono text-emerald-600 font-semibold">
                     -₹{Number(estimate.discount_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               )}
-              <div className="flex justify-between text-slate-500">
-                <span>GST / Tax ({estimate.tax_rate}%):</span>
-                <span className="font-mono text-slate-800">
-                  ₹{Number(estimate.tax_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                </span>
-              </div>
+              {(estimate as any).tax_calculation_type === "inclusive" ? (
+                <>
+                  <div className="flex justify-between text-slate-500">
+                    <span>Taxable Turnover:</span>
+                    <span className="font-mono text-slate-800">
+                      ₹{Math.max(0, Number(estimate.total_amount) - Number(estimate.round_off || 0) - Number(estimate.tax_amount)).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-slate-500">
+                    <span>GST ({estimate.tax_rate}% Included):</span>
+                    <span className="font-mono text-slate-800">
+                      ₹{Number(estimate.tax_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-between text-slate-500">
+                  <span>GST / Tax ({estimate.tax_rate}%):</span>
+                  <span className="font-mono text-slate-800">
+                    +₹{Number(estimate.tax_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+              {Number(estimate.round_off || 0) !== 0 && (
+                <div className="flex justify-between text-slate-500">
+                  <span>Round Off:</span>
+                  <span className="font-mono text-slate-800">
+                    {Number(estimate.round_off) > 0 ? "+" : ""}₹{Number(estimate.round_off).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
               <div className="pt-2 border-t border-slate-200 flex justify-between text-base font-black text-slate-900">
                 <span>Grand Total:</span>
                 <span className="font-mono text-blue-600">

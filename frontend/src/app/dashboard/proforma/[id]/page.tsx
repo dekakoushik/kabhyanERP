@@ -364,17 +364,54 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
 
             <div className="sm:w-72 space-y-2 text-xs">
               <div className="flex justify-between text-slate-600">
-                <span>Subtotal:</span>
+                <span>Subtotal ({(proforma as any).tax_calculation_type === "inclusive" ? "Gross" : "Net"}):</span>
                 <span className="font-mono font-semibold">
                   ₹{Number(proforma.subtotal).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              <div className="flex justify-between text-slate-600">
-                <span>GST Tax (18%):</span>
-                <span className="font-mono font-semibold">
-                  ₹{Number(proforma.tax_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                </span>
-              </div>
+              {Number(proforma.discount_amount || 0) > 0 && (
+                <div className="flex justify-between text-slate-600">
+                  <span>
+                    {(proforma as any).discount_type === "fixed"
+                      ? "Discount (Flat):"
+                      : `Discount (${proforma.discount_rate}%):`}
+                  </span>
+                  <span className="font-mono text-emerald-600 font-semibold">
+                    -₹{Number(proforma.discount_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+              {(proforma as any).tax_calculation_type === "inclusive" ? (
+                <>
+                  <div className="flex justify-between text-slate-600">
+                    <span>Taxable Turnover:</span>
+                    <span className="font-mono font-semibold">
+                      ₹{Math.max(0, Number(proforma.total_amount) - Number(proforma.round_off || 0) - Number(proforma.tax_amount)).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>GST ({proforma.tax_rate || 18}% Included):</span>
+                    <span className="font-mono font-semibold">
+                      ₹{Number(proforma.tax_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-between text-slate-600">
+                  <span>GST Tax ({proforma.tax_rate || 18}%):</span>
+                  <span className="font-mono font-semibold">
+                    +₹{Number(proforma.tax_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+              {Number(proforma.round_off || 0) !== 0 && (
+                <div className="flex justify-between text-slate-600">
+                  <span>Round Off:</span>
+                  <span className="font-mono font-semibold">
+                    {Number(proforma.round_off) > 0 ? "+" : ""}₹{Number(proforma.round_off).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between text-base font-bold text-slate-900 border-t border-slate-200 pt-2">
                 <span>Total Payable:</span>
                 <span className="font-mono text-purple-600">

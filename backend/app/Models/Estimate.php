@@ -25,10 +25,12 @@ class Estimate extends Model
         'expiry_date',
         'status',
         'currency',
+        'tax_calculation_type',
         'subtotal',
         'tax_rate',
         'tax_amount',
         'round_off',
+        'discount_type',
         'discount_rate',
         'discount_amount',
         'total_amount',
@@ -95,14 +97,38 @@ class Estimate extends Model
     public function recalculateTotals(): void
     {
         $subtotal = (float) $this->items()->sum('amount');
-        $discountAmount = ($subtotal * ((float) ($this->discount_rate ?? 0))) / 100;
-        $taxableAmount = max(0, $subtotal - $discountAmount);
-        $taxAmount = ($taxableAmount * ((float) ($this->tax_rate ?? 0))) / 100;
+        $taxCalculationType = $this->tax_calculation_type ?? 'exclusive';
+        $discountType = $this->discount_type ?? 'percentage';
+
+        // 1. Calculate discount
+        if ($discountType === 'fixed') {
+            $discountAmount = min((float) ($this->discount_amount ?? 0), $subtotal);
+            $discountRate = $subtotal > 0 ? round(($discountAmount / $subtotal) * 100, 2) : 0;
+        } else {
+            $discountRate = (float) ($this->discount_rate ?? 0);
+            $discountAmount = round(($subtotal * $discountRate) / 100, 2);
+        }
+
+        $grossAfterDiscount = max(0, $subtotal - $discountAmount);
+        $taxRate = (float) ($this->tax_rate ?? 0);
+
+        // 2. Calculate tax based on mode
+        if ($taxCalculationType === 'inclusive') {
+            $taxableAmount = $taxRate > 0 ? round($grossAfterDiscount / (1 + ($taxRate / 100)), 2) : $grossAfterDiscount;
+            $taxAmount = round($grossAfterDiscount - $taxableAmount, 2);
+            $rawTotal = $grossAfterDiscount;
+        } else {
+            $taxableAmount = $grossAfterDiscount;
+            $taxAmount = round(($taxableAmount * $taxRate) / 100, 2);
+            $rawTotal = $taxableAmount + $taxAmount;
+        }
+
         $roundOff = (float) ($this->round_off ?? 0);
-        $total = $taxableAmount + $taxAmount + $roundOff;
+        $total = max(0, $rawTotal + $roundOff);
 
         $this->update([
             'subtotal' => $subtotal,
+            'discount_rate' => $discountRate,
             'discount_amount' => $discountAmount,
             'tax_amount' => $taxAmount,
             'round_off' => $roundOff,

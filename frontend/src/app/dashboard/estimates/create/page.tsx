@@ -69,8 +69,11 @@ export default function CreateEstimatePage() {
     expiry_date: "",
     status: "draft",
     currency: "INR",
+    tax_calculation_type: "exclusive" as "exclusive" | "inclusive",
     tax_rate: "18",
+    discount_type: "percentage" as "percentage" | "fixed",
     discount_rate: "0",
+    discount_amount_input: "",
     round_off: 0,
     is_round_off: true,
     target_total: "",
@@ -212,10 +215,30 @@ export default function CreateEstimatePage() {
 
   // Recalculate totals
   const subtotal = formData.items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-  const discountAmount = subtotal * (Number(formData.discount_rate) / 100);
-  const taxableAmount = Math.max(0, subtotal - discountAmount);
-  const taxAmount = taxableAmount * (Number(formData.tax_rate) / 100);
-  const rawTotal = taxableAmount + taxAmount;
+  const isFixedDiscount = formData.discount_type === "fixed";
+  const rawDiscountInput = isFixedDiscount ? Number(formData.discount_amount_input) || 0 : Number(formData.discount_rate) || 0;
+
+  const discountAmount = isFixedDiscount
+    ? Math.min(rawDiscountInput, subtotal)
+    : Number(((subtotal * Math.min(100, Math.max(0, rawDiscountInput))) / 100).toFixed(2));
+
+  const effectiveDiscountRate = subtotal > 0
+    ? Number(((discountAmount / subtotal) * 100).toFixed(2))
+    : 0;
+
+  const grossAfterDiscount = Math.max(0, subtotal - discountAmount);
+  const activeTaxRate = Number(formData.tax_rate) || 0;
+  const isTaxInclusive = formData.tax_calculation_type === "inclusive";
+
+  const taxableAmount = isTaxInclusive
+    ? (activeTaxRate > 0 ? Number((grossAfterDiscount / (1 + activeTaxRate / 100)).toFixed(2)) : grossAfterDiscount)
+    : grossAfterDiscount;
+
+  const taxAmount = isTaxInclusive
+    ? Number((grossAfterDiscount - taxableAmount).toFixed(2))
+    : Number(((taxableAmount * (activeTaxRate / 100))).toFixed(2));
+
+  const rawTotal = isTaxInclusive ? grossAfterDiscount : taxableAmount + taxAmount;
   const grandTotal = formData.is_round_off ? Math.round(rawTotal) : rawTotal;
   const roundOffAmount = formData.is_round_off ? Number((grandTotal - rawTotal).toFixed(2)) : 0;
 
@@ -284,8 +307,11 @@ export default function CreateEstimatePage() {
         method: "POST",
         body: JSON.stringify({
           ...formData,
-          subtotal,
+          tax_calculation_type: formData.tax_calculation_type,
+          discount_type: formData.discount_type,
+          discount_rate: effectiveDiscountRate,
           discount_amount: discountAmount,
+          subtotal,
           tax_amount: taxAmount,
           round_off: roundOffAmount,
           total: grandTotal,
@@ -478,6 +504,7 @@ export default function CreateEstimatePage() {
               items={formData.items}
               currency={formData.currency}
               taxRate={formData.tax_rate}
+              taxCalculationType={formData.tax_calculation_type}
               title="Item Table"
               onItemChange={handleItemChange}
               onAddItem={addItem}
@@ -528,53 +555,152 @@ export default function CreateEstimatePage() {
                   </span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-4 space-y-3.5 text-xs">
+              <CardContent className="pt-4 space-y-4 text-xs">
+                {/* 1. Tax Treatment: Exclusive vs Inclusive */}
+                <div className="space-y-1.5 pb-3 border-b border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xs font-bold uppercase tracking-wider text-slate-500">Tax Mode</span>
+                    <span className="text-2xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                      {isTaxInclusive ? "GST Included" : "GST Added on Top"}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, tax_calculation_type: "exclusive" }))}
+                      className={`py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                        !isTaxInclusive
+                          ? "bg-white text-blue-700 shadow-xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      Exclusive (+GST)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, tax_calculation_type: "inclusive" }))}
+                      className={`py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                        isTaxInclusive
+                          ? "bg-white text-blue-700 shadow-xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      Inclusive (Incl. GST)
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Subtotal */}
                 <div className="flex justify-between items-center text-slate-600">
-                  <span>Deliverables Subtotal</span>
+                  <span>Deliverables Subtotal {isTaxInclusive ? "(Gross)" : "(Net)"}</span>
                   <span className="font-mono font-semibold text-slate-900">
-                    ₹{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    ₹{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center text-slate-600">
-                  <span className="flex items-center gap-1.5">
-                    Discount (%)
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={formData.discount_rate}
-                      onChange={(e) => setFormData({ ...formData, discount_rate: e.target.value })}
-                      className="w-12 h-6 text-center text-xs border border-slate-200 rounded px-1"
-                    />
-                  </span>
-                  <span className="font-mono text-red-600">
-                    -₹{discountAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </span>
+                {/* 3. Discount Controls (Percentage vs Fixed Amount) */}
+                <div className="space-y-1.5 pb-3 border-b border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xs font-bold uppercase tracking-wider text-slate-500">Discount</span>
+                    <div className="inline-flex p-0.5 bg-slate-100 rounded-lg text-2xs font-bold">
+                      <button
+                        type="button"
+                        onClick={() => setFormData((prev) => ({ ...prev, discount_type: "percentage" }))}
+                        className={`px-2 py-0.5 rounded-md transition cursor-pointer ${
+                          !isFixedDiscount ? "bg-white text-blue-700 shadow-xs" : "text-slate-500 hover:text-slate-800"
+                        }`}
+                      >
+                        % Percent
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData((prev) => ({ ...prev, discount_type: "fixed" }))}
+                        className={`px-2 py-0.5 rounded-md transition cursor-pointer ${
+                          isFixedDiscount ? "bg-white text-blue-700 shadow-xs" : "text-slate-500 hover:text-slate-800"
+                        }`}
+                      >
+                        ₹ Flat
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <div className="flex items-center gap-1.5">
+                      {!isFixedDiscount ? (
+                        <div className="relative inline-flex items-center">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="any"
+                            placeholder="0"
+                            value={formData.discount_rate}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, discount_rate: e.target.value }))}
+                            className="w-16 h-7 text-right pr-5 text-xs font-bold border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                          <span className="absolute right-1.5 text-2xs font-bold text-slate-400 select-none">%</span>
+                        </div>
+                      ) : (
+                        <div className="relative inline-flex items-center">
+                          <span className="absolute left-2 text-2xs font-bold text-slate-400 select-none">₹</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            placeholder="0.00"
+                            value={formData.discount_amount_input}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, discount_amount_input: e.target.value }))}
+                            className="w-24 h-7 text-right pl-5 pr-2 text-xs font-bold border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+                      )}
+                      {discountAmount > 0 && isFixedDiscount && (
+                        <span className="text-2xs font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                          {effectiveDiscountRate}% off
+                        </span>
+                      )}
+                    </div>
+                    <span className="font-mono text-xs font-bold text-emerald-600">
+                      -₹{discountAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
                 </div>
 
+                {/* 4. Taxable Turnover if Inclusive */}
+                {isTaxInclusive && (
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span className="text-slate-500">Taxable Turnover</span>
+                    <span className="font-mono font-semibold text-slate-800">
+                      ₹{taxableAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                )}
+
+                {/* 5. GST Rate & Amount */}
                 <div className="flex justify-between items-center text-slate-600">
                   <span className="flex items-center gap-1.5">
                     GST Rate (%)
                     <input
                       type="number"
                       min="0"
+                      step="any"
                       value={formData.tax_rate}
-                      onChange={(e) => setFormData({ ...formData, tax_rate: e.target.value })}
-                      className="w-12 h-6 text-center text-xs border border-slate-200 rounded px-1"
+                      onChange={(e) => setFormData((prev) => ({ ...prev, tax_rate: e.target.value }))}
+                      className="w-12 h-6 text-center text-xs border border-slate-200 rounded px-1 font-bold"
                     />
                   </span>
                   <span className="font-mono text-slate-900 font-semibold">
-                    +₹{taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    {isTaxInclusive ? "Incl. " : "+"}₹{taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
 
+                {/* 6. Round Off Adjustment */}
                 <div className="flex justify-between items-center text-slate-600 pt-2 border-t border-slate-100">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={formData.is_round_off}
-                      onChange={(e) => setFormData({ ...formData, is_round_off: e.target.checked })}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, is_round_off: e.target.checked }))}
                       className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                     />
                     <span>Round Off Adjustment</span>
@@ -584,13 +710,14 @@ export default function CreateEstimatePage() {
                   </span>
                 </div>
 
+                {/* 7. Total Payable Amount */}
                 <div className="p-3 rounded-lg bg-blue-600 text-white flex justify-between items-center">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-blue-100">
                       Total Payable Amount
                     </p>
                     <p className="text-xl font-mono font-black mt-0.5">
-                      ₹{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      ₹{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                   <Sparkles className="w-6 h-6 text-blue-200 opacity-80" />

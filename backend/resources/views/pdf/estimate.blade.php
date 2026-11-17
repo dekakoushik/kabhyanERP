@@ -60,8 +60,8 @@
         <thead>
             <tr>
                 <th style="width: 50%; text-align: left;">ITEM DESCRIPTION &amp; SCOPE</th>
-                <th style="width: 16%; text-align: right;">QTY / HOURS</th>
-                <th style="width: 17%; text-align: right;">UNIT RATE</th>
+                <th style="width: 16%; text-align: right;">QTY / UNIT</th>
+                <th style="width: 17%; text-align: right;">{{ ($estimate->tax_calculation_type ?? 'exclusive') === 'inclusive' ? 'GROSS RATE' : 'UNIT RATE' }}</th>
                 <th style="width: 17%; text-align: right;">AMOUNT ({{ $estimate->currency ?? 'INR' }})</th>
             </tr>
         </thead>
@@ -115,7 +115,7 @@
             <td style="width: 48%; vertical-align: top;">
                 <table class="totals-table">
                     <tr>
-                        <td style="width: 55%; color: #64748b;">Subtotal:</td>
+                        <td style="width: 55%; color: #64748b;">Subtotal ({{ ($estimate->tax_calculation_type ?? 'exclusive') === 'inclusive' ? 'Gross' : 'Net' }}):</td>
                         <td style="width: 45%; text-align: right; color: #0f172a;">
                             &#8377;{{ number_format($estimate->subtotal, 2) }}
                         </td>
@@ -123,21 +123,52 @@
                     @if((float)$estimate->discount_amount > 0)
                     <tr>
                         <td style="color: #059669;">
-                            Discount ({{ number_format((float)$estimate->discount_rate, 2) }}%):
+                            @if(($estimate->discount_type ?? 'percentage') === 'fixed')
+                                Discount (Fixed Amount):
+                            @else
+                                Discount ({{ number_format((float)$estimate->discount_rate, 2) }}%):
+                            @endif
                         </td>
                         <td style="text-align: right; color: #059669;">
                             -&#8377;{{ number_format((float)$estimate->discount_amount, 2) }}
                         </td>
                     </tr>
                     @endif
+                    @if(($estimate->tax_calculation_type ?? 'exclusive') === 'inclusive')
                     <tr>
                         <td style="color: #64748b;">
-                            GST / Tax ({{ number_format((float)($estimate->tax_rate ?? 18), 2) }}%):
+                            Taxable Turnover:
+                        </td>
+                        <td style="text-align: right; color: #0f172a;">
+                            &#8377;{{ number_format(max(0, (float)$estimate->total_amount - (float)($estimate->round_off ?? 0) - (float)$estimate->tax_amount), 2) }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color: #64748b;">
+                            GST ({{ number_format((float)($estimate->tax_rate ?? 18), 2) }}% Included):
                         </td>
                         <td style="text-align: right; color: #0f172a;">
                             &#8377;{{ number_format($estimate->tax_amount, 2) }}
                         </td>
                     </tr>
+                    @else
+                    <tr>
+                        <td style="color: #64748b;">
+                            GST / Tax ({{ number_format((float)($estimate->tax_rate ?? 18), 2) }}%):
+                        </td>
+                        <td style="text-align: right; color: #0f172a;">
+                            +&#8377;{{ number_format($estimate->tax_amount, 2) }}
+                        </td>
+                    </tr>
+                    @endif
+                    @if((float)($estimate->round_off ?? 0) != 0)
+                    <tr>
+                        <td style="color: #64748b;">Round Off:</td>
+                        <td style="text-align: right; color: #0f172a;">
+                            {{ (float)$estimate->round_off > 0 ? '+' : '' }}&#8377;{{ number_format((float)$estimate->round_off, 2) }}
+                        </td>
+                    </tr>
+                    @endif
                     <tr>
                         <td colspan="2" style="border-top: 1.5px solid #cbd5e1; padding-top: 6px; margin-top: 3px;"></td>
                     </tr>

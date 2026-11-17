@@ -26,6 +26,7 @@ interface DocumentItemsTableProps {
   items: any[];
   currency?: string;
   taxRate?: number | string;
+  taxCalculationType?: "exclusive" | "inclusive";
   title?: string;
   subtitle?: string;
   itemLabel?: string;
@@ -40,6 +41,7 @@ export default function DocumentItemsTable({
   items,
   currency = "INR",
   taxRate = 18,
+  taxCalculationType = "exclusive",
   title = "Item Table",
   onItemChange,
   onAddItem,
@@ -101,7 +103,7 @@ export default function DocumentItemsTable({
                 <th className="py-3 px-3 w-28 text-right text-slate-600">Qty & Unit</th>
                 <th className="py-3 px-3 w-28 text-right text-slate-600">
                   <span className="inline-flex items-center gap-1 justify-end">
-                    <span>Rate ({currencySymbol})</span>
+                    <span>{taxCalculationType === "inclusive" ? "Gross Rate" : "Rate"} ({currencySymbol})</span>
                     <Calculator className="w-3.5 h-3.5 text-slate-400" />
                   </span>
                 </th>
@@ -111,7 +113,9 @@ export default function DocumentItemsTable({
                     <Info className="w-3.5 h-3.5 text-slate-400" />
                   </span>
                 </th>
-                <th className="py-3 px-4 w-36 text-right text-slate-600">Amount ({currencySymbol})</th>
+                <th className="py-3 px-4 w-36 text-right text-slate-600">
+                  {taxCalculationType === "inclusive" ? `Gross Total (${currencySymbol})` : `Amount (${currencySymbol})`}
+                </th>
                 <th className="py-3 px-2 w-10 text-center"></th>
               </tr>
             </thead>
@@ -127,14 +131,21 @@ export default function DocumentItemsTable({
                     {items.map((item, idx) => {
                       const qty = Number(item.quantity) || 0;
                       const rate = Number(item.unit_price) || 0;
-                      const taxable = Number((qty * rate).toFixed(2));
+                      const lineTotal = Number((qty * rate).toFixed(2));
 
                       const currentItemTaxRate =
                         item.tax_rate !== undefined && item.tax_rate !== null && item.tax_rate !== ""
                           ? Number(item.tax_rate)
                           : defaultNumTax;
 
-                      const itemGst = Number(((taxable * currentItemTaxRate) / 100).toFixed(2));
+                      const isInclusive = taxCalculationType === "inclusive";
+                      const taxable = isInclusive
+                        ? (currentItemTaxRate > 0 ? Number((lineTotal / (1 + currentItemTaxRate / 100)).toFixed(2)) : lineTotal)
+                        : lineTotal;
+
+                      const itemGst = isInclusive
+                        ? Number((lineTotal - taxable).toFixed(2))
+                        : Number(((taxable * currentItemTaxRate) / 100).toFixed(2));
 
                       const draggableKey = `desktop-item-${item.id ?? idx}`;
 
@@ -248,14 +259,16 @@ export default function DocumentItemsTable({
                               {/* AMOUNT & PER-ITEM GST BREAKDOWN */}
                               <td className="py-3 px-4 text-right whitespace-nowrap">
                                 <div className="font-mono text-xs font-black text-slate-900 tabular-nums select-none">
-                                  {currencySymbol} {taxable.toLocaleString(undefined, {
+                                  {currencySymbol} {lineTotal.toLocaleString(undefined, {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
                                   })}
                                 </div>
                                 {currentItemTaxRate > 0 && (
                                   <div className="text-[10px] font-mono text-purple-700 font-semibold mt-0.5 select-none">
-                                    +₹{itemGst.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({currentItemTaxRate}% GST)
+                                    {isInclusive
+                                      ? `Incl. ₹${itemGst.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${currentItemTaxRate}% GST) • ₹${taxable.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} net`
+                                      : `+₹${itemGst.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${currentItemTaxRate}% GST)`}
                                   </div>
                                 )}
                               </td>
@@ -289,12 +302,18 @@ export default function DocumentItemsTable({
                 {items.map((item, idx) => {
                   const qty = Number(item.quantity) || 0;
                   const rate = Number(item.unit_price) || 0;
-                  const taxable = Number((qty * rate).toFixed(2));
+                  const lineTotal = Number((qty * rate).toFixed(2));
                   const currentItemTaxRate =
                     item.tax_rate !== undefined && item.tax_rate !== null && item.tax_rate !== ""
                       ? Number(item.tax_rate)
                       : defaultNumTax;
-                  const itemGst = Number(((taxable * currentItemTaxRate) / 100).toFixed(2));
+                  const isInclusive = taxCalculationType === "inclusive";
+                  const taxable = isInclusive
+                    ? (currentItemTaxRate > 0 ? Number((lineTotal / (1 + currentItemTaxRate / 100)).toFixed(2)) : lineTotal)
+                    : lineTotal;
+                  const itemGst = isInclusive
+                    ? Number((lineTotal - taxable).toFixed(2))
+                    : Number(((taxable * currentItemTaxRate) / 100).toFixed(2));
 
                   return (
                     <tr key={idx} className="hover:bg-slate-50/50 transition-colors group align-middle">
@@ -366,11 +385,13 @@ export default function DocumentItemsTable({
                       </td>
                       <td className="py-3 px-4 text-right whitespace-nowrap">
                         <div className="font-mono text-xs font-black text-slate-900 select-none">
-                          {currencySymbol} {taxable.toFixed(2)}
+                          {currencySymbol} {lineTotal.toFixed(2)}
                         </div>
                         {currentItemTaxRate > 0 && (
                           <div className="text-[10px] font-mono text-purple-700 font-semibold mt-0.5 select-none">
-                            +₹{itemGst.toFixed(2)} ({currentItemTaxRate}% GST)
+                            {isInclusive
+                              ? `Incl. ₹${itemGst.toFixed(2)} (${currentItemTaxRate}% GST) • ₹${taxable.toFixed(2)} net`
+                              : `+₹${itemGst.toFixed(2)} ({currentItemTaxRate}% GST)`}
                           </div>
                         )}
                       </td>
@@ -406,11 +427,18 @@ export default function DocumentItemsTable({
                   {items.map((item, idx) => {
                     const qty = Number(item.quantity) || 0;
                     const rate = Number(item.unit_price) || 0;
-                    const taxable = Number((qty * rate).toFixed(2));
+                    const lineTotal = Number((qty * rate).toFixed(2));
                     const currentItemTaxRate =
                       item.tax_rate !== undefined && item.tax_rate !== null && item.tax_rate !== ""
                         ? Number(item.tax_rate)
                         : defaultNumTax;
+                    const isInclusive = taxCalculationType === "inclusive";
+                    const taxable = isInclusive
+                      ? (currentItemTaxRate > 0 ? Number((lineTotal / (1 + currentItemTaxRate / 100)).toFixed(2)) : lineTotal)
+                      : lineTotal;
+                    const itemGst = isInclusive
+                      ? Number((lineTotal - taxable).toFixed(2))
+                      : Number(((taxable * currentItemTaxRate) / 100).toFixed(2));
 
                     const draggableKey = `mobile-item-${item.id ?? idx}`;
 
@@ -526,15 +554,20 @@ export default function DocumentItemsTable({
 
                               <div className="text-right">
                                 <span className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
-                                  Amount
+                                  {isInclusive ? "Gross Total" : "Amount"}
                                 </span>
                                 <p className="font-mono text-sm font-extrabold text-slate-900">
                                   {currencySymbol}
-                                  {taxable.toLocaleString(undefined, {
+                                  {lineTotal.toLocaleString(undefined, {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
                                   })}
                                 </p>
+                                {currentItemTaxRate > 0 && (
+                                  <span className="block text-[10px] font-mono text-purple-700 font-semibold mt-0.5">
+                                    {isInclusive ? `Incl. ₹${itemGst.toFixed(2)} (${currentItemTaxRate}% GST)` : `+₹${itemGst.toFixed(2)} GST`}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>

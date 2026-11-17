@@ -40,7 +40,12 @@ class PdfController extends Controller
         $placeOfSupply = $isInterState ? 'Inter-State (IGST Applicable)' : 'Assam (State Code: 18)';
 
         // GST Calculation
-        $taxableAmount = (float) $invoice->subtotal - (float) $invoice->discount_amount;
+        $taxCalculationType = $invoice->tax_calculation_type ?? 'exclusive';
+        if ($taxCalculationType === 'inclusive') {
+            $taxableAmount = round((float) $invoice->total_amount - (float) ($invoice->round_off ?? 0) - (float) $invoice->tax_amount, 2);
+        } else {
+            $taxableAmount = (float) $invoice->subtotal - (float) $invoice->discount_amount;
+        }
         $gstRate = (float) ($invoice->tax_rate ?? 18);
         $totalTax = (float) $invoice->tax_amount;
 
@@ -122,7 +127,12 @@ class PdfController extends Controller
         $isInterState = $this->isInterStateSupply($clientGstin, $proforma->client_address);
         $placeOfSupply = $isInterState ? 'Inter-State (IGST Applicable)' : 'Assam (State Code: 18)';
 
-        $taxableAmount = (float) $proforma->subtotal - (float) $proforma->discount_amount;
+        $taxCalculationType = $proforma->tax_calculation_type ?? 'exclusive';
+        if ($taxCalculationType === 'inclusive') {
+            $taxableAmount = round((float) $proforma->total_amount - (float) ($proforma->round_off ?? 0) - (float) $proforma->tax_amount, 2);
+        } else {
+            $taxableAmount = (float) $proforma->subtotal - (float) $proforma->discount_amount;
+        }
         $totalTax = (float) $proforma->tax_amount;
 
         $cgstAmount = !$isInterState ? round($totalTax / 2, 2) : 0;
@@ -202,7 +212,12 @@ class PdfController extends Controller
         $isInterState = $this->isInterStateSupply($clientGstin, $estimate->client_address);
         $placeOfSupply = $isInterState ? 'Inter-State (IGST Applicable)' : 'Assam (State Code: 18)';
 
-        $taxableAmount = (float) $estimate->subtotal - (float) $estimate->discount_amount;
+        $taxCalculationType = $estimate->tax_calculation_type ?? 'exclusive';
+        if ($taxCalculationType === 'inclusive') {
+            $taxableAmount = round((float) $estimate->total_amount - (float) ($estimate->round_off ?? 0) - (float) $estimate->tax_amount, 2);
+        } else {
+            $taxableAmount = (float) $estimate->subtotal - (float) $estimate->discount_amount;
+        }
         $totalTax = (float) $estimate->tax_amount;
 
         $cgstAmount = !$isInterState ? round($totalTax / 2, 2) : 0;
