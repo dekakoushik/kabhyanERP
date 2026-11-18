@@ -602,6 +602,8 @@ export interface Client {
   currency?: string | null;
   payment_terms?: string | null;
   portal_access_status: "active" | "inactive";
+  has_password_set?: boolean;
+  password_set_at?: string | null;
   business_associate_id?: number | null;
   business_associate?: BusinessAssociate | null;
   notes?: string | null;

@@ -70,7 +70,17 @@ class AppServiceProvider extends ServiceProvider
                     }
                 }
 
-                // 2. Self-heal document numbering settings (ensure suffixes are never null)
+                // 2. Self-heal users schema and document numbering settings
+                if (Schema::hasTable('users') && !Schema::hasColumn('users', 'password_set_at')) {
+                    try {
+                        Schema::table('users', function ($table) {
+                            $table->timestamp('password_set_at')->nullable()->after('password');
+                        });
+                    } catch (\Throwable $e) {
+                        // Safe ignore
+                    }
+                }
+
                 if (Schema::hasTable('system_settings')) {
                     try {
                         \Illuminate\Support\Facades\DB::table('system_settings')

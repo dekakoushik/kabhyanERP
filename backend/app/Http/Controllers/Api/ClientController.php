@@ -272,6 +272,14 @@ class ClientController extends Controller
             return response()->json(['message' => 'Client has no email address configured.'], 422);
         }
 
+        // Security Guardrail: If client has already established their private password, prevent re-sending activation link
+        $existingUser = $client->user ?? User::where('email', $client->email)->first();
+        if ($existingUser && $existingUser->password_set_at !== null) {
+            return response()->json([
+                'message' => 'This client has already established their portal account password. For security reasons, activation links are disabled.',
+            ], 422);
+        }
+
         // Ensure user account exists
         $user = User::firstOrCreate(
             ['email' => $client->email],

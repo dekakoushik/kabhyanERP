@@ -525,30 +525,26 @@ function ClientsContent() {
                         {/* ACTIONS GROUP WITH SHADCN RADIX TOOLTIPS */}
                         <td className="py-2.5 px-3.5 text-right align-middle">
                           <div className="flex items-center justify-end gap-1">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  onClick={() => handleResendInvite(cli)}
-                                  disabled={sendingInviteId === cli.id || !hasEmail}
-                                  className={`p-1 rounded-md transition ${
-                                    !hasEmail
-                                      ? "text-slate-300 cursor-not-allowed"
-                                      : "text-slate-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer disabled:opacity-50"
-                                  }`}
-                                >
-                                  {sendingInviteId === cli.id ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
-                                  ) : (
-                                    <Send className="w-3.5 h-3.5" />
-                                  )}
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent side="top">
-                                {hasEmail
-                                  ? "Send / Resend Mobile App Activation Link"
-                                  : "Cannot invite client without email"}
-                              </TooltipContent>
-                            </Tooltip>
+                            {!cli.has_password_set && hasEmail && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    onClick={() => handleResendInvite(cli)}
+                                    disabled={sendingInviteId === cli.id}
+                                    className="p-1 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer disabled:opacity-50 transition"
+                                  >
+                                    {sendingInviteId === cli.id ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
+                                    ) : (
+                                      <Send className="w-3.5 h-3.5" />
+                                    )}
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  Send Mobile App Activation Link
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
 
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -830,19 +826,21 @@ function ClientsContent() {
                     <p className="text-2xs text-slate-600 leading-relaxed">
                       For zero-knowledge security, passwords are never stored or managed by administrators. Clients create their own password securely via email for the Mobile App.
                     </p>
-                    <div className="pt-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const target = clients.find((c) => c.id === editingId);
-                          if (target) handleResendInvite(target);
-                        }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs cursor-pointer shadow-2xs"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        <span>Send New Activation Link via Email</span>
-                      </button>
-                    </div>
+                    {!clients.find((c) => c.id === editingId)?.has_password_set && (
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const target = clients.find((c) => c.id === editingId);
+                            if (target) handleResendInvite(target);
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs cursor-pointer shadow-2xs"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                          <span>Send Activation Link via Email</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="p-3 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-2xs text-slate-400 text-center">

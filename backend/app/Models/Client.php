@@ -31,6 +31,29 @@ class Client extends Model
         'notes',
     ];
 
+    protected $appends = [
+        'has_password_set',
+        'password_set_at',
+    ];
+
+    public function getHasPasswordSetAttribute(): bool
+    {
+        $user = $this->relationLoaded('user') ? $this->user : $this->user()->first();
+        if (!$user && $this->email) {
+            $user = User::where('email', $this->email)->first();
+        }
+        return (bool) ($user && $user->password_set_at !== null);
+    }
+
+    public function getPasswordSetAtAttribute(): ?string
+    {
+        $user = $this->relationLoaded('user') ? $this->user : $this->user()->first();
+        if (!$user && $this->email) {
+            $user = User::where('email', $this->email)->first();
+        }
+        return $user?->password_set_at?->toIso8601String();
+    }
+
     public function businessAssociate()
     {
         return $this->belongsTo(BusinessAssociate::class, 'business_associate_id');

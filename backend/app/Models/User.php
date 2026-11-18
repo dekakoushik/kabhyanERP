@@ -41,6 +41,7 @@ class User extends Authenticatable
         'esic_number',
         'status',
         'password',
+        'password_set_at',
         'last_login_at',
         'last_login_ip',
     ];
@@ -65,6 +66,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'last_login_at' => 'datetime',
+            'password_set_at' => 'datetime',
             'date_of_joining' => 'date',
             'password' => 'hashed',
         ];

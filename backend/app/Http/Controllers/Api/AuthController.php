@@ -177,6 +177,7 @@ class AuthController extends Controller
 
         $user->update([
             'password' => Hash::make($request->password),
+            'password_set_at' => now(),
         ]);
 
         // Revoke token record
@@ -287,6 +288,7 @@ class AuthController extends Controller
 
         $user->update([
             'password' => Hash::make($request->password),
+            'password_set_at' => now(),
             'status' => 'active',
         ]);
 
