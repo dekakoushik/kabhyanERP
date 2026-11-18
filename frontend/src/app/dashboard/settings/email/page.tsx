@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { api, SettingsResponse } from "@/lib/api";
+import { api, SettingsResponse, getSettingValue } from "@/lib/api";
 import { toast } from "sonner";
 import {
   Mail,
@@ -43,20 +43,20 @@ function EmailSettingsContent() {
           Object.values(res.settings).forEach((items) => {
             if (Array.isArray(items)) {
               items.forEach((item) => {
-                flat[item.key] = item.value || "";
+                flat[item.key] = item.value !== null && item.value !== undefined ? String(item.value) : "";
               });
             }
           });
         }
         setForm({
-          mail_mailer: flat["mail_mailer"] || "smtp",
-          mail_host: flat["mail_host"] || "smtp.gmail.com",
-          mail_port: flat["mail_port"] || "587",
-          mail_username: flat["mail_username"] || "",
-          mail_password: flat["mail_password"] || "",
-          mail_encryption: flat["mail_encryption"] || "tls",
-          mail_from_address: flat["mail_from_address"] || "support@kabhyan.com",
-          mail_from_name: flat["mail_from_name"] || "Kabhyan Technologies ERP",
+          mail_mailer: getSettingValue(flat, "mail_mailer", "smtp"),
+          mail_host: getSettingValue(flat, "mail_host", "smtp.gmail.com"),
+          mail_port: getSettingValue(flat, "mail_port", "587"),
+          mail_username: getSettingValue(flat, "mail_username", ""),
+          mail_password: getSettingValue(flat, "mail_password", ""),
+          mail_encryption: getSettingValue(flat, "mail_encryption", "tls"),
+          mail_from_address: getSettingValue(flat, "mail_from_address", "support@kabhyan.com"),
+          mail_from_name: getSettingValue(flat, "mail_from_name", "Kabhyan Technologies ERP"),
         });
       } catch (err: any) {
         toast.error("Failed to load SMTP settings");

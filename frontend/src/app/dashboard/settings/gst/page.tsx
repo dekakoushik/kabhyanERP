@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { api, SettingsResponse } from "@/lib/api";
+import { api, SettingsResponse, getSettingValue } from "@/lib/api";
 import { toast } from "sonner";
 import {
   GST_STATE_CODES,
@@ -42,18 +42,18 @@ function GSTSettingsContent() {
           Object.values(res.settings).forEach((items) => {
             if (Array.isArray(items)) {
               items.forEach((item) => {
-                flat[item.key] = item.value || "";
+                flat[item.key] = item.value !== null && item.value !== undefined ? String(item.value) : "";
               });
             }
           });
         }
         setForm({
-          company_gstin: flat["company_gstin"] || "18AAGCK2934D1Z2",
-          company_pan: flat["company_pan"] || "AAGCK2934D",
-          default_sac_code: flat["default_sac_code"] || "998314",
-          default_gst_rate: flat["default_gst_rate"] || "18",
-          reverse_charge_applicable: flat["reverse_charge_applicable"] || "false",
-          lut_number: flat["lut_number"] || "ARN-AD180226001924L",
+          company_gstin: getSettingValue(flat, "company_gstin", "18AAGCK2934D1Z2"),
+          company_pan: getSettingValue(flat, "company_pan", "AAGCK2934D"),
+          default_sac_code: getSettingValue(flat, "default_sac_code", "998314"),
+          default_gst_rate: getSettingValue(flat, "default_gst_rate", "18"),
+          reverse_charge_applicable: getSettingValue(flat, "reverse_charge_applicable", "false"),
+          lut_number: getSettingValue(flat, "lut_number", ""),
         });
       } catch (err: any) {
         toast.error("Failed to load GST settings");

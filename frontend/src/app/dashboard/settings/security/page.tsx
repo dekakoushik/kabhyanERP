@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { api, SettingsResponse } from "@/lib/api";
+import { api, SettingsResponse, getSettingValue } from "@/lib/api";
 import { toast } from "sonner";
 import {
   KeyRound,
@@ -31,15 +31,15 @@ function SecuritySettingsContent() {
           Object.values(res.settings).forEach((items) => {
             if (Array.isArray(items)) {
               items.forEach((item) => {
-                flat[item.key] = item.value || "";
+                flat[item.key] = item.value !== null && item.value !== undefined ? String(item.value) : "";
               });
             }
           });
         }
         setForm({
-          client_portal_enabled: flat["client_portal_enabled"] || "true",
-          auto_notify_client_on_reply: flat["auto_notify_client_on_reply"] || "true",
-          session_timeout_minutes: flat["session_timeout_minutes"] || "120",
+          client_portal_enabled: getSettingValue(flat, "client_portal_enabled", "true"),
+          auto_notify_client_on_reply: getSettingValue(flat, "auto_notify_client_on_reply", "true"),
+          session_timeout_minutes: getSettingValue(flat, "session_timeout_minutes", "120"),
         });
       } catch (err: any) {
         toast.error("Failed to load security policies");

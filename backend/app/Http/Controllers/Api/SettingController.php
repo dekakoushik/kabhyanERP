@@ -25,7 +25,16 @@ class SettingController extends Controller
         $grouped = [];
 
         foreach ($allSettings as $item) {
-            $grouped[$item->group][] = $item;
+            $grouped[$item->group][] = [
+                'id' => $item->id,
+                'key' => $item->key,
+                'value' => $item->value ?? '',
+                'group' => $item->group,
+                'type' => $item->type,
+                'description' => $item->description,
+                'created_at' => $item->created_at,
+                'updated_at' => $item->updated_at,
+            ];
         }
 
         // Check PostgreSQL Database status & latency
@@ -77,10 +86,15 @@ class SettingController extends Controller
         ]);
 
         foreach ($validated['settings'] as $item) {
+            $rawVal = $item['value'] ?? '';
+            $storedVal = is_array($rawVal)
+                ? json_encode($rawVal)
+                : ($rawVal === null ? '' : (string) $rawVal);
+
             SystemSetting::updateOrCreate(
                 ['key' => $item['key']],
                 [
-                    'value' => is_array($item['value']) ? json_encode($item['value']) : $item['value'],
+                    'value' => $storedVal,
                     'group' => $item['group'] ?? 'general',
                 ]
             );

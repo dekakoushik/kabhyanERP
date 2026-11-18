@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, Suspense } from "react";
-import { api, SettingsResponse } from "@/lib/api";
+import { api, SettingsResponse, getSettingValue } from "@/lib/api";
 import { toast } from "sonner";
 import Image from "next/image";
 import {
@@ -69,24 +69,24 @@ function CompanySettingsContent() {
         Object.values(res.settings).forEach((items) => {
           if (Array.isArray(items)) {
             items.forEach((item) => {
-              flat[item.key] = item.value || "";
+              flat[item.key] = item.value !== null && item.value !== undefined ? String(item.value) : "";
             });
           }
         });
       }
       setForm({
-        company_name: flat["company_name"] || "Kabhyan Technologies Private Limited",
-        company_legal_tagline: flat["company_legal_tagline"] || "Enterprise IT & Software Engineering Solutions",
-        company_email: flat["company_email"] || "contact@kabhyan.com",
-        company_phone: flat["company_phone"] || "+91 98200 12345",
-        company_address: flat["company_address"] || "Bandra Kurla Complex, Mumbai, Maharashtra 400051",
-        company_website: flat["company_website"] || "https://www.kabhyan.com",
+        company_name: getSettingValue(flat, "company_name", "Kabhyan Technologies Private Limited"),
+        company_legal_tagline: getSettingValue(flat, "company_legal_tagline", "Enterprise IT & Software Engineering Solutions"),
+        company_email: getSettingValue(flat, "company_email", "contact@kabhyan.com"),
+        company_phone: getSettingValue(flat, "company_phone", "+91 70869 59737"),
+        company_address: getSettingValue(flat, "company_address", "GMCH Road, near Dispur College Road, Kachari Basti, Ganeshguri, Guwahati, Assam 781005"),
+        company_website: getSettingValue(flat, "company_website", "https://www.kabhyan.com"),
       });
       setBrandLogos({
-        logo_primary: flat["company_logo_primary"] || "",
-        logo_document: flat["company_logo_document"] || "",
-        logo_icon: flat["company_logo_icon"] || "",
-        logo_dark: flat["company_logo_dark"] || "",
+        logo_primary: getSettingValue(flat, "company_logo_primary", ""),
+        logo_document: getSettingValue(flat, "company_logo_document", ""),
+        logo_icon: getSettingValue(flat, "company_logo_icon", ""),
+        logo_dark: getSettingValue(flat, "company_logo_dark", ""),
       });
     } catch (err: any) {
       toast.error("Failed to load company profile");

@@ -705,6 +705,22 @@ export interface SettingsResponse {
   environment: EnvironmentHealth;
 }
 
+/**
+ * Safely extracts a setting value from the flat settings map.
+ * If the key exists in the database flat map, its exact value (even if an empty string "") is returned.
+ * The fallback is ONLY used if the key is completely absent from the database.
+ */
+export function getSettingValue(
+  flat: Record<string, string>,
+  key: string,
+  fallbackIfUnset: string = ""
+): string {
+  if (key in flat && flat[key] !== null && flat[key] !== undefined) {
+    return flat[key];
+  }
+  return fallbackIfUnset;
+}
+
 export interface SystemNotificationItem {
   id: number;
   user_id?: number | null;

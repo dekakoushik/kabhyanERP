@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { api, SettingsResponse } from "@/lib/api";
+import { api, SettingsResponse, getSettingValue } from "@/lib/api";
 import Link from "next/link";
 import {
   Building,
@@ -54,7 +54,7 @@ function SettingsOverviewContent() {
     Object.values(settings).forEach((items) => {
       if (Array.isArray(items)) {
         items.forEach((item) => {
-          flat[item.key] = item.value || "";
+          flat[item.key] = item.value !== null && item.value !== undefined ? String(item.value) : "";
         });
       }
     });
@@ -66,13 +66,13 @@ function SettingsOverviewContent() {
       href: "/dashboard/settings/company",
       icon: Building,
       color: "bg-blue-50 text-blue-600 border-blue-200",
-      description: flat["company_name"] || "Kabhyan Technologies Private Limited",
+      description: getSettingValue(flat, "company_name", "Kabhyan Technologies Private Limited"),
       badge: flat["company_gstin"] ? "Registered" : "Incomplete",
       badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
       details: [
-        { label: "Tagline", val: flat["company_legal_tagline"] || "Enterprise IT & Software Engineering" },
-        { label: "Official Email", val: flat["company_email"] || "support@kabhyan.com" },
-        { label: "HQ Phone", val: flat["company_phone"] || "+91 98200 12345" },
+        { label: "Tagline", val: getSettingValue(flat, "company_legal_tagline", "Enterprise IT & Software Engineering") },
+        { label: "Official Email", val: getSettingValue(flat, "company_email", "contact@kabhyan.com") },
+        { label: "HQ Phone", val: getSettingValue(flat, "company_phone", "+91 70869 59737") },
       ],
     },
     {
@@ -81,12 +81,12 @@ function SettingsOverviewContent() {
       icon: Receipt,
       color: "bg-purple-50 text-purple-600 border-purple-200",
       description: "CGST, SGST & IGST Tax Rates",
-      badge: flat["company_gstin"] || "18AAGCK2934D1Z2",
+      badge: flat["company_gstin"] || "Tax Configured",
       badgeColor: "bg-purple-50 text-purple-700 border-purple-200 font-mono",
       details: [
-        { label: "State Code", val: "19 - West Bengal (or 18 Assam)" },
-        { label: "Default SAC", val: flat["default_sac_code"] || "998314 (IT Dev)" },
-        { label: "Standard GST", val: `${flat["default_gst_rate"] || "18"}%` },
+        { label: "State Code", val: "18 - Assam" },
+        { label: "Default SAC", val: `${getSettingValue(flat, "default_sac_code", "998314")} (IT Dev)` },
+        { label: "Standard GST", val: `${getSettingValue(flat, "default_gst_rate", "18")}%` },
       ],
     },
     {
@@ -94,13 +94,13 @@ function SettingsOverviewContent() {
       href: "/dashboard/settings/banking",
       icon: Building2,
       color: "bg-emerald-50 text-emerald-600 border-emerald-200",
-      description: flat["bank_name"] || "HDFC Bank Ltd",
+      description: getSettingValue(flat, "bank_name", "HDFC Bank Ltd"),
       badge: flat["bank_ifsc_code"] ? "Active" : "Not Set",
       badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
       details: [
-        { label: "Beneficiary", val: flat["bank_beneficiary_name"] || "Kabhyan Technologies Pvt Ltd" },
-        { label: "IFSC Code", val: flat["bank_ifsc_code"] || "HDFC0001234" },
-        { label: "Account No", val: flat["bank_account_number"] ? `•••• ${flat["bank_account_number"].slice(-4)}` : "5020••••" },
+        { label: "Beneficiary", val: getSettingValue(flat, "bank_beneficiary_name", "Kabhyan Technologies Pvt Ltd") },
+        { label: "IFSC Code", val: getSettingValue(flat, "bank_ifsc_code", "Not Configured") },
+        { label: "Account No", val: flat["bank_account_number"] ? `•••• ${flat["bank_account_number"].slice(-4)}` : "Not Configured" },
       ],
     },
     {
@@ -109,12 +109,12 @@ function SettingsOverviewContent() {
       icon: Globe,
       color: "bg-amber-50 text-amber-600 border-amber-200",
       description: "Currency, Date & Timezone",
-      badge: flat["currency_code"] || "INR (₹)",
+      badge: `${getSettingValue(flat, "currency_code", "INR")} (${getSettingValue(flat, "currency_symbol", "₹")})`,
       badgeColor: "bg-amber-50 text-amber-700 border-amber-200",
       details: [
-        { label: "Currency Symbol", val: flat["currency_symbol"] || "₹" },
-        { label: "Date Format", val: flat["date_format"] || "DD MMM YYYY" },
-        { label: "Timezone", val: flat["time_zone"] || "Asia/Kolkata (IST)" },
+        { label: "Currency Symbol", val: getSettingValue(flat, "currency_symbol", "₹") },
+        { label: "Date Format", val: getSettingValue(flat, "date_format", "DD MMM YYYY") },
+        { label: "Timezone", val: getSettingValue(flat, "time_zone", "Asia/Kolkata") },
       ],
     },
     {
@@ -127,7 +127,7 @@ function SettingsOverviewContent() {
       badgeColor: flat["client_portal_enabled"] === "true" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-600 border-slate-200",
       details: [
         { label: "Portal Access", val: "Active" },
-        { label: "Session Timeout", val: `${flat["session_timeout_minutes"] || "120"} mins` },
+        { label: "Session Timeout", val: `${getSettingValue(flat, "session_timeout_minutes", "120")} mins` },
         { label: "Notifications", val: flat["auto_notify_client_on_reply"] === "true" ? "Enabled" : "Disabled" },
       ],
     },
@@ -136,12 +136,12 @@ function SettingsOverviewContent() {
       href: "/dashboard/settings/email",
       icon: Mail,
       color: "bg-cyan-50 text-cyan-600 border-cyan-200",
-      description: flat["mail_host"] || "smtp.gmail.com",
+      description: getSettingValue(flat, "mail_host", "SMTP Not Configured"),
       badge: flat["mail_mailer"] ? "Configured" : "Unset",
       badgeColor: "bg-cyan-50 text-cyan-700 border-cyan-200",
       details: [
-        { label: "Port & Security", val: `${flat["mail_port"] || "587"} (${(flat["mail_encryption"] || "tls").toUpperCase()})` },
-        { label: "Sender Email", val: flat["mail_from_address"] || "support@kabhyan.com" },
+        { label: "Port & Security", val: `${getSettingValue(flat, "mail_port", "587")} (${(getSettingValue(flat, "mail_encryption", "tls")).toUpperCase()})` },
+        { label: "Sender Email", val: getSettingValue(flat, "mail_from_address", "support@kabhyan.com") },
         { label: "Test Email", val: "Available in settings" },
       ],
     },

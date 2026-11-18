@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { api, SettingsResponse } from "@/lib/api";
+import { api, SettingsResponse, getSettingValue } from "@/lib/api";
 import { toast } from "sonner";
 import {
   Building2,
@@ -35,19 +35,19 @@ function BankingSettingsContent() {
           Object.values(res.settings).forEach((items) => {
             if (Array.isArray(items)) {
               items.forEach((item) => {
-                flat[item.key] = item.value || "";
+                flat[item.key] = item.value !== null && item.value !== undefined ? String(item.value) : "";
               });
             }
           });
         }
         setForm({
-          bank_beneficiary_name: flat["bank_beneficiary_name"] || "Kabhyan Technologies Private Limited",
-          bank_name: flat["bank_name"] || "HDFC Bank Ltd",
-          bank_branch: flat["bank_branch"] || "Guwahati Central Branch",
-          bank_account_number: flat["bank_account_number"] || "50200088921822",
-          bank_ifsc_code: flat["bank_ifsc_code"] || "HDFC0001234",
-          bank_swift_code: flat["bank_swift_code"] || "HDFCINBB",
-          bank_upi_id: flat["bank_upi_id"] || "kabhyan@hdfcbank",
+          bank_beneficiary_name: getSettingValue(flat, "bank_beneficiary_name", "Kabhyan Technologies Private Limited"),
+          bank_name: getSettingValue(flat, "bank_name", "HDFC Bank Ltd"),
+          bank_branch: getSettingValue(flat, "bank_branch", "Guwahati Central Branch"),
+          bank_account_number: getSettingValue(flat, "bank_account_number", ""),
+          bank_ifsc_code: getSettingValue(flat, "bank_ifsc_code", ""),
+          bank_swift_code: getSettingValue(flat, "bank_swift_code", ""),
+          bank_upi_id: getSettingValue(flat, "bank_upi_id", ""),
         });
       } catch (err: any) {
         toast.error("Failed to load banking coordinates");

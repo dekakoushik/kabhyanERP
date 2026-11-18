@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { api, SettingsResponse } from "@/lib/api";
+import { api, SettingsResponse, getSettingValue } from "@/lib/api";
 import { toast } from "sonner";
 import {
   Globe,
@@ -32,16 +32,16 @@ function LocalizationSettingsContent() {
           Object.values(res.settings).forEach((items) => {
             if (Array.isArray(items)) {
               items.forEach((item) => {
-                flat[item.key] = item.value || "";
+                flat[item.key] = item.value !== null && item.value !== undefined ? String(item.value) : "";
               });
             }
           });
         }
         setForm({
-          currency_code: flat["currency_code"] || "INR",
-          currency_symbol: flat["currency_symbol"] || "₹",
-          date_format: flat["date_format"] || "DD MMM YYYY",
-          time_zone: flat["time_zone"] || "Asia/Kolkata",
+          currency_code: getSettingValue(flat, "currency_code", "INR"),
+          currency_symbol: getSettingValue(flat, "currency_symbol", "₹"),
+          date_format: getSettingValue(flat, "date_format", "DD MMM YYYY"),
+          time_zone: getSettingValue(flat, "time_zone", "Asia/Kolkata"),
         });
       } catch (err: any) {
         toast.error("Failed to load localization parameters");
