@@ -66,6 +66,8 @@ Route::prefix('v1')->group(function () {
             Route::get('invoices', [ClientPortalController::class, 'invoices']);
             Route::get('invoices/{invoice}', [ClientPortalController::class, 'showInvoice']);
             Route::post('invoices/{invoice}/payment-link', [ClientPortalController::class, 'invoicePaymentLink']);
+            Route::get('proforma-invoices', [ClientPortalController::class, 'proformaInvoices']);
+            Route::get('proforma-invoices/{proformaInvoice}', [ClientPortalController::class, 'showProformaInvoice']);
             Route::get('estimates', [ClientPortalController::class, 'estimates']);
             Route::get('estimates/{estimate}', [ClientPortalController::class, 'showEstimate']);
             Route::post('estimates/{estimate}/respond', [ClientPortalController::class, 'respondEstimate']);

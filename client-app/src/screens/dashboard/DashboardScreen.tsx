@@ -90,7 +90,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         <View style={styles.welcomeTopRow}>
           <View style={styles.verifiedBadge}>
             <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-            <Text style={styles.verifiedText}>VERIFIED CLIENT</Text>
+            <Text style={styles.verifiedText}>Verified Corporate Account</Text>
           </View>
           {client?.gstin && (
             <Text style={styles.gstinText}>GSTIN: {client.gstin}</Text>
@@ -101,7 +101,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           {client?.company_name || client?.name || user?.name || "Client Partner"}
         </Text>
         <Text style={styles.welcomeSubtitle}>
-          Track project deliverables, verify invoices, and settle milestones online securely via Cashfree.
+          Track active milestones, review deliverables, manage proforma & tax invoices, and approve project scope.
         </Text>
       </Card>
 
@@ -109,38 +109,38 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
       <View style={styles.metricsGrid}>
         {/* Outstanding Balance */}
         <View style={[styles.metricCard, { borderLeftColor: (stats?.unpaid_amount || 0) > 0 ? colors.warning : colors.success }]}>
-          <Text style={styles.metricLabel}>OUTSTANDING DUE</Text>
+          <Text style={styles.metricLabel}>Outstanding Balance</Text>
           <Text style={[styles.metricValue, { color: (stats?.unpaid_amount || 0) > 0 ? colors.warning : colors.success }]}>
             ₹{Number(stats?.unpaid_amount || 0).toLocaleString()}
           </Text>
-          <Text style={styles.metricSub}>{stats?.unpaid_invoices_count || 0} pending invoice(s)</Text>
+          <Text style={styles.metricSub}>{stats?.unpaid_invoices_count || 0} invoice(s) due</Text>
         </View>
 
         {/* Paid Revenue */}
         <View style={[styles.metricCard, { borderLeftColor: colors.success }]}>
-          <Text style={styles.metricLabel}>TOTAL PAID</Text>
+          <Text style={styles.metricLabel}>Total Settled</Text>
           <Text style={[styles.metricValue, { color: colors.success }]}>
             ₹{Number(stats?.paid_amount || 0).toLocaleString()}
           </Text>
-          <Text style={styles.metricSub}>Gross settled invoices</Text>
+          <Text style={styles.metricSub}>Lifetime payments</Text>
         </View>
 
         {/* Active Projects */}
         <View style={[styles.metricCard, { borderLeftColor: colors.primary }]}>
-          <Text style={styles.metricLabel}>ACTIVE PROJECTS</Text>
+          <Text style={styles.metricLabel}>Active Projects</Text>
           <Text style={[styles.metricValue, { color: colors.primary }]}>
             {stats?.active_projects || 0}
           </Text>
-          <Text style={styles.metricSub}>Sprints in progress</Text>
+          <Text style={styles.metricSub}>Ongoing deliverables</Text>
         </View>
 
         {/* Open Tickets */}
         <View style={[styles.metricCard, { borderLeftColor: colors.purple }]}>
-          <Text style={styles.metricLabel}>OPEN TICKETS</Text>
+          <Text style={styles.metricLabel}>Support Tickets</Text>
           <Text style={[styles.metricValue, { color: colors.purple }]}>
             {stats?.open_tickets || 0}
           </Text>
-          <Text style={styles.metricSub}>Support requests</Text>
+          <Text style={styles.metricSub}>Active inquiries</Text>
         </View>
       </View>
 
@@ -229,7 +229,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
                 {!isPaid && (
                   <Button
-                    title="Pay Online"
+                    title="Pay Now"
                     onPress={() => handlePayInvoice(inv.id)}
                     loading={isPaying}
                     variant="primary"

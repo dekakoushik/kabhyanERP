@@ -55,7 +55,7 @@ export const ProfileScreen: React.FC = () => {
         <Text style={styles.userName}>{user?.name || "Client Partner"}</Text>
         <Text style={styles.userEmail}>{user?.email}</Text>
         <View style={styles.roleBadge}>
-          <Text style={styles.roleText}>VERIFIED ENTERPRISE CLIENT</Text>
+          <Text style={styles.roleText}>Verified Client Account</Text>
         </View>
       </Card>
 
@@ -101,13 +101,13 @@ export const ProfileScreen: React.FC = () => {
         </View>
       </Card>
 
-      {/* System Gateway Info */}
+      {/* Account Support Card */}
       <Card style={styles.systemCard}>
         <View style={styles.systemRow}>
-          <Ionicons name="server-outline" size={18} color={colors.primary} />
+          <Ionicons name="headset-outline" size={20} color={colors.primary} />
           <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text style={styles.systemTitle}>Connected ERP Gateway</Text>
-            <Text style={styles.systemSub}>https://erp.kabhyan.com (Sanctum Auth)</Text>
+            <Text style={styles.systemTitle}>Dedicated Account Support</Text>
+            <Text style={styles.systemSub}>Account Manager Active • support@kabhyan.com</Text>
           </View>
           <View style={styles.onlineDot} />
         </View>
@@ -115,14 +115,14 @@ export const ProfileScreen: React.FC = () => {
 
       {/* Logout Action */}
       <Button
-        title="Log Out of Portal"
+        title="Log Out"
         variant="danger"
         onPress={handleLogout}
         icon={<Ionicons name="log-out-outline" size={16} color={colors.textLight} />}
         style={styles.logoutBtn}
       />
 
-      <Text style={styles.versionText}>Kabhyan ERP Mobile Client • v1.0.0 (Expo SDK 57)</Text>
+      <Text style={styles.versionText}>Kabhyan Client • Version 1.0.0</Text>
     </ScrollView>
   );
 };

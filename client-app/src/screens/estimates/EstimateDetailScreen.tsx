@@ -49,7 +49,7 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
     Alert.alert(title, msg, [
       { text: "Cancel", style: "cancel" },
       {
-        text: action === "accepted" ? "Approve Quote" : "Decline",
+        text: action === "accepted" ? "Approve" : "Decline",
         style: action === "accepted" ? "default" : "destructive",
         onPress: async () => {
           try {
@@ -112,7 +112,7 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
               style={{ flex: 1, marginRight: 8 }}
             />
             <Button
-              title="Accept & Approve"
+              title="Approve Scope"
               variant="success"
               onPress={() => handleRespond("accepted")}
               loading={acting}
@@ -176,7 +176,7 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
         <View style={styles.summaryDivider} />
 
         <View style={styles.summaryRow}>
-          <Text style={styles.grossLabel}>Estimated Gross (INR)</Text>
+          <Text style={styles.grossLabel}>Total Scope Value</Text>
           <Text style={styles.grossValue}>₹{Number(estimate.total).toLocaleString()}</Text>
         </View>
       </Card>

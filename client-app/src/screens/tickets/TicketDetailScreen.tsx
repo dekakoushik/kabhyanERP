@@ -127,7 +127,7 @@ export const TicketDetailScreen: React.FC<{ route: any }> = ({ route }) => {
       <View style={styles.replyBar}>
         <TextInput
           style={styles.replyInput}
-          placeholder="Type your reply to the engineering team..."
+          placeholder="Type your message..."
           placeholderTextColor={colors.textMuted}
           value={replyText}
           onChangeText={setReplyText}

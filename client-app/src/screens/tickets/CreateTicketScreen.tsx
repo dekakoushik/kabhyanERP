@@ -49,13 +49,13 @@ export const CreateTicketScreen: React.FC<{ navigation: any }> = ({ navigation }
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Card style={styles.card}>
-        <Text style={styles.title}>Raise Technical Support Request</Text>
+        <Text style={styles.title}>New Support Ticket</Text>
         <Text style={styles.subtitle}>
-          Submit questions, milestone feedback, or urgent engineering requests to the team.
+          Submit inquiries, milestone feedback, or technical assistance requests.
         </Text>
 
         {/* Priority Selection */}
-        <Text style={styles.label}>Severity / Priority Level</Text>
+        <Text style={styles.label}>Priority Level</Text>
         <View style={styles.priorityRow}>
           {(["low", "medium", "high", "urgent"] as const).map((p) => {
             const isSelected = priority === p;
@@ -94,7 +94,7 @@ export const CreateTicketScreen: React.FC<{ navigation: any }> = ({ navigation }
         />
 
         {/* Message Input */}
-        <Text style={styles.label}>Detailed Description / Requirements</Text>
+        <Text style={styles.label}>Description</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           placeholder="Describe your request in detail, including steps, URLs, or deliverables involved..."

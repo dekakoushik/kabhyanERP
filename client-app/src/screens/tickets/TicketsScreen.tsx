@@ -89,7 +89,7 @@ export const TicketsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       <View style={styles.topBar}>
         <View>
           <Text style={styles.topTitle}>Support Desk</Text>
-          <Text style={styles.topSubtitle}>Direct assistance from Kabhyan IT engineering</Text>
+          <Text style={styles.topSubtitle}>Dedicated technical assistance for your workspace</Text>
         </View>
         <Button
           title="+ New Ticket"

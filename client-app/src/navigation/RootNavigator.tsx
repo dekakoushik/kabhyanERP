@@ -60,32 +60,34 @@ export const RootNavigator: React.FC = () => {
             <Stack.Screen
               name="InvoiceDetail"
               component={InvoiceDetailScreen}
-              options={{ title: "Tax Invoice Details" }}
+              options={({ route }: any) => ({
+                title: route?.params?.type === "proforma" ? "Proforma Invoice" : "Invoice Details",
+              })}
             />
             <Stack.Screen
               name="ProjectDetail"
               component={ProjectDetailScreen}
-              options={{ title: "Project Milestones" }}
+              options={{ title: "Project Details" }}
             />
             <Stack.Screen
               name="EstimateDetail"
               component={EstimateDetailScreen}
-              options={{ title: "Quotation Scope" }}
+              options={{ title: "Quotation Details" }}
             />
             <Stack.Screen
               name="TicketDetail"
               component={TicketDetailScreen}
-              options={{ title: "Support Discussion" }}
+              options={{ title: "Support Ticket" }}
             />
             <Stack.Screen
               name="CreateTicket"
               component={CreateTicketScreen}
-              options={{ title: "New Support Ticket" }}
+              options={{ title: "New Ticket" }}
             />
             <Stack.Screen
               name="Profile"
               component={ProfileScreen}
-              options={{ title: "Client Account" }}
+              options={{ title: "Account Profile" }}
             />
           </>
         )}

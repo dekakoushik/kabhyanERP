@@ -78,7 +78,7 @@ export const BottomTabNavigator: React.FC<{ navigation: any }> = ({ navigation }
         name="InvoicesTab"
         component={InvoicesScreen}
         options={{
-          title: "Tax Invoices",
+          title: "Invoices",
           tabBarLabel: "Invoices",
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? "receipt" : "receipt-outline"} size={size} color={color} />

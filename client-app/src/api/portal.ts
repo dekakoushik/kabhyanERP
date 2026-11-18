@@ -58,6 +58,23 @@ export interface Invoice {
   items?: InvoiceItem[];
 }
 
+export interface ProformaInvoice {
+  id: number;
+  proforma_number: string;
+  invoice_date: string;
+  due_date: string;
+  status: "draft" | "sent" | "partially_paid" | "paid" | "converted" | "cancelled";
+  subtotal: number;
+  tax_amount: number;
+  total_amount: number;
+  paid_amount?: number;
+  invoiced_amount?: number;
+  remaining_amount?: number;
+  items?: InvoiceItem[];
+  notes?: string;
+  terms_and_conditions?: string;
+}
+
 export interface Estimate {
   id: number;
   estimate_number: string;
@@ -141,6 +158,15 @@ export const portalApi = {
       `/portal/invoices/${invoiceId}/payment-link`,
       { method: "POST" }
     ),
+
+  // Proforma Invoices
+  getProformaInvoices: (status?: string) =>
+    apiClient<{ proforma_invoices: { data?: ProformaInvoice[] } | ProformaInvoice[] }>("/portal/proforma-invoices", {
+      params: { status },
+    }),
+
+  getProformaInvoice: (id: number | string) =>
+    apiClient<{ proforma_invoice: ProformaInvoice }>(`/portal/proforma-invoices/${id}`),
 
   // Estimates / Quotations
   getEstimates: (status?: string) =>

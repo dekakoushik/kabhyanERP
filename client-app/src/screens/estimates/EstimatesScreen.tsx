@@ -67,21 +67,21 @@ export const EstimatesScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
           <View style={styles.amountRow}>
             <View>
-              <Text style={styles.metaLabel}>Turnover (Taxable)</Text>
+              <Text style={styles.metaLabel}>Subtotal</Text>
               <Text style={styles.metaValue}>₹{Number(item.subtotal || 0).toLocaleString()}</Text>
             </View>
             <View style={{ alignItems: "flex-end" }}>
-              <Text style={styles.metaLabel}>Gross Scope Total</Text>
+              <Text style={styles.metaLabel}>Estimated Total</Text>
               <Text style={styles.grossTotal}>₹{Number(item.total).toLocaleString()}</Text>
             </View>
           </View>
 
           <View style={styles.footerRow}>
             <Text style={styles.validityText}>
-              {item.expiry_date ? `Valid until: ${item.expiry_date}` : "Standard 30-day quote"}
+              {item.expiry_date ? `Valid until: ${item.expiry_date}` : "Valid for 30 days"}
             </Text>
             <View style={styles.reviewLink}>
-              <Text style={styles.reviewLinkText}>Review & Sign</Text>
+              <Text style={styles.reviewLinkText}>Review Scope</Text>
               <Ionicons name="chevron-forward" size={14} color={colors.primary} />
             </View>
           </View>

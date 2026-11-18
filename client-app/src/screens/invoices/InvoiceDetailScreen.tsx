@@ -13,24 +13,34 @@ import { colors } from "../../theme/colors";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
-import { portalApi, Invoice, InvoiceItem } from "../../api/portal";
+import { portalApi, Invoice, ProformaInvoice, InvoiceItem } from "../../api/portal";
 
 export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   route,
   navigation,
 }) => {
-  const { invoiceId } = route.params;
+  const { invoiceId, proformaId, type = "tax" } = route.params;
+
   const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [proforma, setProforma] = useState<ProformaInvoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
+
+  const isProforma = type === "proforma" || Boolean(proformaId);
 
   const fetchDetail = async () => {
     try {
       setLoading(true);
-      const res = await portalApi.getInvoice(invoiceId);
-      setInvoice(res.invoice);
+      if (isProforma) {
+        const id = proformaId || invoiceId;
+        const res = await portalApi.getProformaInvoice(id);
+        setProforma(res.proforma_invoice);
+      } else {
+        const res = await portalApi.getInvoice(invoiceId);
+        setInvoice(res.invoice);
+      }
     } catch (err: any) {
-      Alert.alert("Error", err.message || "Failed to load invoice details.");
+      Alert.alert("Error", err.message || "Failed to load document details.");
     } finally {
       setLoading(false);
     }
@@ -38,12 +48,13 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
 
   useEffect(() => {
     fetchDetail();
-  }, [invoiceId]);
+  }, [invoiceId, proformaId, isProforma]);
 
   const handlePay = async () => {
+    if (!invoice) return;
     try {
       setPaying(true);
-      const res = await portalApi.getPaymentLink(invoiceId);
+      const res = await portalApi.getPaymentLink(invoice.id);
       if (res.success && res.payment_link?.link_url) {
         await WebBrowser.openBrowserAsync(res.payment_link.link_url);
         fetchDetail();
@@ -57,11 +68,122 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
     }
   };
 
-  if (loading || !invoice) {
+  if (loading) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Loading invoice details...</Text>
+        <Text style={styles.loadingText}>
+          {isProforma ? "Loading proforma invoice..." : "Loading tax invoice..."}
+        </Text>
+      </View>
+    );
+  }
+
+  // Proforma View
+  if (isProforma && proforma) {
+    const isConverted = proforma.status === "converted";
+    const items = proforma.items || [];
+
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        {/* Document Kind Banner */}
+        <View style={styles.proformaBanner}>
+          <Ionicons name="information-circle" size={18} color={colors.purple} />
+          <Text style={styles.proformaBannerText}>
+            Preliminary Proforma Invoice issued for milestone advance billing.
+          </Text>
+        </View>
+
+        {/* Status Card */}
+        <Card style={styles.statusCard}>
+          <View style={styles.headerRow}>
+            <View>
+              <Text style={styles.invoiceNumber}>{proforma.proforma_number}</Text>
+              <Text style={styles.dateText}>Issued on: {proforma.invoice_date}</Text>
+              <Text style={styles.dateText}>Payment Due: {proforma.due_date || "Upon receipt"}</Text>
+            </View>
+            <Badge
+              label={isConverted ? "Converted to Tax Invoice" : proforma.status.replace("_", " ")}
+              variant={isConverted ? "success" : "purple"}
+            />
+          </View>
+
+          <View style={styles.advanceRow}>
+            <View>
+              <Text style={styles.dueLabel}>Advance Scope Total</Text>
+              <Text style={styles.dueAmount}>₹{Number(proforma.total_amount).toLocaleString()}</Text>
+            </View>
+            {proforma.paid_amount ? (
+              <View style={{ alignItems: "flex-end" }}>
+                <Text style={styles.dueLabel}>Amount Paid</Text>
+                <Text style={[styles.dueAmount, { color: colors.success }]}>
+                  ₹{Number(proforma.paid_amount).toLocaleString()}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        </Card>
+
+        {/* Deliverables & Line Items */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Scope Deliverables Schedule</Text>
+        </View>
+
+        {items.length === 0 ? (
+          <Card>
+            <Text style={styles.noItemsText}>Standard milestone deliverables schedule</Text>
+          </Card>
+        ) : (
+          items.map((item, idx) => (
+            <Card key={item.id || idx} style={styles.itemCard}>
+              <Text style={styles.itemTitle}>{item.description}</Text>
+              <View style={styles.itemMetaRow}>
+                <Text style={styles.itemQty}>
+                  Qty: {item.quantity} {item.unit || "units"} @ ₹{Number(item.unit_price).toLocaleString()}
+                </Text>
+                <View style={styles.gstBadge}>
+                  <Text style={styles.gstBadgeText}>+{item.gst_rate || 18}% GST</Text>
+                </View>
+              </View>
+              <View style={styles.itemDivider} />
+              <View style={styles.itemFooterRow}>
+                <Text style={styles.itemTaxable}>
+                  Taxable: ₹{Number(item.taxable_amount || (item.quantity * item.unit_price)).toLocaleString()}
+                </Text>
+                <Text style={styles.itemTotal}>
+                  Gross: ₹{Number(item.total_amount || 0).toLocaleString()}
+                </Text>
+              </View>
+            </Card>
+          ))
+        )}
+
+        {/* Accounting Summary */}
+        <Card style={styles.breakdownCard}>
+          <Text style={styles.breakdownTitle}>Advance Billing Summary</Text>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Subtotal (Taxable)</Text>
+            <Text style={styles.summaryValue}>₹{Number(proforma.subtotal).toLocaleString()}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>GST Component</Text>
+            <Text style={styles.summaryValue}>+₹{Number(proforma.tax_amount).toLocaleString()}</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryRow}>
+            <Text style={styles.grossLabel}>Total Proforma Value</Text>
+            <Text style={styles.grossValue}>₹{Number(proforma.total_amount).toLocaleString()}</Text>
+          </View>
+        </Card>
+      </ScrollView>
+    );
+  }
+
+  // Tax Invoice View
+  if (!invoice) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.noItemsText}>Invoice not found.</Text>
       </View>
     );
   }
@@ -88,7 +210,7 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
         {!isPaid && (
           <View style={styles.payBox}>
             <View>
-              <Text style={styles.dueLabel}>Amount Payable</Text>
+              <Text style={styles.dueLabel}>Total Amount Due</Text>
               <Text style={styles.dueAmount}>₹{Number(invoice.total).toLocaleString()}</Text>
             </View>
             <Button
@@ -144,12 +266,12 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
         <Text style={styles.breakdownTitle}>Accounting Summary</Text>
         
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Taxable Turnover (Subtotal)</Text>
+          <Text style={styles.summaryLabel}>Subtotal (Taxable)</Text>
           <Text style={styles.summaryValue}>₹{Number(invoice.subtotal).toLocaleString()}</Text>
         </View>
 
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Goods & Services Tax (GST)</Text>
+          <Text style={styles.summaryLabel}>GST (18%)</Text>
           <Text style={styles.summaryValue}>+₹{Number(invoice.tax_amount).toLocaleString()}</Text>
         </View>
 
@@ -183,6 +305,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSecondary,
   },
+  proformaBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.purpleBg,
+    borderColor: colors.purpleBorder,
+    borderWidth: 1,
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 12,
+    gap: 8,
+  },
+  proformaBannerText: {
+    fontSize: 12,
+    color: colors.purple,
+    fontWeight: "600",
+    flex: 1,
+  },
   statusCard: {
     marginBottom: 16,
   },
@@ -210,6 +349,15 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
   },
+  advanceRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+  },
   dueLabel: {
     fontSize: 11,
     color: colors.textMuted,
@@ -228,7 +376,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     marginBottom: 10,
-    marginTop: 6,
+    marginTop: 4,
   },
   sectionTitle: {
     fontSize: 15,

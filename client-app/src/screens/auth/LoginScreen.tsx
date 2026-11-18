@@ -54,9 +54,9 @@ export const LoginScreen: React.FC = () => {
               <Text style={styles.logoText}>K</Text>
             </View>
             <Text style={styles.brandTitle}>KABHYAN</Text>
-            <Text style={styles.brandSubtitle}>Technologies Private Limited</Text>
+            <Text style={styles.brandSubtitle}>Enterprise Client Workspace</Text>
             <View style={styles.portalTag}>
-              <Text style={styles.portalTagText}>ENTERPRISE CLIENT PORTAL</Text>
+              <Text style={styles.portalTagText}>CLIENT PORTAL</Text>
             </View>
           </View>
 
@@ -64,7 +64,7 @@ export const LoginScreen: React.FC = () => {
           <View style={styles.card}>
             <Text style={styles.welcomeTitle}>Client Sign In</Text>
             <Text style={styles.welcomeSubtitle}>
-              Access deliverables, review invoices, manage project milestones, and pay online.
+              Sign in to review milestones, manage invoices, and approve project scope.
             </Text>
 
             {errorMessage && (
@@ -125,17 +125,17 @@ export const LoginScreen: React.FC = () => {
 
             {/* Submit Button */}
             <Button
-              title="Sign In to Portal"
+              title="Sign In"
               onPress={handleLogin}
               loading={loading}
               style={styles.submitButton}
             />
 
-            {/* Help / Secure Gateway Note */}
+            {/* Help / Secure Connection Note */}
             <View style={styles.securityNote}>
               <Ionicons name="shield-checkmark" size={16} color={colors.success} />
               <Text style={styles.securityText}>
-                End-to-end encrypted connection with Sanctum token authentication.
+                Protected by 256-bit enterprise encryption.
               </Text>
             </View>
           </View>
@@ -143,7 +143,7 @@ export const LoginScreen: React.FC = () => {
           {/* Footer Coordinates */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Need account assistance? Contact your designated account manager or email support@kabhyan.com
+              Need access? Contact your Kabhyan account manager or support@kabhyan.com.
             </Text>
           </View>
         </ScrollView>

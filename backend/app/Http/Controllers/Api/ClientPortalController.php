@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\Invoice;
+use App\Models\ProformaInvoice;
 use App\Models\Project;
 use App\Models\Ticket;
 use App\Models\TicketReply;
@@ -280,6 +281,35 @@ class ClientPortalController extends Controller
         $invoice->load(['items', 'payments', 'project']);
 
         return response()->json(['invoice' => $invoice]);
+    }
+
+    /**
+     * Client's proforma invoice list.
+     */
+    public function proformaInvoices(Request $request)
+    {
+        $client = $this->getClient($request);
+        $proformas = ProformaInvoice::where('client_email', $client->email)
+            ->with(['items', 'project'])
+            ->orderBy('invoice_date', 'desc')
+            ->paginate($request->input('per_page', 20));
+
+        return response()->json(['proforma_invoices' => $proformas]);
+    }
+
+    /**
+     * Show single proforma invoice for client.
+     */
+    public function showProformaInvoice(Request $request, ProformaInvoice $proformaInvoice)
+    {
+        $client = $this->getClient($request);
+        if ($proformaInvoice->client_email !== $client->email) {
+            abort(403, 'Unauthorized access to this proforma invoice.');
+        }
+
+        $proformaInvoice->load(['items', 'project']);
+
+        return response()->json(['proforma_invoice' => $proformaInvoice]);
     }
 
     /**

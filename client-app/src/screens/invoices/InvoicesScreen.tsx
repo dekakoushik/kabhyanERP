@@ -17,45 +17,61 @@ import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
 import { EmptyState } from "../../components/EmptyState";
-import { portalApi, Invoice } from "../../api/portal";
+import { portalApi, Invoice, ProformaInvoice } from "../../api/portal";
 
 export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+  // Document Type Tab: "tax" or "proforma"
+  const [docType, setDocType] = useState<"tax" | "proforma">("tax");
+
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [proformas, setProformas] = useState<ProformaInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<string>("all");
+
+  const [taxFilter, setTaxFilter] = useState<string>("all");
+  const [proformaFilter, setProformaFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [payingId, setPayingId] = useState<number | null>(null);
 
-  const fetchInvoices = useCallback(async (filter?: string) => {
+  const fetchData = useCallback(async () => {
     try {
-      const statusParam = filter && filter !== "all" ? filter : undefined;
-      const res = await portalApi.getInvoices(statusParam);
-      setInvoices(res.invoices || []);
+      if (docType === "tax") {
+        const statusParam = taxFilter !== "all" ? taxFilter : undefined;
+        const res = await portalApi.getInvoices(statusParam);
+        setInvoices(res.invoices || []);
+      } else {
+        const statusParam = proformaFilter !== "all" ? proformaFilter : undefined;
+        const res = await portalApi.getProformaInvoices(statusParam);
+        const data = Array.isArray(res.proforma_invoices)
+          ? res.proforma_invoices
+          : res.proforma_invoices?.data || [];
+        setProformas(data);
+      }
     } catch (err: any) {
       Alert.alert("Error", err.message || "Failed to load invoices.");
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [docType, taxFilter, proformaFilter]);
 
   useEffect(() => {
-    fetchInvoices(activeFilter);
-  }, [fetchInvoices, activeFilter]);
+    setLoading(true);
+    fetchData();
+  }, [fetchData]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchInvoices(activeFilter);
+    fetchData();
   };
 
-  const handlePayInvoice = async (invoiceId: number) => {
+  const handlePayTaxInvoice = async (invoiceId: number) => {
     try {
       setPayingId(invoiceId);
       const res = await portalApi.getPaymentLink(invoiceId);
       if (res.success && res.payment_link?.link_url) {
         await WebBrowser.openBrowserAsync(res.payment_link.link_url);
-        fetchInvoices(activeFilter);
+        fetchData();
       } else {
         Alert.alert("Notice", "Payment gateway is not configured for this invoice yet.");
       }
@@ -66,12 +82,19 @@ export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
     }
   };
 
-  const filteredInvoices = invoices.filter((inv) => {
+  // Tax Invoices Filtering
+  const filteredTaxInvoices = invoices.filter((inv) => {
     if (!searchQuery.trim()) return true;
     return inv.invoice_number.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
-  const renderInvoiceCard = ({ item }: { item: Invoice }) => {
+  // Proforma Invoices Filtering
+  const filteredProformas = proformas.filter((pi) => {
+    if (!searchQuery.trim()) return true;
+    return pi.proforma_number.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  const renderTaxInvoiceCard = ({ item }: { item: Invoice }) => {
     const isPaid = item.status === "paid";
     const isPaying = payingId === item.id;
 
@@ -79,12 +102,17 @@ export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
       <Card style={styles.invoiceCard}>
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => navigation.navigate("InvoiceDetail", { invoiceId: item.id })}
+          onPress={() => navigation.navigate("InvoiceDetail", { invoiceId: item.id, type: "tax" })}
         >
           <View style={styles.cardHeader}>
             <View>
-              <Text style={styles.invoiceNumber}>{item.invoice_number}</Text>
-              <Text style={styles.invoiceDate}>Issued: {item.invoice_date}</Text>
+              <View style={styles.typeTagRow}>
+                <Text style={styles.invoiceNumber}>{item.invoice_number}</Text>
+                <View style={styles.taxTag}>
+                  <Text style={styles.taxTagText}>TAX INVOICE</Text>
+                </View>
+              </View>
+              <Text style={styles.invoiceDate}>Issued on: {item.invoice_date}</Text>
             </View>
             <Badge
               label={item.status.replace("_", " ")}
@@ -96,7 +124,7 @@ export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 
           <View style={styles.detailsRow}>
             <View>
-              <Text style={styles.metaLabel}>Taxable Turnover</Text>
+              <Text style={styles.metaLabel}>Subtotal</Text>
               <Text style={styles.metaValue}>₹{Number(item.subtotal || 0).toLocaleString()}</Text>
             </View>
             <View>
@@ -104,7 +132,7 @@ export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
               <Text style={styles.metaValue}>+₹{Number(item.tax_amount || 0).toLocaleString()}</Text>
             </View>
             <View style={{ alignItems: "flex-end" }}>
-              <Text style={styles.metaLabel}>Gross Total</Text>
+              <Text style={styles.metaLabel}>Total Due</Text>
               <Text style={styles.grossTotal}>₹{Number(item.total).toLocaleString()}</Text>
             </View>
           </View>
@@ -112,16 +140,16 @@ export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           <View style={styles.actionRow}>
             <TouchableOpacity
               style={styles.viewDetailBtn}
-              onPress={() => navigation.navigate("InvoiceDetail", { invoiceId: item.id })}
+              onPress={() => navigation.navigate("InvoiceDetail", { invoiceId: item.id, type: "tax" })}
             >
               <Ionicons name="document-text-outline" size={14} color={colors.primary} />
-              <Text style={styles.viewDetailText}>View Scope & Items</Text>
+              <Text style={styles.viewDetailText}>View Details</Text>
             </TouchableOpacity>
 
             {!isPaid && (
               <Button
-                title="Pay Online"
-                onPress={() => handlePayInvoice(item.id)}
+                title="Pay Now"
+                onPress={() => handlePayTaxInvoice(item.id)}
                 loading={isPaying}
                 icon={<Ionicons name="card-outline" size={14} color={colors.textLight} />}
                 style={styles.payBtn}
@@ -133,15 +161,118 @@ export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
     );
   };
 
+  const renderProformaInvoiceCard = ({ item }: { item: ProformaInvoice }) => {
+    const isPaid = item.status === "paid" || item.status === "converted";
+
+    return (
+      <Card style={styles.invoiceCard}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => navigation.navigate("InvoiceDetail", { proformaId: item.id, type: "proforma" })}
+        >
+          <View style={styles.cardHeader}>
+            <View>
+              <View style={styles.typeTagRow}>
+                <Text style={styles.invoiceNumber}>{item.proforma_number}</Text>
+                <View style={styles.proformaTag}>
+                  <Text style={styles.proformaTagText}>PROFORMA</Text>
+                </View>
+              </View>
+              <Text style={styles.invoiceDate}>Issued on: {item.invoice_date}</Text>
+            </View>
+            <Badge
+              label={item.status === "converted" ? "Converted to Tax Inv" : item.status.replace("_", " ")}
+              variant={isPaid ? "success" : "info"}
+            />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.detailsRow}>
+            <View>
+              <Text style={styles.metaLabel}>Scope Amount</Text>
+              <Text style={styles.metaValue}>₹{Number(item.subtotal || 0).toLocaleString()}</Text>
+            </View>
+            <View>
+              <Text style={styles.metaLabel}>GST</Text>
+              <Text style={styles.metaValue}>+₹{Number(item.tax_amount || 0).toLocaleString()}</Text>
+            </View>
+            <View style={{ alignItems: "flex-end" }}>
+              <Text style={styles.metaLabel}>Advance Total</Text>
+              <Text style={styles.grossTotal}>₹{Number(item.total_amount || 0).toLocaleString()}</Text>
+            </View>
+          </View>
+
+          <View style={styles.actionRow}>
+            <TouchableOpacity
+              style={styles.viewDetailBtn}
+              onPress={() => navigation.navigate("InvoiceDetail", { proformaId: item.id, type: "proforma" })}
+            >
+              <Ionicons name="document-text-outline" size={14} color={colors.primary} />
+              <Text style={styles.viewDetailText}>View Advance Scope</Text>
+            </TouchableOpacity>
+
+            <View style={styles.proformaHint}>
+              <Text style={styles.proformaHintText}>Preliminary Advance Bill</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Card>
+    );
+  };
+
   return (
     <View style={styles.container}>
+      {/* Document Type Segmented Control */}
+      <View style={styles.segmentedContainer}>
+        <View style={styles.segmentedControl}>
+          <TouchableOpacity
+            style={[styles.segmentBtn, docType === "tax" && styles.segmentBtnActive]}
+            onPress={() => {
+              setDocType("tax");
+              setSearchQuery("");
+            }}
+          >
+            <Ionicons
+              name="file-tray-full-outline"
+              size={15}
+              color={docType === "tax" ? colors.primary : colors.textMuted}
+            />
+            <Text style={[styles.segmentText, docType === "tax" && styles.segmentTextActive]}>
+              Tax Invoices
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.segmentBtn, docType === "proforma" && styles.segmentBtnActive]}
+            onPress={() => {
+              setDocType("proforma");
+              setSearchQuery("");
+            }}
+          >
+            <Ionicons
+              name="receipt-outline"
+              size={15}
+              color={docType === "proforma" ? colors.primary : colors.textMuted}
+            />
+            <Text style={[styles.segmentText, docType === "proforma" && styles.segmentTextActive]}>
+              Proforma Invoices
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
           <Ionicons name="search-outline" size={18} color={colors.textMuted} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search by invoice number (e.g. INV-2026-001)..."
+            placeholder={
+              docType === "tax"
+                ? "Search by Tax Invoice (e.g. INV-2026-001)..."
+                : "Search by Proforma (e.g. PI-2026-001)..."
+            }
             placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -156,41 +287,75 @@ export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 
       {/* Filter Tabs */}
       <View style={styles.filterRow}>
-        {[
-          { key: "all", label: "All Invoices" },
-          { key: "unpaid", label: "Pending" },
-          { key: "paid", label: "Paid" },
-          { key: "overdue", label: "Overdue" },
-        ].map((tab) => (
-          <TouchableOpacity
-            key={tab.key}
-            style={[styles.filterChip, activeFilter === tab.key && styles.filterChipActive]}
-            onPress={() => setActiveFilter(tab.key)}
-          >
-            <Text style={[styles.filterChipText, activeFilter === tab.key && styles.filterChipTextActive]}>
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        {(docType === "tax"
+          ? [
+              { key: "all", label: "All Invoices" },
+              { key: "unpaid", label: "Pending" },
+              { key: "paid", label: "Paid" },
+              { key: "overdue", label: "Overdue" },
+            ]
+          : [
+              { key: "all", label: "All Proformas" },
+              { key: "sent", label: "Pending Advance" },
+              { key: "paid", label: "Settled" },
+              { key: "converted", label: "Converted" },
+            ]
+        ).map((tab) => {
+          const isActive = docType === "tax" ? taxFilter === tab.key : proformaFilter === tab.key;
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.filterChip, isActive && styles.filterChipActive]}
+              onPress={() => {
+                if (docType === "tax") {
+                  setTaxFilter(tab.key);
+                } else {
+                  setProformaFilter(tab.key);
+                }
+              }}
+            >
+              <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {loading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Fetching tax invoices...</Text>
+          <Text style={styles.loadingText}>
+            {docType === "tax" ? "Fetching tax invoices..." : "Fetching proforma invoices..."}
+          </Text>
         </View>
-      ) : (
+      ) : docType === "tax" ? (
         <FlatList
-          data={filteredInvoices}
+          data={filteredTaxInvoices}
           keyExtractor={(item) => String(item.id)}
-          renderItem={renderInvoiceCard}
+          renderItem={renderTaxInvoiceCard}
           contentContainerStyle={styles.listContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}
           ListEmptyComponent={
             <EmptyState
               icon="receipt-outline"
-              title="No Invoices Found"
-              description="There are no tax invoices matching the selected filter criteria."
+              title="No Tax Invoices Found"
+              description="There are no formal GST tax invoices matching the selected filter."
+            />
+          }
+        />
+      ) : (
+        <FlatList
+          data={filteredProformas}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderProformaInvoiceCard}
+          contentContainerStyle={styles.listContent}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}
+          ListEmptyComponent={
+            <EmptyState
+              icon="document-text-outline"
+              title="No Proforma Invoices"
+              description="There are no preliminary proforma invoices issued for this account."
             />
           }
         />
@@ -204,9 +369,48 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  searchContainer: {
+  segmentedContainer: {
+    backgroundColor: colors.card,
     paddingHorizontal: 16,
     paddingTop: 12,
+    paddingBottom: 6,
+  },
+  segmentedControl: {
+    flexDirection: "row",
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  segmentBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    borderRadius: 9,
+    gap: 6,
+  },
+  segmentBtnActive: {
+    backgroundColor: colors.card,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  segmentText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: colors.textMuted,
+  },
+  segmentTextActive: {
+    color: colors.primary,
+  },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
     paddingBottom: 8,
     backgroundColor: colors.card,
   },
@@ -218,7 +422,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 12,
     paddingHorizontal: 12,
-    height: 42,
+    height: 40,
   },
   searchInput: {
     flex: 1,
@@ -237,7 +441,7 @@ const styles = StyleSheet.create({
   },
   filterChip: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 20,
     backgroundColor: colors.background,
     borderWidth: 1,
@@ -277,15 +481,42 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
   },
+  typeTagRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
   invoiceNumber: {
     fontSize: 15,
-    fontWeight: "700",
+    fontWeight: "800",
     color: colors.text,
+  },
+  taxTag: {
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  taxTagText: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: colors.primary,
+  },
+  proformaTag: {
+    backgroundColor: colors.purpleBg,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  proformaTagText: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: colors.purple,
   },
   invoiceDate: {
     fontSize: 11,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: 3,
   },
   divider: {
     height: 1,
@@ -335,8 +566,19 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   payBtn: {
-    paddingVertical: 8,
+    paddingVertical: 7,
     paddingHorizontal: 14,
     borderRadius: 10,
+  },
+  proformaHint: {
+    backgroundColor: colors.background,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  proformaHintText: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: colors.textMuted,
   },
 });
