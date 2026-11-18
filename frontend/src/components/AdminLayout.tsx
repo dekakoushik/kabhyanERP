@@ -477,15 +477,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* Mobile Drawer Backdrop */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs lg:hidden transition-opacity"
+          className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs lg:hidden transition-opacity"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
       {/* Modern Sidebar (Desktop Fixed & Mobile Offcanvas) */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 bg-white border-r border-slate-200/80 transform transition-all duration-200 ease-in-out lg:translate-x-0 h-screen flex flex-col print:hidden ${
-          mobileMenuOpen ? "translate-x-0 w-72" : "-translate-x-full lg:translate-x-0"
+        className={`fixed inset-y-0 left-0 bg-white border-r border-slate-200/80 transform transition-all duration-200 ease-in-out lg:translate-x-0 h-screen flex flex-col print:hidden ${
+          mobileMenuOpen ? "translate-x-0 w-72 z-50" : "-translate-x-full lg:translate-x-0 z-40"
         } ${isCollapsed ? "lg:w-20" : "lg:w-64"}`}
       >
         {/* Fixed Brand & Collapse Header */}
@@ -775,11 +775,22 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <button
                 onClick={logout}
                 title="Sign Out"
-                className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                className="hidden lg:flex p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
               </button>
             )}
+          </div>
+
+          {/* Prominent Full-Width Logout Action for Mobile Drawer */}
+          <div className="mt-2.5 lg:hidden">
+            <button
+              onClick={logout}
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-red-50 hover:bg-red-100 active:scale-98 text-red-600 font-semibold text-xs border border-red-200/70 transition cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Log Out of Workspace</span>
+            </button>
           </div>
         </div>
       </aside>
@@ -794,6 +805,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           onOpenCommandPalette={() => setCommandPaletteOpen(true)}
           onInstallClick={handleInstallApp}
           canInstall={canInstall}
+          onLogout={logout}
         />
 
         {/* Desktop Top Navbar */}

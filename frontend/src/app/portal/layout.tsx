@@ -68,6 +68,7 @@ export default function ClientPortalLayout({ children }: { children: React.React
         user={user}
         onInstallClick={handleInstallApp}
         canInstall={canInstall}
+        onLogout={logout}
       />
 
       {/* Desktop Top Client Navigation Bar */}
