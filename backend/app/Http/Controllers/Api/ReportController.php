@@ -105,8 +105,10 @@ class ReportController extends Controller
             ->where('status', '!=', 'cancelled')
             ->sum('tax_amount');
 
-        // Cash Collections
-        $collectionsCash = (float) InvoicePayment::whereBetween('payment_date', [$startDate, $endDate])
+        // Cash Collections (Active Non-Deleted Invoices Only)
+        $collectionsCash = (float) InvoicePayment::whereHas('invoice', function ($q) {
+            $q->where('status', '!=', 'cancelled');
+        })->whereBetween('payment_date', [$startDate, $endDate])
             ->sum('amount');
 
         // Rule 50 Advances Received
@@ -150,8 +152,11 @@ class ReportController extends Controller
             ? round(($acceptedEstimatesCount / $totalEstimatesCount) * 100, 1)
             : 0;
 
-        // Recent 6 cash movements
-        $recentInflows = InvoicePayment::with('invoice:id,invoice_number,client_name')
+        // Recent 6 cash movements (Active Non-Deleted Invoices Only)
+        $recentInflows = InvoicePayment::whereHas('invoice', function ($q) {
+            $q->where('status', '!=', 'cancelled');
+        })
+            ->with('invoice:id,invoice_number,client_name')
             ->orderBy('payment_date', 'desc')
             ->limit(4)
             ->get()
@@ -232,7 +237,9 @@ class ReportController extends Controller
                 ->where('status', '!=', 'cancelled')
                 ->sum('total_amount');
 
-            $collected = (float) InvoicePayment::whereBetween('payment_date', [$mStart, $mEnd])
+            $collected = (float) InvoicePayment::whereHas('invoice', function ($q) {
+                $q->where('status', '!=', 'cancelled');
+            })->whereBetween('payment_date', [$mStart, $mEnd])
                 ->sum('amount');
 
             $advances = (float) ReceiptVoucher::whereBetween('voucher_date', [$mStart, $mEnd])
@@ -950,7 +957,9 @@ class ReportController extends Controller
                 fputcsv($handle, ['INCOME VS EXPENSE & CASH FLOW STATEMENT']);
                 fputcsv($handle, ['Date', 'Type', 'Reference / Title', 'Party', 'Payment Mode', 'Amount (INR)']);
 
-                $payments = InvoicePayment::with('invoice')->whereBetween('payment_date', [$startDate, $endDate])->get();
+                $payments = InvoicePayment::whereHas('invoice', function ($q) {
+                    $q->where('status', '!=', 'cancelled');
+                })->with('invoice')->whereBetween('payment_date', [$startDate, $endDate])->get();
                 foreach ($payments as $p) {
                     fputcsv($handle, [
                         $p->payment_date,

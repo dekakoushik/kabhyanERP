@@ -20,8 +20,10 @@ class FinancialReportController extends Controller
     {
         $year = $request->input('year', date('Y'));
 
-        // 1. Total Inflow (Collected from Clients via Invoices)
-        $totalCollectedIncome = (float) InvoicePayment::whereYear('payment_date', $year)->sum('amount');
+        // 1. Total Inflow (Collected from Clients via Active Invoices)
+        $totalCollectedIncome = (float) InvoicePayment::whereHas('invoice', function ($q) {
+            $q->where('status', '!=', 'cancelled');
+        })->whereYear('payment_date', $year)->sum('amount');
         
         // In case there are invoices paid directly
         $totalInvoicedGross = (float) Invoice::whereYear('invoice_date', $year)->sum('total_amount');
@@ -45,7 +47,9 @@ class FinancialReportController extends Controller
         $months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
         for ($m = 1; $m <= 12; $m++) {
-            $monthIncome = (float) InvoicePayment::whereYear('payment_date', $year)
+            $monthIncome = (float) InvoicePayment::whereHas('invoice', function ($q) {
+                $q->where('status', '!=', 'cancelled');
+            })->whereYear('payment_date', $year)
                 ->whereMonth('payment_date', $m)
                 ->sum('amount');
 
@@ -80,7 +84,10 @@ class FinancialReportController extends Controller
         ->values();
 
         // 5. Recent Cashflow Activity (Last 10 transactions of Income & Expense combined)
-        $recentIncome = InvoicePayment::with('invoice')
+        $recentIncome = InvoicePayment::whereHas('invoice', function ($q) {
+            $q->where('status', '!=', 'cancelled');
+        })
+            ->with('invoice')
             ->orderBy('payment_date', 'desc')
             ->limit(8)
             ->get()

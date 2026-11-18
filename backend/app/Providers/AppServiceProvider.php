@@ -137,6 +137,25 @@ class AppServiceProvider extends ServiceProvider
                     } catch (\Throwable $e) {}
                 }
 
+                // Autonomous purge of orphan payments & adjustments from deleted or soft-deleted invoices
+                if (Schema::hasTable('invoice_payments') && Schema::hasTable('invoices')) {
+                    try {
+                        $deletedInvoiceIds = \Illuminate\Support\Facades\DB::table('invoices')
+                            ->whereNotNull('deleted_at')
+                            ->pluck('id');
+                        if ($deletedInvoiceIds->isNotEmpty()) {
+                            \Illuminate\Support\Facades\DB::table('invoice_payments')
+                                ->whereIn('invoice_id', $deletedInvoiceIds)
+                                ->delete();
+                            if (Schema::hasTable('invoice_advance_adjustments')) {
+                                \Illuminate\Support\Facades\DB::table('invoice_advance_adjustments')
+                                    ->whereIn('invoice_id', $deletedInvoiceIds)
+                                    ->delete();
+                            }
+                        }
+                    } catch (\Throwable $e) {}
+                }
+
                 // 2. Auto-run pending database migrations (debounced every 5 minutes to keep requests fast)
                 $cacheKey = 'kabhyan_auto_migration_last_run_v12';
                 if (!\Illuminate\Support\Facades\Cache::has($cacheKey)) {

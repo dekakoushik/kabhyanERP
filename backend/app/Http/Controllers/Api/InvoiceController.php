@@ -729,6 +729,10 @@ class InvoiceController extends Controller
      */
     public function destroy(Invoice $invoice): JsonResponse
     {
+        // Delete child payments, items, and advance adjustments to prevent orphan records
+        $invoice->payments()->delete();
+        $invoice->advanceAdjustments()->delete();
+        $invoice->items()->delete();
         $invoice->delete();
 
         return response()->json([
