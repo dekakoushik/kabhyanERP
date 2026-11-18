@@ -277,7 +277,12 @@ export const portalApi = {
     apiClient<{ download_url: string; filename: string }>(`/portal/estimates/${id}/download-url`),
 
   respondEstimate: (id: number | string, action: "accepted" | "declined", reason?: string) =>
-    apiClient<{ success: boolean; message: string }>(`/portal/estimates/${id}/respond`, {
+    apiClient<{
+      success: boolean;
+      message: string;
+      estimate?: Estimate;
+      proforma_invoice?: ProformaInvoiceSummary;
+    }>(`/portal/estimates/${id}/respond`, {
       method: "POST",
       body: JSON.stringify({ action, reason }),
     }),

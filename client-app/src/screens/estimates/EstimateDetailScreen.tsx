@@ -77,8 +77,31 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
           try {
             setActing(true);
             const res = await portalApi.respondEstimate(estimateId, action);
-            Alert.alert("Success", res.message || `Quotation ${action} successfully.`);
-            fetchDetail();
+            if (action === "accepted" && res.proforma_invoice) {
+              Alert.alert(
+                "Quotation Accepted",
+                `Proforma Invoice #${res.proforma_invoice.proforma_number} has been generated for project mobilization.`,
+                [
+                  {
+                    text: "View Proforma Invoice",
+                    onPress: () => {
+                      navigation.replace("InvoiceDetail", {
+                        proformaId: res.proforma_invoice!.id,
+                        type: "proforma",
+                      });
+                    },
+                  },
+                  {
+                    text: "Stay Here",
+                    style: "cancel",
+                    onPress: () => fetchDetail(),
+                  },
+                ]
+              );
+            } else {
+              Alert.alert("Success", res.message || `Quotation ${action} successfully.`);
+              fetchDetail();
+            }
           } catch (err: any) {
             Alert.alert("Action Failed", err.message || "Could not record response.");
           } finally {
