@@ -4,9 +4,11 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  TouchableOpacity,
   ActivityIndicator,
   Alert,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
 import { colors } from "../../theme/colors";
@@ -14,7 +16,6 @@ import { fonts } from "../../theme/typography";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
-import { DocumentPipelineStepper } from "../../components/DocumentPipelineStepper";
 import { portalApi, Estimate } from "../../api/portal";
 import { formatDate, formatCurrency } from "../../utils/date";
 
@@ -22,6 +23,7 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
   route,
   navigation,
 }) => {
+  const insets = useSafeAreaInsets();
   const { estimateId } = route.params;
   const [estimate, setEstimate] = useState<Estimate | null>(null);
   const [loading, setLoading] = useState(true);
@@ -146,6 +148,7 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
   }
 
   const linkedProforma = estimate.proforma_invoices && estimate.proforma_invoices[0];
+  const linkedTaxInvoice = linkedProforma?.tax_invoices && linkedProforma.tax_invoices[0];
   const isConverted = estimate.status === "invoiced" || Boolean(linkedProforma);
   const isPending = !isConverted && estimate.status === "sent";
   const items = estimate.items || [];
@@ -160,255 +163,367 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
     ? Math.max(0, totalAmountNum - roundOffNum - taxAmountNum)
     : subtotalNum - discountNum;
 
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Visual Stepper */}
-      <DocumentPipelineStepper
-        currentStep="estimate"
-        estimateNumber={estimate.estimate_number}
-        estimateId={estimate.id}
-        proformaNumber={linkedProforma?.proforma_number}
-        proformaId={linkedProforma?.id}
-        onNavigate={(type, id) => {
-          if (type === "proforma") {
-            navigation.navigate("InvoiceDetail", { proformaId: id, type: "proforma" });
-          }
-        }}
-      />
+  const timelineItems = [
+    {
+      key: "estimate",
+      title: "Quotation",
+      number: estimate.estimate_number,
+      date: formatDate(estimate.estimate_date),
+      amount: totalAmountNum,
+      status: isConverted
+        ? "ACCEPTED"
+        : estimate.status === "sent"
+        ? "AWAITING APPROVAL"
+        : estimate.status.toUpperCase(),
+      badgeVariant: (isConverted || estimate.status === "accepted"
+        ? "success"
+        : estimate.status === "declined"
+        ? "danger"
+        : "warning") as "success" | "warning" | "danger" | "info" | "neutral" | "purple",
+      isCurrent: true,
+      onPress: undefined,
+    },
+    ...(linkedProforma
+      ? [
+          {
+            key: "proforma",
+            title: "Proforma Invoice",
+            number: linkedProforma.proforma_number,
+            date: formatDate(linkedProforma.invoice_date),
+            amount: Number(linkedProforma.total_amount ?? totalAmountNum),
+            status: (linkedProforma.status || "unpaid").toUpperCase(),
+            badgeVariant: (linkedProforma.status === "paid"
+              ? "success"
+              : "warning") as "success" | "warning" | "danger" | "info" | "neutral" | "purple",
+            isCurrent: false,
+            onPress: () =>
+              navigation.navigate("InvoiceDetail", {
+                proformaId: linkedProforma.id,
+                type: "proforma",
+              }),
+          },
+        ]
+      : []),
+    ...(linkedTaxInvoice
+      ? [
+          {
+            key: "invoice",
+            title: "Tax Invoice",
+            number: linkedTaxInvoice.invoice_number,
+            date: formatDate(linkedTaxInvoice.invoice_date),
+            amount: Number(linkedTaxInvoice.total_amount ?? totalAmountNum),
+            status: (linkedTaxInvoice.status || "unpaid").toUpperCase(),
+            badgeVariant: (linkedTaxInvoice.status === "paid"
+              ? "success"
+              : "warning") as "success" | "warning" | "danger" | "info" | "neutral" | "purple",
+            isCurrent: false,
+            onPress: () =>
+              navigation.navigate("InvoiceDetail", {
+                invoiceId: linkedTaxInvoice.id,
+                type: "tax",
+              }),
+          },
+        ]
+      : []),
+  ];
 
-      {/* Converted Proforma Notice Card */}
-      {isConverted && linkedProforma && (
-        <Card style={styles.conversionCard}>
-          <View style={styles.conversionRow}>
-            <View style={styles.conversionIconBg}>
-              <Ionicons name="receipt-outline" size={18} color={colors.purple} />
+  return (
+    <View style={styles.screenWrapper}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: isPending ? Math.max(insets.bottom, 12) + 72 : 40 },
+        ]}
+      >
+        {/* 1. Hero Valuation Card */}
+        <Card style={styles.heroCard}>
+          <View style={styles.heroHeaderRow}>
+            <View style={styles.heroDocGroup}>
+              <Text style={styles.heroDocNumber}>{estimate.estimate_number}</Text>
+              <Badge label="QUOTATION" variant="warning" size="sm" />
             </View>
-            <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={styles.conversionTitle}>Converted to Proforma Invoice</Text>
-              <Text style={styles.conversionSub}>
-                Proforma #{linkedProforma.proforma_number} has been generated for this scope.
+            <Badge
+              label={
+                isConverted
+                  ? "CONVERTED"
+                  : estimate.status === "sent"
+                  ? "AWAITING APPROVAL"
+                  : estimate.status.toUpperCase()
+              }
+              variant={
+                isConverted
+                  ? "purple"
+                  : estimate.status === "accepted"
+                  ? "success"
+                  : estimate.status === "declined"
+                  ? "danger"
+                  : "warning"
+              }
+              size="sm"
+            />
+          </View>
+
+          <View style={styles.valuationBox}>
+            <Text style={styles.valuationLabel}>PROPOSAL VALUE</Text>
+            <Text style={styles.valuationAmount}>{formatCurrency(totalAmountNum)}</Text>
+          </View>
+
+          <View style={styles.heroDivider} />
+
+          <View style={styles.heroFooterRow}>
+            <View style={{ flex: 1, marginRight: 10 }}>
+              {estimate.project?.name ? (
+                <Text style={styles.projectText} numberOfLines={1}>
+                  Project: {estimate.project.name}
+                </Text>
+              ) : null}
+              <Text style={styles.dateMetaText}>
+                Issued: {formatDate(estimate.estimate_date)}
+                {estimate.expiry_date ? ` • Valid until: ${formatDate(estimate.expiry_date)}` : ""}
               </Text>
             </View>
+
             <Button
-              title="View PI →"
-              variant="primary"
-              onPress={() =>
-                navigation.navigate("InvoiceDetail", {
-                  proformaId: linkedProforma.id,
-                  type: "proforma",
-                })
-              }
-              style={styles.conversionBtnCompact}
+              title="Download PDF"
+              variant="outline"
+              onPress={handleDownloadPdf}
+              loading={downloadingPdf}
+              icon={<Ionicons name="cloud-download-outline" size={14} color={colors.primary} />}
+              style={styles.compactDownloadBtn}
             />
           </View>
         </Card>
-      )}
 
-      {/* 1. Hero Valuation Card */}
-      <Card style={styles.heroCard}>
-        <View style={styles.heroHeaderRow}>
-          <View style={styles.heroDocGroup}>
-            <Text style={styles.heroDocNumber}>{estimate.estimate_number}</Text>
-            <Badge label="QUOTATION" variant="warning" size="sm" />
-          </View>
+        {/* 2. Scope & Deliverables Section */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitle}>Scope & Deliverables</Text>
           <Badge
-            label={
-              isConverted
-                ? "CONVERTED"
-                : estimate.status === "sent"
-                ? "AWAITING APPROVAL"
-                : estimate.status.toUpperCase()
-            }
-            variant={
-              isConverted
-                ? "purple"
-                : estimate.status === "accepted"
-                ? "success"
-                : estimate.status === "declined"
-                ? "danger"
-                : "warning"
-            }
+            label={`${items.length} ${items.length === 1 ? "item" : "items"}`}
+            variant="neutral"
             size="sm"
           />
         </View>
 
-        <View style={styles.valuationBox}>
-          <Text style={styles.valuationLabel}>PROPOSAL VALUE</Text>
-          <Text style={styles.valuationAmount}>{formatCurrency(totalAmountNum)}</Text>
-        </View>
+        {items.length === 0 ? (
+          <Card style={styles.emptyCard}>
+            <Text style={styles.noItemsText}>No line items listed.</Text>
+          </Card>
+        ) : (
+          items.map((item, idx) => {
+            const itemTaxRate = item.tax_rate ?? estimate.tax_rate ?? 18;
+            return (
+              <Card key={item.id || idx} style={styles.itemCard}>
+                <View style={styles.itemHeaderRow}>
+                  <Text style={styles.itemTitle}>
+                    {item.item_name || item.description || "Scope Deliverable"}
+                  </Text>
+                  <Text style={styles.itemTotalAmount}>{formatCurrency(item.amount)}</Text>
+                </View>
 
-        <View style={styles.heroDivider} />
+                {item.item_name && item.description ? (
+                  <Text style={styles.itemDescription} numberOfLines={3}>
+                    {item.description}
+                  </Text>
+                ) : null}
 
-        <View style={styles.heroFooterRow}>
-          <View style={{ flex: 1, marginRight: 10 }}>
-            {estimate.project?.name ? (
-              <Text style={styles.projectText} numberOfLines={1}>
-                Project: {estimate.project.name}
+                <View style={styles.itemPillRow}>
+                  <View style={styles.itemCalcPill}>
+                    <Text style={styles.itemCalcText}>
+                      {item.quantity} {item.unit || "units"} × {formatCurrency(item.unit_price)}
+                    </Text>
+                    <Text style={styles.itemCalcDot}>•</Text>
+                    <Text style={styles.itemGstText}>+{itemTaxRate}% GST</Text>
+                  </View>
+                </View>
+              </Card>
+            );
+          })
+        )}
+
+        {/* 3. Accounting Summary Card */}
+        <Card style={styles.breakdownCard}>
+          <Text style={styles.breakdownTitle}>Summary</Text>
+
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Subtotal</Text>
+            <Text style={styles.summaryValue}>{formatCurrency(subtotalNum)}</Text>
+          </View>
+
+          {discountNum > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Discount</Text>
+              <Text style={[styles.summaryValue, { color: colors.success }]}>
+                -{formatCurrency(discountNum)}
+              </Text>
+            </View>
+          )}
+
+          {isInclusive ? (
+            <>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Taxable Amount</Text>
+                <Text style={styles.summaryValue}>{formatCurrency(taxableTurnover)}</Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>GST ({estimate.tax_rate || 18}% Included)</Text>
+                <Text style={styles.summaryValue}>{formatCurrency(taxAmountNum)}</Text>
+              </View>
+            </>
+          ) : (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>GST ({estimate.tax_rate || 18}%)</Text>
+              <Text style={styles.summaryValue}>+{formatCurrency(taxAmountNum)}</Text>
+            </View>
+          )}
+
+          {roundOffNum !== 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Round Off</Text>
+              <Text style={styles.summaryValue}>
+                {roundOffNum > 0 ? "+" : ""}{formatCurrency(roundOffNum)}
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.summaryDivider} />
+
+          <View style={styles.summaryRow}>
+            <Text style={styles.grossLabel}>Total Amount</Text>
+            <Text style={styles.grossValue}>{formatCurrency(totalAmountNum)}</Text>
+          </View>
+        </Card>
+
+        {/* Terms & Conditions (if present) */}
+        {estimate.notes || estimate.terms_and_conditions ? (
+          <Card style={styles.termsCard}>
+            <Text style={styles.termsTitle}>Terms & Scope Notes</Text>
+            {estimate.notes ? (
+              <Text style={styles.termsText}>{estimate.notes}</Text>
+            ) : null}
+            {estimate.terms_and_conditions ? (
+              <Text style={[styles.termsText, estimate.notes ? { marginTop: 6 } : null]}>
+                {estimate.terms_and_conditions}
               </Text>
             ) : null}
-            <Text style={styles.dateMetaText}>
-              Issued: {formatDate(estimate.estimate_date)}
-              {estimate.expiry_date ? ` • Valid until: ${formatDate(estimate.expiry_date)}` : ""}
-            </Text>
+          </Card>
+        ) : null}
+
+        {/* 4. Commercial Document Lifecycle Timeline (Completed only) */}
+        <Card style={styles.timelineCard}>
+          <View style={styles.timelineHeaderRow}>
+            <Text style={styles.timelineTitle}>Commercial Timeline</Text>
+            <Badge
+              label={`${timelineItems.length} ${timelineItems.length === 1 ? "record" : "records"}`}
+              variant="neutral"
+              size="sm"
+            />
           </View>
 
-          <Button
-            title="Download PDF"
-            variant="outline"
-            onPress={handleDownloadPdf}
-            loading={downloadingPdf}
-            icon={<Ionicons name="cloud-download-outline" size={14} color={colors.primary} />}
-            style={styles.compactDownloadBtn}
-          />
-        </View>
-      </Card>
+          <View style={styles.timelineList}>
+            {timelineItems.map((item, index) => {
+              const isLast = index === timelineItems.length - 1;
+              return (
+                <View key={item.key} style={styles.timelineRow}>
+                  {/* Left Column: Node dot & vertical line */}
+                  <View style={styles.nodeColumn}>
+                    <View
+                      style={[
+                        styles.timelineDot,
+                        item.isCurrent ? styles.dotCurrent : styles.dotCompleted,
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.timelineDotInner,
+                          item.isCurrent ? styles.dotInnerCurrent : styles.dotInnerCompleted,
+                        ]}
+                      />
+                    </View>
+                    {!isLast && <View style={styles.verticalLine} />}
+                  </View>
 
-      {/* 2. Scope & Deliverables Section */}
-      <View style={styles.sectionHeaderRow}>
-        <Text style={styles.sectionTitle}>Scope & Deliverables</Text>
-        <Badge
-          label={`${items.length} ${items.length === 1 ? "item" : "items"}`}
-          variant="neutral"
-          size="sm"
-        />
-      </View>
+                  {/* Right Column: Record Details */}
+                  <TouchableOpacity
+                    style={[styles.timelineContentBox, isLast && { marginBottom: 0 }]}
+                    onPress={item.onPress}
+                    disabled={!item.onPress}
+                    activeOpacity={item.onPress ? 0.7 : 1}
+                  >
+                    <View style={styles.timelineMainInfo}>
+                      <View style={styles.timelineTitleRow}>
+                        <Text style={styles.timelineItemTitle}>{item.title}</Text>
+                        <Badge label={item.status} variant={item.badgeVariant} size="sm" />
+                      </View>
+                      <Text style={styles.timelineItemNumber}>
+                        {item.number} • {item.date}
+                      </Text>
+                    </View>
 
-      {items.length === 0 ? (
-        <Card style={styles.emptyCard}>
-          <Text style={styles.noItemsText}>No line items listed.</Text>
-        </Card>
-      ) : (
-        items.map((item, idx) => {
-          const itemTaxRate = item.tax_rate ?? estimate.tax_rate ?? 18;
-          return (
-            <Card key={item.id || idx} style={styles.itemCard}>
-              <View style={styles.itemHeaderRow}>
-                <Text style={styles.itemTitle}>
-                  {item.item_name || item.description || "Scope Deliverable"}
-                </Text>
-                <Text style={styles.itemTotalAmount}>{formatCurrency(item.amount)}</Text>
-              </View>
-
-              {item.item_name && item.description ? (
-                <Text style={styles.itemDescription} numberOfLines={3}>
-                  {item.description}
-                </Text>
-              ) : null}
-
-              <View style={styles.itemPillRow}>
-                <View style={styles.itemCalcPill}>
-                  <Text style={styles.itemCalcText}>
-                    {item.quantity} {item.unit || "units"} × {formatCurrency(item.unit_price)}
-                  </Text>
-                  <Text style={styles.itemCalcDot}>•</Text>
-                  <Text style={styles.itemGstText}>+{itemTaxRate}% GST</Text>
+                    <View style={styles.timelineActionCol}>
+                      <Text style={styles.timelineAmount}>{formatCurrency(item.amount)}</Text>
+                      {item.isCurrent ? (
+                        <Text style={styles.currentViewingText}>Viewing</Text>
+                      ) : item.onPress ? (
+                        <View style={styles.viewRow}>
+                          <Text style={styles.viewText}>View</Text>
+                          <Ionicons name="chevron-forward" size={12} color={colors.primary} />
+                        </View>
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
                 </View>
-              </View>
-            </Card>
-          );
-        })
-      )}
-
-      {/* 3. Accounting Summary Card */}
-      <Card style={styles.breakdownCard}>
-        <Text style={styles.breakdownTitle}>Summary</Text>
-
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Subtotal</Text>
-          <Text style={styles.summaryValue}>{formatCurrency(subtotalNum)}</Text>
-        </View>
-
-        {discountNum > 0 && (
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Discount</Text>
-            <Text style={[styles.summaryValue, { color: colors.success }]}>
-              -{formatCurrency(discountNum)}
-            </Text>
+              );
+            })}
           </View>
-        )}
-
-        {isInclusive ? (
-          <>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Taxable Amount</Text>
-              <Text style={styles.summaryValue}>{formatCurrency(taxableTurnover)}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>GST ({estimate.tax_rate || 18}% Included)</Text>
-              <Text style={styles.summaryValue}>{formatCurrency(taxAmountNum)}</Text>
-            </View>
-          </>
-        ) : (
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>GST ({estimate.tax_rate || 18}%)</Text>
-            <Text style={styles.summaryValue}>+{formatCurrency(taxAmountNum)}</Text>
-          </View>
-        )}
-
-        {roundOffNum !== 0 && (
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Round Off</Text>
-            <Text style={styles.summaryValue}>
-              {roundOffNum > 0 ? "+" : ""}{formatCurrency(roundOffNum)}
-            </Text>
-          </View>
-        )}
-
-        <View style={styles.summaryDivider} />
-
-        <View style={styles.summaryRow}>
-          <Text style={styles.grossLabel}>Total Amount</Text>
-          <Text style={styles.grossValue}>{formatCurrency(totalAmountNum)}</Text>
-        </View>
-      </Card>
-
-      {/* Terms & Conditions (if present) */}
-      {estimate.notes || estimate.terms_and_conditions ? (
-        <Card style={styles.termsCard}>
-          <Text style={styles.termsTitle}>Terms & Scope Notes</Text>
-          {estimate.notes ? (
-            <Text style={styles.termsText}>{estimate.notes}</Text>
-          ) : null}
-          {estimate.terms_and_conditions ? (
-            <Text style={[styles.termsText, estimate.notes ? { marginTop: 6 } : null]}>
-              {estimate.terms_and_conditions}
-            </Text>
-          ) : null}
         </Card>
-      ) : null}
+      </ScrollView>
 
-      {/* 4. Bottom Decision Card (When awaiting approval) */}
+      {/* Floating Compact Decision Dock (When awaiting approval) */}
       {isPending && (
-        <Card style={styles.decisionCard}>
-          <Text style={styles.decisionTitle}>Ready to proceed?</Text>
-          <Text style={styles.decisionSub}>
-            Accept this proposal to approve the deliverables and mobilize the project.
-          </Text>
+        <View style={[styles.floatingDecisionBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+          <View style={styles.floatingPriceBox}>
+            <Text style={styles.floatingPriceLabel}>TOTAL PROPOSAL</Text>
+            <Text style={styles.floatingPriceValue}>{formatCurrency(totalAmountNum)}</Text>
+          </View>
 
-          <View style={styles.actionButtonsRow}>
-            <Button
-              title="Decline"
-              variant="outline"
+          <View style={styles.floatingBtnGroup}>
+            <TouchableOpacity
+              style={styles.floatingDeclineBtn}
               onPress={() => handleRespond("declined")}
               disabled={acting}
-              style={{ flex: 1, marginRight: 10 }}
-            />
-            <Button
-              title="Accept Quotation"
-              variant="success"
+              activeOpacity={0.7}
+            >
+              <Text style={styles.floatingDeclineText}>Decline</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.floatingAcceptBtn}
               onPress={() => handleRespond("accepted")}
-              loading={acting}
-              icon={<Ionicons name="checkmark-circle-outline" size={16} color={colors.textLight} />}
-              style={{ flex: 1.5 }}
-            />
+              disabled={acting}
+              activeOpacity={0.8}
+            >
+              {acting ? (
+                <ActivityIndicator size="small" color={colors.textLight} />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle" size={15} color={colors.textLight} />
+                  <Text style={styles.floatingAcceptText}>Accept</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
-        </Card>
+        </View>
       )}
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  screenWrapper: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -427,44 +542,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontSize: 13,
     color: colors.textSecondary,
-  },
-
-  // Converted Proforma Alert Card
-  conversionCard: {
-    backgroundColor: "#FAF5FF",
-    borderColor: "#E9D5FF",
-    borderWidth: 1,
-    marginBottom: 12,
-    padding: 12,
-    borderRadius: 14,
-  },
-  conversionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  conversionIconBg: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#F3E8FF",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  conversionTitle: {
-    fontFamily: fonts.bold,
-    fontSize: 13,
-    color: "#6B21A8",
-  },
-  conversionSub: {
-    fontFamily: fonts.regular,
-    fontSize: 11,
-    color: "#7E22CE",
-    marginTop: 1,
-  },
-  conversionBtnCompact: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 8,
   },
 
   // 1. Hero Valuation Card
@@ -683,31 +760,195 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
 
-  // 4. Decision Card
-  decisionCard: {
-    padding: 16,
-    marginTop: 4,
-    marginBottom: 20,
-    borderRadius: 16,
-    backgroundColor: "#F0FDF4",
-    borderWidth: 1,
-    borderColor: "#BBF7D0",
-  },
-  decisionTitle: {
-    fontFamily: fonts.bold,
-    fontSize: 15,
-    color: "#166534",
-    marginBottom: 2,
-  },
-  decisionSub: {
-    fontFamily: fonts.regular,
-    fontSize: 12,
-    color: "#15803D",
+  // 4. Commercial Timeline Card
+  timelineCard: {
+    marginTop: 2,
     marginBottom: 14,
-    lineHeight: 16,
+    padding: 14,
+    borderRadius: 16,
   },
-  actionButtonsRow: {
+  timelineHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  timelineTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.text,
+  },
+  timelineList: {
+    marginTop: 2,
+  },
+  timelineRow: {
+    flexDirection: "row",
+    alignItems: "stretch",
+  },
+  nodeColumn: {
+    width: 24,
+    alignItems: "center",
+    marginRight: 8,
+  },
+  timelineDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.card,
+  },
+  dotCurrent: {
+    borderColor: colors.primary,
+  },
+  dotCompleted: {
+    borderColor: colors.success,
+  },
+  timelineDotInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  dotInnerCurrent: {
+    backgroundColor: colors.primary,
+  },
+  dotInnerCompleted: {
+    backgroundColor: colors.success,
+  },
+  verticalLine: {
+    flex: 1,
+    width: 2,
+    backgroundColor: colors.borderLight,
+    marginVertical: 3,
+  },
+  timelineContentBox: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+  },
+  timelineMainInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  timelineTitleRow: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 6,
+    marginBottom: 3,
+  },
+  timelineItemTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: colors.text,
+  },
+  timelineItemNumber: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    color: colors.textSecondary,
+  },
+  timelineActionCol: {
+    alignItems: "flex-end",
+    justifyContent: "center",
+  },
+  timelineAmount: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: colors.text,
+    marginBottom: 2,
+  },
+  currentViewingText: {
+    fontFamily: fonts.medium,
+    fontSize: 10.5,
+    color: colors.primary,
+  },
+  viewRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  viewText: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: colors.primary,
+  },
+
+  // 5. Compact Floating Decision Dock
+  floatingDecisionBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "#E2E8F0",
+    paddingTop: 10,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  floatingPriceBox: {
+    justifyContent: "center",
+  },
+  floatingPriceLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 9,
+    color: colors.textMuted,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  floatingPriceValue: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    color: colors.text,
+    letterSpacing: -0.3,
+  },
+  floatingBtnGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  floatingDeclineBtn: {
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  floatingDeclineText: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.danger,
+  },
+  floatingAcceptBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.success,
+    paddingVertical: 7,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    gap: 5,
+    justifyContent: "center",
+  },
+  floatingAcceptText: {
+    fontFamily: fonts.bold,
+    fontSize: 12.5,
+    color: colors.textLight,
   },
 });

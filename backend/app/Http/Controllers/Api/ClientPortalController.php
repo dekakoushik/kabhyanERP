@@ -673,6 +673,7 @@ class ClientPortalController extends Controller
             'project:id,name,code',
             'proformaInvoices' => function ($q) {
                 $q->select('id', 'estimate_id', 'proforma_number', 'status', 'total_amount', 'invoice_date')
+                    ->with(['taxInvoices:id,proforma_invoice_id,invoice_number,status,total_amount,paid_amount,due_amount,invoice_date'])
                     ->orderBy('invoice_date', 'desc');
             },
         ]);

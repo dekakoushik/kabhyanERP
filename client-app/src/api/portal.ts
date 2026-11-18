@@ -83,6 +83,7 @@ export interface ProformaInvoiceSummary {
   status: string;
   total_amount?: number;
   invoice_date?: string;
+  tax_invoices?: TaxInvoiceSummary[];
 }
 
 export interface TaxInvoiceSummary {
