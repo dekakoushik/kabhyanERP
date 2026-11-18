@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  ScrollView,
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
@@ -27,16 +26,12 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "invoices" | "vouchers" | "quotations" | "unpaid" | "settled"
-  >("all");
   const [payingId, setPayingId] = useState<number | null>(null);
 
   const fetchThreads = useCallback(async () => {
     try {
       const res = await portalApi.getCommercialDocuments(
-        searchQuery.trim() || undefined,
-        statusFilter !== "all" ? statusFilter : undefined
+        searchQuery.trim() || undefined
       );
       setThreads(res.threads || []);
     } catch (err: any) {
@@ -45,7 +40,7 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       setLoading(false);
       setRefreshing(false);
     }
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery]);
 
   useEffect(() => {
     setLoading(true);
@@ -242,38 +237,6 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         )}
       </View>
 
-      {/* Filter Chips Bar */}
-      <View style={styles.filterBarContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterBar}
-        >
-          {[
-            { key: "all", label: "All" },
-            { key: "invoices", label: "Invoices" },
-            { key: "vouchers", label: "Advance Receipts" },
-            { key: "quotations", label: "Quotations" },
-            { key: "unpaid", label: "Unpaid" },
-            { key: "settled", label: "Paid" },
-          ].map((chip) => {
-            const isSelected = statusFilter === chip.key;
-            return (
-              <TouchableOpacity
-                key={chip.key}
-                style={[styles.filterChip, isSelected && styles.filterChipActive]}
-                onPress={() => setStatusFilter(chip.key as any)}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
-                  {chip.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-
       {/* Content List */}
       {loading && !refreshing ? (
         <View style={styles.centerContainer}>
@@ -333,36 +296,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.text,
     height: "100%",
-  },
-  filterBarContainer: {
-    marginBottom: 2,
-  },
-  filterBar: {
-    flexDirection: "row",
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    gap: 8,
-  },
-  filterChip: {
-    paddingVertical: 5,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  filterChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  filterChipText: {
-    fontFamily: fonts.medium,
-    fontSize: 11,
-    color: colors.textSecondary,
-  },
-  filterChipTextActive: {
-    fontFamily: fonts.bold,
-    color: colors.textLight,
   },
   listContent: {
     paddingHorizontal: 16,
