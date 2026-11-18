@@ -50,6 +50,9 @@ class AppServiceProvider extends ServiceProvider
                 if (\Illuminate\Support\Facades\DB::getDriverName() === 'pgsql') {
                     try {
                         \Illuminate\Support\Facades\DB::statement('ALTER TABLE proforma_invoices DROP CONSTRAINT IF EXISTS proforma_invoices_status_check');
+                        if (Schema::hasTable('business_associates')) {
+                            \Illuminate\Support\Facades\DB::statement('ALTER TABLE business_associates ALTER COLUMN email DROP NOT NULL');
+                        }
                     } catch (\Throwable $e) {
                         // Safe ignore
                     }

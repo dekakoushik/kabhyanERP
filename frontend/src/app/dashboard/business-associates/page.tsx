@@ -302,7 +302,7 @@ export default function BusinessAssociatesPage() {
                           <span>{ba.name}</span>
                         </div>
                         <div className="text-[11px] text-slate-500 mt-0.5">
-                          {ba.email} &bull; {ba.phone}
+                          {ba.email ? `${ba.email} • ` : ""}{ba.phone}
                         </div>
                       </td>
                       <td className="py-3.5 px-4">

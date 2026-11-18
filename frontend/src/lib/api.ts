@@ -623,7 +623,7 @@ export interface BusinessAssociate {
   id: number;
   associate_code: string;
   name: string;
-  email: string;
+  email?: string | null;
   phone: string;
   emergency_contact?: string | null;
   address?: string | null;

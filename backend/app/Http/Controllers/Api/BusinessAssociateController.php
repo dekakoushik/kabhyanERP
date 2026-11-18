@@ -82,7 +82,7 @@ class BusinessAssociateController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:business_associates,email'],
+            'email' => ['nullable', 'string', 'email', 'max:255', 'unique:business_associates,email'],
             'phone' => ['required', 'string', 'max:30'],
             'emergency_contact' => ['nullable', 'string', 'max:100'],
             'address' => ['nullable', 'string'],
@@ -112,7 +112,7 @@ class BusinessAssociateController extends Controller
         $associate = BusinessAssociate::create([
             'associate_code' => $code,
             'name' => $validated['name'],
-            'email' => strtolower(trim($validated['email'])),
+            'email' => !empty($validated['email']) ? strtolower(trim($validated['email'])) : null,
             'phone' => $validated['phone'],
             'emergency_contact' => $validated['emergency_contact'] ?? null,
             'address' => $validated['address'] ?? null,
@@ -204,7 +204,7 @@ class BusinessAssociateController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('business_associates', 'email')->ignore($businessAssociate->id)],
+            'email' => ['nullable', 'string', 'email', 'max:255', Rule::unique('business_associates', 'email')->ignore($businessAssociate->id)],
             'phone' => ['required', 'string', 'max:30'],
             'emergency_contact' => ['nullable', 'string', 'max:100'],
             'address' => ['nullable', 'string'],
@@ -231,7 +231,7 @@ class BusinessAssociateController extends Controller
 
         $businessAssociate->update([
             'name' => $validated['name'],
-            'email' => strtolower(trim($validated['email'])),
+            'email' => !empty($validated['email']) ? strtolower(trim($validated['email'])) : null,
             'phone' => $validated['phone'],
             'emergency_contact' => $validated['emergency_contact'] ?? null,
             'address' => $validated['address'] ?? null,

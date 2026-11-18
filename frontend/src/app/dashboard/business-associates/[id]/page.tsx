@@ -252,7 +252,7 @@ export default function BusinessAssociateDossierPage({
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              {associate.email} &bull; {associate.phone} &bull; Onboarded on {associate.joining_date}
+              {associate.email ? `${associate.email} • ` : ""}{associate.phone} &bull; Onboarded on {associate.joining_date}
             </p>
           </div>
 
