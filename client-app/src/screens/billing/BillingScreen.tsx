@@ -84,13 +84,13 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const renderStageBadge = (stage: string) => {
     switch (stage) {
       case "tax_invoice":
-        return <Badge label="TAX INVOICE" variant="success" style={styles.compactBadge} />;
+        return <Badge label="TAX INVOICE" variant="success" size="sm" />;
       case "proforma":
-        return <Badge label="PROFORMA" variant="purple" style={styles.compactBadge} />;
+        return <Badge label="PROFORMA" variant="purple" size="sm" />;
       case "estimate":
-        return <Badge label="QUOTATION" variant="warning" style={styles.compactBadge} />;
+        return <Badge label="QUOTATION" variant="warning" size="sm" />;
       default:
-        return <Badge label={stage.toUpperCase()} variant="neutral" style={styles.compactBadge} />;
+        return <Badge label={stage.toUpperCase()} variant="neutral" size="sm" />;
     }
   };
 
@@ -111,7 +111,7 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       <Badge
         label={status.replace("_", " ").toUpperCase()}
         variant={variant}
-        style={styles.compactBadge}
+        size="sm"
       />
     );
   };
@@ -363,11 +363,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text,
     letterSpacing: -0.2,
-  },
-  compactBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 6,
   },
   amountValue: {
     fontFamily: fonts.bold,
