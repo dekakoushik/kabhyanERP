@@ -450,7 +450,10 @@ class InvoiceController extends Controller
 
             // Auto-accrue commission if the client is linked to a business associate
             try {
-                $client = $invoice->client ?? ($invoice->client_id ? \App\Models\Client::find($invoice->client_id) : null);
+                $client = null;
+                if (!empty($invoice->client_email)) {
+                    $client = \App\Models\Client::where('email', $invoice->client_email)->first();
+                }
                 if ($client && $client->business_associate_id) {
                     $associate = \App\Models\BusinessAssociate::find($client->business_associate_id);
                     if ($associate && in_array($associate->engagement_model, ['commission', 'hybrid']) && $associate->commission_rate > 0) {
@@ -462,8 +465,9 @@ class InvoiceController extends Controller
                         if ($associate->commission_scope !== 'one_time' || $existingPayoutCount === 0) {
                             $paidAmount = (float) $validated['amount'];
                             $calcBase = $paidAmount;
-                            if ($associate->commission_basis === 'taxable_turnover' && (float) $invoice->total > 0) {
-                                $taxableRatio = (float) ($invoice->taxable_amount ?? ($invoice->subtotal ?? $invoice->total)) / (float) $invoice->total;
+                            $invoiceTotal = (float) ($invoice->total_amount ?? ($invoice->total ?? 0));
+                            if ($associate->commission_basis === 'taxable_turnover' && $invoiceTotal > 0) {
+                                $taxableRatio = (float) ($invoice->subtotal ?? $invoiceTotal) / $invoiceTotal;
                                 $calcBase = round($paidAmount * $taxableRatio, 2);
                             }
 

@@ -110,11 +110,15 @@ class BusinessAssociate extends Model
      */
     public function syncPartnerTier(): string
     {
-        $totalSales = DB::table('invoices')
-            ->join('clients', 'invoices.client_id', '=', 'clients.id')
-            ->where('clients.business_associate_id', $this->id)
-            ->where('invoices.status', 'paid')
-            ->sum('invoices.total');
+        $clientEmails = $this->clients()->whereNotNull('email')->pluck('email')->filter();
+
+        $totalSales = 0;
+        if ($clientEmails->isNotEmpty()) {
+            $totalSales = (float) DB::table('invoices')
+                ->whereIn('client_email', $clientEmails)
+                ->where('status', 'paid')
+                ->sum('total_amount');
+        }
 
         $tier = 'bronze';
         if ($totalSales >= 2000000) {

@@ -151,21 +151,25 @@ class BusinessAssociateController extends Controller
     public function show(BusinessAssociate $businessAssociate): JsonResponse
     {
         // Sync tier dynamically based on actual revenue
-        $businessAssociate->syncPartnerTier();
+        try {
+            $businessAssociate->syncPartnerTier();
+        } catch (\Throwable $e) {
+            // Non-blocking sync fallback
+        }
 
         // 1. Referred Clients with their revenue summary
         $referredClients = Client::where('business_associate_id', $businessAssociate->id)
-            ->select('id', 'name', 'company_name', 'email', 'phone', 'city', 'status', 'created_at')
+            ->select('id', 'name', 'company_name', 'email', 'phone', 'city', 'portal_access_status as status', 'created_at')
             ->withCount(['invoices as total_invoices_count'])
             ->withSum(['invoices as total_revenue_paid' => function ($q) {
                 $q->where('status', 'paid');
-            }], 'total')
+            }], 'total_amount')
             ->latest()
             ->get();
 
         // 2. Payouts Ledger
         $payouts = BusinessAssociatePayout::where('business_associate_id', $businessAssociate->id)
-            ->with(['client:id,name,company_name', 'invoice:id,invoice_number,total,taxable_amount'])
+            ->with(['client:id,name,company_name', 'invoice:id,invoice_number,total_amount,subtotal'])
             ->latest()
             ->get();
 
