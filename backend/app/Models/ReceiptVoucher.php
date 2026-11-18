@@ -59,6 +59,21 @@ class ReceiptVoucher extends Model
         'is_inter_state' => 'boolean',
     ];
 
+    protected $appends = [
+        'total_amount',
+        'remaining_amount',
+    ];
+
+    public function getTotalAmountAttribute(): float
+    {
+        return (float) ($this->attributes['amount_received'] ?? 0);
+    }
+
+    public function getRemainingAmountAttribute(): float
+    {
+        return (float) ($this->attributes['remaining_advance'] ?? 0);
+    }
+
     public function estimate(): BelongsTo
     {
         return $this->belongsTo(Estimate::class);

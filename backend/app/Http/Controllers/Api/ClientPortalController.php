@@ -356,7 +356,7 @@ class ClientPortalController extends Controller
                 'project:id,name,code',
                 'proformaInvoice:id,proforma_number,status,invoice_date,total_amount,estimate_id',
                 'estimate:id,estimate_number,status,estimate_date,total_amount',
-                'advanceAdjustments.receiptVoucher:id,voucher_number,voucher_date,total_amount',
+                'advanceAdjustments.receiptVoucher:id,voucher_number,voucher_date,amount_received,remaining_advance',
                 'payments',
             ])
             ->orderBy('invoice_date', 'desc')
@@ -377,7 +377,7 @@ class ClientPortalController extends Controller
             ->where('status', '!=', 'draft')
             ->with([
                 'project:id,name,code',
-                'receiptVouchers:id,estimate_id,voucher_number,status,total_amount,voucher_date',
+                'receiptVouchers:id,estimate_id,voucher_number,status,amount_received,remaining_advance,voucher_date',
                 'invoices:id,estimate_id,invoice_number,status,total_amount,invoice_date',
                 'proformaInvoices:id,estimate_id,proforma_number,status,total_amount,invoice_date',
             ])
@@ -418,7 +418,7 @@ class ClientPortalController extends Controller
                         'id' => $adj->receiptVoucher->id,
                         'number' => $adj->receiptVoucher->voucher_number,
                         'date' => $adj->receiptVoucher->voucher_date,
-                        'total_amount' => (float) $adj->receiptVoucher->total_amount,
+                        'total_amount' => (float) ($adj->receiptVoucher->amount_received ?? $adj->receiptVoucher->total_amount ?? 0),
                         'status' => 'adjusted',
                     ];
                 }
@@ -475,11 +475,11 @@ class ClientPortalController extends Controller
                 'headline_status' => $rv->status,
                 'headline_date' => $rv->voucher_date,
                 'due_date' => null,
-                'total_amount' => (float) $rv->total_amount,
+                'total_amount' => (float) ($rv->amount_received ?? $rv->total_amount ?? 0),
                 'due_amount' => 0.0,
-                'paid_amount' => (float) $rv->total_amount,
-                'adjusted_amount' => (float) $rv->adjusted_amount,
-                'remaining_amount' => (float) $rv->remaining_amount,
+                'paid_amount' => (float) ($rv->amount_received ?? $rv->total_amount ?? 0),
+                'adjusted_amount' => (float) ($rv->adjusted_amount ?? 0),
+                'remaining_amount' => (float) ($rv->remaining_advance ?? $rv->remaining_amount ?? 0),
                 'project_name' => $rv->project?->name,
                 'history' => $history,
                 'raw_document' => $rv,
@@ -495,7 +495,7 @@ class ClientPortalController extends Controller
                     'id' => $srv->id,
                     'number' => $srv->voucher_number,
                     'date' => $srv->voucher_date,
-                    'total_amount' => (float) $srv->total_amount,
+                    'total_amount' => (float) ($srv->amount_received ?? $srv->total_amount ?? 0),
                     'status' => $srv->status,
                 ];
             }
@@ -631,7 +631,7 @@ class ClientPortalController extends Controller
             'project:id,name,code',
             'proformaInvoice:id,proforma_number,status,invoice_date,total_amount,tax_calculation_type',
             'estimate:id,estimate_number,status,estimate_date,total_amount,tax_calculation_type',
-            'advanceAdjustments.receiptVoucher:id,voucher_number,voucher_date,total_amount,adjusted_amount',
+            'advanceAdjustments.receiptVoucher:id,voucher_number,voucher_date,amount_received,adjusted_amount,remaining_advance',
         ]);
 
         return response()->json(['invoice' => $invoice]);
