@@ -88,7 +88,7 @@ export default function SettingsLayout({
         </div>
 
         {/* Secondary Sub-Navigation Pill Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-slate-200/60 no-scrollbar">
+        <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-slate-200/60">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = item.exact
