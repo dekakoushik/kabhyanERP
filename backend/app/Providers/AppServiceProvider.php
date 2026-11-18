@@ -60,9 +60,9 @@ class AppServiceProvider extends ServiceProvider
                 if (!\Illuminate\Support\Facades\Cache::has($cacheKey)) {
                     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
 
-                    // One-time autonomous live-mode database reset and dummy data purge
-                    $liveModePurgeKey = 'kabhyan_live_mode_reset_v1';
-                    if (!\Illuminate\Support\Facades\Cache::has($liveModePurgeKey)) {
+                    // One-time autonomous live-mode database reset and dummy data purge (grounded in persistent database flag)
+                    $isAlreadyPurged = Schema::hasTable('system_settings') && \Illuminate\Support\Facades\DB::table('system_settings')->where('key', 'live_mode_purged_at')->exists();
+                    if (!$isAlreadyPurged) {
                         try {
                             if (Schema::hasTable('personal_access_tokens')) {
                                 \Illuminate\Support\Facades\DB::table('personal_access_tokens')->delete();
@@ -133,7 +133,7 @@ class AppServiceProvider extends ServiceProvider
                             if (Schema::hasTable('users')) {
                                 \Illuminate\Support\Facades\DB::table('users')
                                     ->where('role', '!=', 'superadmin')
-                                    ->whereRaw('LOWER(TRIM(email)) != ?', ['superadmin@kabhyan.com'])
+                                    ->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(TRIM(email))'), ['admin@kabhyan.com', 'superadmin@kabhyan.com'])
                                     ->delete();
                             }
 

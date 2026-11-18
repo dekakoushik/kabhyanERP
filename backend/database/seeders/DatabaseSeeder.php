@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
 
         // 3. Ensure a SuperAdmin account exists (Never overwrite existing user's custom email/password)
         $hasSuperAdmin = User::where('role', 'superadmin')
+            ->orWhereIn(User::raw('LOWER(TRIM(email))'), ['admin@kabhyan.com', 'superadmin@kabhyan.com'])
             ->orWhereHas('customRole', fn ($q) => $q->where('slug', 'superadmin'))
             ->exists();
 
@@ -32,15 +33,16 @@ class DatabaseSeeder extends Seeder
             $superadminRole = Role::where('slug', 'superadmin')->first();
 
             User::create([
+                'employee_code' => 'EMP-001',
                 'name' => 'Kabhyan Super Admin',
-                'email' => 'superadmin@kabhyan.com',
+                'email' => 'admin@kabhyan.com',
                 'phone' => '+91 9876543210',
                 'role' => 'superadmin',
                 'role_id' => $superadminRole?->id,
                 'department' => 'Executive Office',
-                'designation' => 'Chief Technology Officer',
+                'designation' => 'Chief Executive Officer',
                 'status' => 'active',
-                'password' => Hash::make('Kabhyan@2026'),
+                'password' => Hash::make('Kabyaa@2580@#'),
                 'email_verified_at' => now(),
             ]);
         }

@@ -69,10 +69,22 @@ export default function StaffEditPage({
         if (userRes?.user) {
           const u: User = userRes.user;
           const availableRoles: Role[] = rolesRes?.roles || [];
+          const isSuperAdminUser =
+            u.role === "superadmin" ||
+            u.custom_role?.slug === "superadmin" ||
+            u.email.toLowerCase() === "admin@kabhyan.com" ||
+            u.email.toLowerCase() === "superadmin@kabhyan.com";
+
           const matchedRole = availableRoles.find((r) =>
-            u.role_id ? r.id === u.role_id : r.slug === u.role
+            isSuperAdminUser
+              ? r.slug === "superadmin"
+              : (u.role_id ? r.id === u.role_id : r.slug === u.role)
           );
-          const initialRoleId = matchedRole ? String(matchedRole.id) : (u.role_id ? String(u.role_id) : "");
+          const initialRoleId = matchedRole
+            ? String(matchedRole.id)
+            : (isSuperAdminUser
+                ? String(availableRoles.find((r) => r.slug === "superadmin")?.id || "")
+                : (u.role_id ? String(u.role_id) : ""));
 
           setFormData({
             name: u.name,
@@ -81,7 +93,7 @@ export default function StaffEditPage({
             emergency_contact: u.emergency_contact || "",
             employee_code: u.employee_code || "",
             role_id: initialRoleId,
-            role: matchedRole ? matchedRole.slug : u.role,
+            role: isSuperAdminUser ? "superadmin" : (matchedRole ? matchedRole.slug : u.role),
             department: u.department || "General",
             designation: u.designation || "Staff Member",
             date_of_joining: u.date_of_joining ? u.date_of_joining.split("T")[0] : "",
@@ -126,14 +138,22 @@ export default function StaffEditPage({
     setSaving(true);
 
     try {
+      const isSuperAdmin =
+        formData.role === "superadmin" ||
+        formData.email.trim().toLowerCase() === "admin@kabhyan.com" ||
+        formData.email.trim().toLowerCase() === "superadmin@kabhyan.com";
+      const superadminRoleId = roles.find((r) => r.slug === "superadmin")?.id;
+
       const payload: Record<string, any> = {
         name: formData.name.trim(),
         email: formData.email.trim().toLowerCase(),
         phone: formData.phone.trim() || null,
         emergency_contact: formData.emergency_contact.trim() || null,
         employee_code: formData.employee_code.trim() || null,
-        role_id: formData.role_id ? Number(formData.role_id) : null,
-        role: formData.role,
+        role_id: isSuperAdmin
+          ? (superadminRoleId || (formData.role_id ? Number(formData.role_id) : null))
+          : (formData.role_id ? Number(formData.role_id) : null),
+        role: isSuperAdmin ? "superadmin" : formData.role,
         department: formData.department.trim() || "General",
         designation: formData.designation.trim() || "Staff Member",
         date_of_joining: formData.date_of_joining || null,
@@ -385,7 +405,10 @@ export default function StaffEditPage({
                 <select
                   value={formData.role_id}
                   onChange={(e) => handleRoleChange(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500 bg-white"
+                  disabled={formData.role === "superadmin"}
+                  className={`w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500 ${
+                    formData.role === "superadmin" ? "bg-slate-50 cursor-not-allowed text-slate-700 font-medium" : "bg-white"
+                  }`}
                 >
                   {roles.map((r) => (
                     <option key={r.id} value={String(r.id)}>
@@ -393,6 +416,11 @@ export default function StaffEditPage({
                     </option>
                   ))}
                 </select>
+                {formData.role === "superadmin" && (
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Super Administrator authority is permanent for system stability.
+                  </p>
+                )}
               </div>
 
               <div>
