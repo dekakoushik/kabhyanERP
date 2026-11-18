@@ -103,7 +103,7 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
               <Text style={styles.dateText}>Payment Due: {proforma.due_date || "Upon receipt"}</Text>
             </View>
             <Badge
-              label={isConverted ? "Converted to Tax Invoice" : proforma.status.replace("_", " ")}
+              label={isConverted ? "Converted to Tax Invoice" : (proforma.status || "pending").replace("_", " ")}
               variant={isConverted ? "success" : "purple"}
             />
           </View>
@@ -202,7 +202,7 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
             <Text style={styles.dateText}>Payment Due: {invoice.due_date || "Upon receipt"}</Text>
           </View>
           <Badge
-            label={invoice.status.replace("_", " ")}
+            label={(invoice.status || "pending").replace("_", " ")}
             variant={isPaid ? "success" : invoice.status === "overdue" ? "danger" : "warning"}
           />
         </View>

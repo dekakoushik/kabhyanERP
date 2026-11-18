@@ -115,7 +115,7 @@ export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
               <Text style={styles.invoiceDate}>Issued on: {item.invoice_date}</Text>
             </View>
             <Badge
-              label={item.status.replace("_", " ")}
+              label={(item.status || "pending").replace("_", " ")}
               variant={isPaid ? "success" : item.status === "overdue" ? "danger" : "warning"}
             />
           </View>
@@ -181,7 +181,7 @@ export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
               <Text style={styles.invoiceDate}>Issued on: {item.invoice_date}</Text>
             </View>
             <Badge
-              label={item.status === "converted" ? "Converted to Tax Inv" : item.status.replace("_", " ")}
+              label={item.status === "converted" ? "Converted to Tax Inv" : (item.status || "pending").replace("_", " ")}
               variant={isPaid ? "success" : "info"}
             />
           </View>

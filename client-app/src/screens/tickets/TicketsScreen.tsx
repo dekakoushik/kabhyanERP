@@ -58,7 +58,7 @@ export const TicketsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
               <Text style={styles.subject}>{item.subject}</Text>
             </View>
             <Badge
-              label={item.status.replace("_", " ")}
+              label={(item.status || "open").replace("_", " ")}
               variant={isClosed ? "success" : item.status === "in_progress" ? "info" : "warning"}
             />
           </View>

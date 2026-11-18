@@ -57,7 +57,7 @@ export const ProjectsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
               {item.code && <Text style={styles.projectCode}>Code: {item.code}</Text>}
             </View>
             <Badge
-              label={item.status.replace("_", " ")}
+              label={(item.status || "active").replace("_", " ")}
               variant={isCompleted ? "success" : item.status === "in_progress" ? "info" : "neutral"}
             />
           </View>

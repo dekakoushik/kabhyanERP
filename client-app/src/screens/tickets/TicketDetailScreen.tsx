@@ -75,7 +75,7 @@ export const TicketDetailScreen: React.FC<{ route: any }> = ({ route }) => {
       <View style={styles.headerBox}>
         <View style={styles.headerRow}>
           <Text style={styles.ticketNum}>#{ticket.ticket_number || ticket.id}</Text>
-          <Badge label={ticket.status.replace("_", " ")} variant="info" />
+          <Badge label={(ticket.status || "open").replace("_", " ")} variant="info" />
         </View>
         <Text style={styles.subject}>{ticket.subject}</Text>
       </View>

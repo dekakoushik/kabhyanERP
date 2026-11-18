@@ -214,7 +214,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                   <Text style={styles.invoiceDate}>Due: {inv.due_date || "Upon receipt"}</Text>
                 </View>
                 <Badge
-                  label={inv.status.replace("_", " ")}
+                  label={(inv.status || "pending").replace("_", " ")}
                   variant={isPaid ? "success" : inv.status === "overdue" ? "danger" : "warning"}
                 />
               </View>
@@ -262,7 +262,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           <Card key={proj.id} style={styles.projectCard}>
             <View style={styles.projectHeader}>
               <Text style={styles.projectName}>{proj.name}</Text>
-              <Badge label={proj.status.replace("_", " ")} variant="info" />
+              <Badge label={(proj.status || "active").replace("_", " ")} variant="info" />
             </View>
             {proj.description && (
               <Text style={styles.projectDesc} numberOfLines={2}>

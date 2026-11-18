@@ -49,7 +49,7 @@ export const ProjectDetailScreen: React.FC<{ route: any }> = ({ route }) => {
       <Card style={styles.headerCard}>
         <View style={styles.topRow}>
           <Text style={styles.projectName}>{project.name}</Text>
-          <Badge label={project.status.replace("_", " ")} variant="info" />
+          <Badge label={(project.status || "active").replace("_", " ")} variant="info" />
         </View>
 
         {project.code && <Text style={styles.projectCode}>Project Code: {project.code}</Text>}
@@ -109,7 +109,7 @@ export const ProjectDetailScreen: React.FC<{ route: any }> = ({ route }) => {
                 )}
               </View>
               <Badge
-                label={item.status.replace("_", " ")}
+                label={(item.status || "pending").replace("_", " ")}
                 variant={
                   item.status === "completed"
                     ? "success"
