@@ -54,7 +54,7 @@ export const LoginScreen: React.FC = () => {
             <View style={styles.logoBadge}>
               <Text style={styles.logoText}>K</Text>
             </View>
-            <Text style={styles.brandTitle}>KABHYAN</Text>
+            <Text style={styles.brandTitle}>KABHYAN CONNECT</Text>
             <Text style={styles.brandSubtitle}>Enterprise Client Workspace</Text>
             <View style={styles.portalTag}>
               <Text style={styles.portalTagText}>CLIENT PORTAL</Text>

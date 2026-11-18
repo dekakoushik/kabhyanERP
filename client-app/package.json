@@ -1,5 +1,5 @@
 {
-  "name": "client-app",
+  "name": "kabhyan-connect",
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {

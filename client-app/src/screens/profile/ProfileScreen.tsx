@@ -122,7 +122,7 @@ export const ProfileScreen: React.FC = () => {
         style={styles.logoutBtn}
       />
 
-      <Text style={styles.versionText}>Kabhyan Client • Version 1.0.0</Text>
+      <Text style={styles.versionText}>Kabhyan Connect • Version 1.0.0</Text>
     </ScrollView>
   );
 };

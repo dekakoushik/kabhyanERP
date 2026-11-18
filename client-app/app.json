@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Kabhyan Client",
-    "slug": "kabhyan-client",
+    "name": "Kabhyan Connect - Client App",
+    "slug": "kabhyan-connect",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "kabhyanclient",
+    "scheme": "kabhyanconnect",
     "userInterfaceStyle": "light",
     "splash": {
       "backgroundColor": "#2563EB",
@@ -13,10 +13,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kabhyan.clientapp"
+      "bundleIdentifier": "com.kabhyan.kconnect"
     },
     "android": {
-      "package": "com.kabhyan.clientapp",
+      "package": "com.kabhyan.kconnect",
       "adaptiveIcon": {
         "backgroundColor": "#2563EB",
         "foregroundImage": "./assets/android-icon-foreground.png",
