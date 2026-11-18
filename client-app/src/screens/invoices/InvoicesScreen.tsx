@@ -38,13 +38,16 @@ export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
       if (docType === "tax") {
         const statusParam = taxFilter !== "all" ? taxFilter : undefined;
         const res = await portalApi.getInvoices(statusParam);
-        setInvoices(res.invoices || []);
+        const data = Array.isArray(res.invoices)
+          ? res.invoices
+          : (res.invoices as any)?.data || [];
+        setInvoices(data);
       } else {
         const statusParam = proformaFilter !== "all" ? proformaFilter : undefined;
         const res = await portalApi.getProformaInvoices(statusParam);
         const data = Array.isArray(res.proforma_invoices)
           ? res.proforma_invoices
-          : res.proforma_invoices?.data || [];
+          : (res.proforma_invoices as any)?.data || [];
         setProformas(data);
       }
     } catch (err: any) {
@@ -83,15 +86,17 @@ export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   };
 
   // Tax Invoices Filtering
-  const filteredTaxInvoices = invoices.filter((inv) => {
+  const invoiceList = Array.isArray(invoices) ? invoices : [];
+  const filteredTaxInvoices = invoiceList.filter((inv) => {
     if (!searchQuery.trim()) return true;
-    return inv.invoice_number.toLowerCase().includes(searchQuery.toLowerCase());
+    return (inv.invoice_number || "").toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   // Proforma Invoices Filtering
-  const filteredProformas = proformas.filter((pi) => {
+  const proformaList = Array.isArray(proformas) ? proformas : [];
+  const filteredProformas = proformaList.filter((pi) => {
     if (!searchQuery.trim()) return true;
-    return pi.proforma_number.toLowerCase().includes(searchQuery.toLowerCase());
+    return (pi.proforma_number || "").toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   const renderTaxInvoiceCard = ({ item }: { item: Invoice }) => {

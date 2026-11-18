@@ -16,7 +16,7 @@ import { colors } from "../../theme/colors";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
-import { portalApi, DashboardResponse, Invoice } from "../../api/portal";
+import { portalApi, DashboardResponse, Invoice, Project } from "../../api/portal";
 import { useAuth } from "../../context/AuthContext";
 
 export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
@@ -76,8 +76,12 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
   const client = data?.client;
   const stats = data?.stats;
-  const recentInvoices = data?.recent_invoices || [];
-  const projects = data?.projects || [];
+  const recentInvoices = Array.isArray(data?.recent_invoices)
+    ? data.recent_invoices
+    : (data?.recent_invoices as any)?.data || [];
+  const projects = Array.isArray(data?.projects)
+    ? data.projects
+    : (data?.projects as any)?.data || [];
 
   return (
     <ScrollView
@@ -202,7 +206,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           <Text style={styles.emptyCardSub}>When tax invoices are generated for milestones, they will appear here.</Text>
         </Card>
       ) : (
-        recentInvoices.map((inv) => {
+        recentInvoices.map((inv: Invoice) => {
           const isPaid = inv.status === "paid";
           const isPaying = payingInvoiceId === inv.id;
 
@@ -258,7 +262,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           <Text style={styles.emptyCardSub}>Active technology engagements and project sprints will appear here.</Text>
         </Card>
       ) : (
-        projects.slice(0, 3).map((proj) => (
+        projects.slice(0, 3).map((proj: Project) => (
           <Card key={proj.id} style={styles.projectCard}>
             <View style={styles.projectHeader}>
               <Text style={styles.projectName}>{proj.name}</Text>

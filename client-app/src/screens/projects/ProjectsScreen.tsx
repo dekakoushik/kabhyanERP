@@ -24,7 +24,10 @@ export const ProjectsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   const fetchProjects = useCallback(async () => {
     try {
       const res = await portalApi.getProjects();
-      setProjects(res.projects || []);
+      const data = Array.isArray(res.projects)
+        ? res.projects
+        : (res.projects as any)?.data || [];
+      setProjects(data);
     } catch (err: any) {
       Alert.alert("Error", err.message || "Failed to load projects.");
     } finally {

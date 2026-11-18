@@ -24,7 +24,10 @@ export const EstimatesScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   const fetchEstimates = useCallback(async () => {
     try {
       const res = await portalApi.getEstimates();
-      setEstimates(res.estimates || []);
+      const data = Array.isArray(res.estimates)
+        ? res.estimates
+        : (res.estimates as any)?.data || [];
+      setEstimates(data);
     } catch (err: any) {
       Alert.alert("Error", err.message || "Failed to load quotations.");
     } finally {

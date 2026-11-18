@@ -25,7 +25,10 @@ export const TicketsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const fetchTickets = useCallback(async () => {
     try {
       const res = await portalApi.getTickets();
-      setTickets(res.tickets || []);
+      const data = Array.isArray(res.tickets)
+        ? res.tickets
+        : (res.tickets as any)?.data || [];
+      setTickets(data);
     } catch (err: any) {
       Alert.alert("Error", err.message || "Failed to load support tickets.");
     } finally {
