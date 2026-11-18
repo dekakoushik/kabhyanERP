@@ -297,6 +297,217 @@ class ClientPortalController extends Controller
     }
 
     /**
+     * Unified commercial documents lifecycle thread feed.
+     * Merges Estimates, Proforma Invoices, and Tax Invoices into a single feed with zero tabs,
+     * applying precedence rules so converted items become historical lineage.
+     */
+    public function commercialDocuments(Request $request)
+    {
+        $client = $this->getClient($request);
+        $search = $request->input('search');
+        $statusFilter = $request->input('status'); // 'all', 'unpaid', 'action_required', 'settled'
+
+        // 1. Fetch all non-draft Tax Invoices
+        $invoices = Invoice::where('client_email', $client->email)
+            ->where('status', '!=', 'draft')
+            ->with([
+                'project:id,name,code',
+                'proformaInvoice:id,proforma_number,status,invoice_date,total_amount,estimate_id',
+                'estimate:id,estimate_number,status,estimate_date,total_amount',
+                'payments',
+            ])
+            ->orderBy('invoice_date', 'desc')
+            ->get();
+
+        // 2. Fetch all non-draft Proformas
+        $proformas = ProformaInvoice::where('client_email', $client->email)
+            ->where('status', '!=', 'draft')
+            ->with([
+                'project:id,name,code',
+                'estimate:id,estimate_number,status,estimate_date,total_amount',
+                'taxInvoices' => function ($q) {
+                    $q->select('id', 'proforma_invoice_id', 'invoice_number', 'status', 'total_amount', 'due_amount', 'paid_amount', 'invoice_date', 'due_date')
+                        ->where('status', '!=', 'draft');
+                },
+            ])
+            ->orderBy('invoice_date', 'desc')
+            ->get();
+
+        // 3. Fetch all non-draft Estimates
+        $estimates = Estimate::where('client_email', $client->email)
+            ->where('status', '!=', 'draft')
+            ->with([
+                'project:id,name,code',
+                'proformaInvoices' => function ($q) {
+                    $q->select('id', 'estimate_id', 'proforma_number', 'status', 'total_amount', 'invoice_date')
+                        ->where('status', '!=', 'draft');
+                },
+            ])
+            ->orderBy('estimate_date', 'desc')
+            ->get();
+
+        $subsumedProformaIds = [];
+        $subsumedEstimateIds = [];
+        $threads = [];
+
+        // Step A: Tax Invoices are the headline document
+        foreach ($invoices as $inv) {
+            $history = [];
+
+            if ($inv->proformaInvoice) {
+                $subsumedProformaIds[] = $inv->proformaInvoice->id;
+                $history[] = [
+                    'stage' => 'proforma',
+                    'id' => $inv->proformaInvoice->id,
+                    'number' => $inv->proformaInvoice->proforma_number,
+                    'date' => $inv->proformaInvoice->invoice_date,
+                    'total_amount' => (float) $inv->proformaInvoice->total_amount,
+                    'status' => $inv->proformaInvoice->status,
+                ];
+
+                if ($inv->proformaInvoice->estimate) {
+                    $subsumedEstimateIds[] = $inv->proformaInvoice->estimate->id;
+                    $history[] = [
+                        'stage' => 'estimate',
+                        'id' => $inv->proformaInvoice->estimate->id,
+                        'number' => $inv->proformaInvoice->estimate->estimate_number,
+                        'date' => $inv->proformaInvoice->estimate->estimate_date,
+                        'total_amount' => (float) $inv->proformaInvoice->estimate->total_amount,
+                        'status' => $inv->proformaInvoice->estimate->status,
+                    ];
+                }
+            }
+
+            if ($inv->estimate && !in_array($inv->estimate->id, $subsumedEstimateIds)) {
+                $subsumedEstimateIds[] = $inv->estimate->id;
+                $history[] = [
+                    'stage' => 'estimate',
+                    'id' => $inv->estimate->id,
+                    'number' => $inv->estimate->estimate_number,
+                    'date' => $inv->estimate->estimate_date,
+                    'total_amount' => (float) $inv->estimate->total_amount,
+                    'status' => $inv->estimate->status,
+                ];
+            }
+
+            $threads[] = [
+                'thread_id' => 'inv-' . $inv->id,
+                'stage' => 'tax_invoice',
+                'headline_id' => $inv->id,
+                'headline_number' => $inv->invoice_number,
+                'headline_status' => $inv->status,
+                'headline_date' => $inv->invoice_date,
+                'due_date' => $inv->due_date,
+                'total_amount' => (float) $inv->total_amount,
+                'due_amount' => (float) $inv->due_amount,
+                'paid_amount' => (float) $inv->paid_amount,
+                'project_name' => $inv->project?->name,
+                'history' => $history,
+                'raw_document' => $inv,
+            ];
+        }
+
+        // Step B: Proforma Invoices that were NOT converted to Tax Invoices
+        foreach ($proformas as $pi) {
+            if (in_array($pi->id, $subsumedProformaIds)) {
+                continue;
+            }
+
+            if ($pi->taxInvoices && $pi->taxInvoices->count() > 0) {
+                continue;
+            }
+
+            $history = [];
+            if ($pi->estimate) {
+                $subsumedEstimateIds[] = $pi->estimate->id;
+                $history[] = [
+                    'stage' => 'estimate',
+                    'id' => $pi->estimate->id,
+                    'number' => $pi->estimate->estimate_number,
+                    'date' => $pi->estimate->estimate_date,
+                    'total_amount' => (float) $pi->estimate->total_amount,
+                    'status' => $pi->estimate->status,
+                ];
+            }
+
+            $threads[] = [
+                'thread_id' => 'pi-' . $pi->id,
+                'stage' => 'proforma',
+                'headline_id' => $pi->id,
+                'headline_number' => $pi->proforma_number,
+                'headline_status' => $pi->status,
+                'headline_date' => $pi->invoice_date,
+                'due_date' => $pi->due_date,
+                'total_amount' => (float) $pi->total_amount,
+                'due_amount' => (float) ($pi->total_amount - ($pi->paid_amount ?? 0)),
+                'paid_amount' => (float) ($pi->paid_amount ?? 0),
+                'project_name' => $pi->project?->name,
+                'history' => $history,
+                'raw_document' => $pi,
+            ];
+        }
+
+        // Step C: Estimates that were NOT converted to Proformas or Invoices
+        foreach ($estimates as $est) {
+            if (in_array($est->id, $subsumedEstimateIds)) {
+                continue;
+            }
+
+            if ($est->proformaInvoices && $est->proformaInvoices->count() > 0) {
+                continue;
+            }
+
+            $threads[] = [
+                'thread_id' => 'est-' . $est->id,
+                'stage' => 'estimate',
+                'headline_id' => $est->id,
+                'headline_number' => $est->estimate_number,
+                'headline_status' => $est->status,
+                'headline_date' => $est->estimate_date,
+                'due_date' => $est->expiry_date,
+                'total_amount' => (float) $est->total_amount,
+                'due_amount' => (float) $est->total_amount,
+                'paid_amount' => 0.0,
+                'project_name' => $est->project?->name,
+                'history' => [],
+                'raw_document' => $est,
+            ];
+        }
+
+        // Sort threads by headline_date descending
+        usort($threads, function ($a, $b) {
+            return strcmp($b['headline_date'], $a['headline_date']);
+        });
+
+        // Search filter
+        if ($search) {
+            $searchLower = strtolower($search);
+            $threads = array_values(array_filter($threads, function ($t) use ($searchLower) {
+                return str_contains(strtolower($t['headline_number']), $searchLower)
+                    || str_contains(strtolower($t['project_name'] ?? ''), $searchLower);
+            }));
+        }
+
+        // Status filter
+        if ($statusFilter && $statusFilter !== 'all') {
+            $threads = array_values(array_filter($threads, function ($t) use ($statusFilter) {
+                if ($statusFilter === 'unpaid') {
+                    return in_array($t['headline_status'], ['unpaid', 'partially_paid', 'overdue']);
+                }
+                if ($statusFilter === 'settled') {
+                    return $t['headline_status'] === 'paid';
+                }
+                if ($statusFilter === 'action_required') {
+                    return $t['headline_status'] === 'sent' || $t['headline_status'] === 'unpaid' || $t['headline_status'] === 'overdue';
+                }
+                return true;
+            }));
+        }
+
+        return response()->json(['threads' => $threads]);
+    }
+
+    /**
      * Client's invoice list.
      */
     public function invoices(Request $request)

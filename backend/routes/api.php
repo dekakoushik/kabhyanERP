@@ -71,6 +71,7 @@ Route::prefix('v1')->group(function () {
         // Client Portal Endpoints (Dedicated portal for authenticated client users)
         Route::prefix('portal')->group(function () {
             Route::get('dashboard', [ClientPortalController::class, 'dashboard']);
+            Route::get('documents', [ClientPortalController::class, 'commercialDocuments']);
             Route::get('projects', [ClientPortalController::class, 'projects']);
             Route::get('projects/{project}', [ClientPortalController::class, 'showProject']);
             Route::get('invoices', [ClientPortalController::class, 'invoices']);

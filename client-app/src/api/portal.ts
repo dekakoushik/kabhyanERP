@@ -34,6 +34,33 @@ export interface DashboardStats {
   total_invoiced?: number;
 }
 
+export type DocumentStage = "estimate" | "proforma" | "tax_invoice";
+
+export interface DocumentHistoryItem {
+  stage: "estimate" | "proforma";
+  id: number;
+  number: string;
+  date: string;
+  total_amount: number;
+  status: string;
+}
+
+export interface CommercialThread {
+  thread_id: string;
+  stage: DocumentStage;
+  headline_id: number;
+  headline_number: string;
+  headline_status: string;
+  headline_date: string;
+  due_date?: string;
+  total_amount: number;
+  due_amount?: number;
+  paid_amount?: number;
+  project_name?: string;
+  history: DocumentHistoryItem[];
+  raw_document: Invoice | ProformaInvoice | Estimate;
+}
+
 export interface InvoiceItem {
   id: number;
   item_name?: string;
@@ -260,6 +287,12 @@ export const portalApi = {
 
   getInvoicePdfUrl: (id: number | string) =>
     apiClient<{ download_url: string; filename: string }>(`/portal/invoices/${id}/download-url`),
+
+  // Unified Commercial Documents Lifecycle Feed (Zero-Tab Billing)
+  getCommercialDocuments: (search?: string, status?: string) =>
+    apiClient<{ threads: CommercialThread[] }>("/portal/documents", {
+      params: { search, status },
+    }),
 
   // Projects
   getProjects: () => apiClient<{ projects: Project[] }>("/portal/projects"),

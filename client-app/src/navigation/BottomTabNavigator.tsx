@@ -4,10 +4,9 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../theme/colors";
 import { DashboardScreen } from "../screens/dashboard/DashboardScreen";
-import { InvoicesScreen } from "../screens/invoices/InvoicesScreen";
 import { ProjectsScreen } from "../screens/projects/ProjectsScreen";
-import { EstimatesScreen } from "../screens/estimates/EstimatesScreen";
 import { TicketsScreen } from "../screens/tickets/TicketsScreen";
+import { BillingScreen } from "../screens/billing/BillingScreen";
 import { useAuth } from "../context/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -99,18 +98,6 @@ export const BottomTabNavigator: React.FC<{ navigation: any }> = ({ navigation }
       />
 
       <Tab.Screen
-        name="InvoicesTab"
-        component={InvoicesScreen}
-        options={{
-          title: "Invoices",
-          tabBarLabel: "Invoices",
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? "receipt" : "receipt-outline"} size={size} color={color} />
-          ),
-        }}
-      />
-
-      <Tab.Screen
         name="ProjectsTab"
         component={ProjectsScreen}
         options={{
@@ -123,18 +110,6 @@ export const BottomTabNavigator: React.FC<{ navigation: any }> = ({ navigation }
       />
 
       <Tab.Screen
-        name="EstimatesTab"
-        component={EstimatesScreen}
-        options={{
-          title: "Quotations",
-          tabBarLabel: "Quotes",
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? "document-text" : "document-text-outline"} size={size} color={color} />
-          ),
-        }}
-      />
-
-      <Tab.Screen
         name="TicketsTab"
         component={TicketsScreen}
         options={{
@@ -142,6 +117,18 @@ export const BottomTabNavigator: React.FC<{ navigation: any }> = ({ navigation }
           tabBarLabel: "Support",
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? "help-buoy" : "help-buoy-outline"} size={size} color={color} />
+          ),
+        }}
+      />
+
+      <Tab.Screen
+        name="BillingTab"
+        component={BillingScreen}
+        options={{
+          title: "Billing & Documents",
+          tabBarLabel: "Billing",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "receipt" : "receipt-outline"} size={size} color={color} />
           ),
         }}
       />

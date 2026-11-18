@@ -186,12 +186,12 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
               : "All project invoices up to date"}
           </Text>
           <TouchableOpacity
-            onPress={() => navigation.navigate("InvoicesTab")}
+            onPress={() => navigation.navigate("BillingTab")}
             activeOpacity={0.8}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Text style={styles.heroActionBtnText}>
-              {outstandingBalance > 0 ? "View Invoices →" : "History →"}
+              {outstandingBalance > 0 ? "View Billing →" : "History →"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -284,7 +284,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
       {/* 5. Recent Invoices Section */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Recent Invoices</Text>
-        <TouchableOpacity onPress={() => navigation.navigate("InvoicesTab")}>
+        <TouchableOpacity onPress={() => navigation.navigate("BillingTab")}>
           <Text style={styles.viewAllText}>View All</Text>
         </TouchableOpacity>
       </View>
