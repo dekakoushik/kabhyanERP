@@ -153,9 +153,12 @@ export interface SupportTicket {
   id: number;
   ticket_number: string;
   subject: string;
-  status: "open" | "in_progress" | "resolved" | "closed";
-  priority: "low" | "medium" | "high" | "urgent";
+  type?: "issue" | "change_request" | "improvement" | "query" | "billing" | string;
+  status: "open" | "in_progress" | "awaiting_client_reply" | "resolved" | "closed" | string;
+  priority: "low" | "medium" | "high" | "urgent" | "critical" | string;
   created_at: string;
+  project?: { id: number; name: string; code?: string };
+  replies_count?: number;
   messages?: TicketMessage[];
 }
 
