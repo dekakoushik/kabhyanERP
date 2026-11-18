@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useBrand } from "@/context/BrandContext";
+import { api, SettingsResponse } from "@/lib/api";
+import { setActiveDateFormat } from "@/lib/date";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -133,6 +135,25 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         setIsCollapsed(saved === "true");
       }
     } catch {}
+
+    // Bootstrap global date format from system settings
+    if (typeof window !== "undefined" && !localStorage.getItem("kabhyan_date_format")) {
+      (api.request("/settings") as Promise<SettingsResponse>)
+        .then((res: any) => {
+          if (res?.settings && typeof res.settings === "object") {
+            Object.values(res.settings).forEach((items) => {
+              if (Array.isArray(items)) {
+                items.forEach((item) => {
+                  if (item.key === "date_format" && item.value) {
+                    setActiveDateFormat(String(item.value));
+                  }
+                });
+              }
+            });
+          }
+        })
+        .catch(() => {});
+    }
   }, []);
 
   const toggleCollapse = () => {

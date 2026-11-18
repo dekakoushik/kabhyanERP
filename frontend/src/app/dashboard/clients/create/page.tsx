@@ -78,9 +78,22 @@ export default function CreateClientPage() {
   });
 
   useEffect(() => {
+    let refCode: string | null = null;
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      refCode = searchParams.get("ref");
+    }
+
     (api.request("/business-associates?status=active&per_page=100") as Promise<{ data: BusinessAssociate[] }>)
       .then((res) => {
-        setAssociates(res.data || []);
+        const list = res.data || [];
+        setAssociates(list);
+        if (refCode) {
+          const matched = list.find((b) => b.associate_code.toLowerCase() === refCode?.toLowerCase());
+          if (matched) {
+            setFormData((prev) => ({ ...prev, business_associate_id: String(matched.id) }));
+          }
+        }
       })
       .catch(() => {});
   }, []);

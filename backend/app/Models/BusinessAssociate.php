@@ -46,8 +46,8 @@ class BusinessAssociate extends Model
     protected $casts = [
         'base_salary' => 'decimal:2',
         'commission_rate' => 'decimal:2',
-        'joining_date' => 'date',
-        'contract_end_date' => 'date',
+        'joining_date' => 'date:Y-m-d',
+        'contract_end_date' => 'date:Y-m-d',
     ];
 
     /**

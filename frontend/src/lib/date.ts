@@ -22,18 +22,64 @@ export function parseDate(dateInput: string | number | Date | null | undefined):
   return isNaN(d.getTime()) ? null : d;
 }
 
+let cachedDateFormat: string | null = null;
+
 /**
- * Standard human-readable calendar date: e.g. "12 Nov 2026"
+ * Get active system date format from memory or localStorage.
  */
-export function formatDate(dateInput: string | number | Date | null | undefined): string {
+export function getActiveDateFormat(): string {
+  if (cachedDateFormat) return cachedDateFormat;
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem("kabhyan_date_format");
+      if (stored) {
+        cachedDateFormat = stored;
+        return stored;
+      }
+    } catch {}
+  }
+  return "DD MMM YYYY";
+}
+
+/**
+ * Update the active system date format across the application.
+ */
+export function setActiveDateFormat(fmt: string): void {
+  if (!fmt) return;
+  cachedDateFormat = fmt;
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem("kabhyan_date_format", fmt);
+    } catch {}
+  }
+}
+
+/**
+ * Standard human-readable calendar date formatted as per system settings.
+ * Supports: "DD MMM YYYY" (default), "DD/MM/YYYY", "YYYY-MM-DD"
+ */
+export function formatDate(
+  dateInput: string | number | Date | null | undefined,
+  formatOverride?: string
+): string {
   const d = parseDate(dateInput);
   if (!d) return "—";
 
+  const format = formatOverride || getActiveDateFormat();
   const day = String(d.getDate()).padStart(2, "0");
-  const month = MONTHS_SHORT[d.getMonth()];
+  const monthNum = String(d.getMonth() + 1).padStart(2, "0");
+  const monthShort = MONTHS_SHORT[d.getMonth()];
   const year = d.getFullYear();
 
-  return `${day} ${month} ${year}`;
+  switch (format) {
+    case "DD/MM/YYYY":
+      return `${day}/${monthNum}/${year}`;
+    case "YYYY-MM-DD":
+      return `${year}-${monthNum}-${day}`;
+    case "DD MMM YYYY":
+    default:
+      return `${day} ${monthShort} ${year}`;
+  }
 }
 
 /**

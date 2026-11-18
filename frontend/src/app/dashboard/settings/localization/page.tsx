@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { api, SettingsResponse, getSettingValue } from "@/lib/api";
+import { setActiveDateFormat } from "@/lib/date";
 import { toast } from "sonner";
 import {
   Globe,
@@ -37,10 +38,12 @@ function LocalizationSettingsContent() {
             }
           });
         }
+        const activeFmt = getSettingValue(flat, "date_format", "DD MMM YYYY");
+        setActiveDateFormat(activeFmt);
         setForm({
           currency_code: getSettingValue(flat, "currency_code", "INR"),
           currency_symbol: getSettingValue(flat, "currency_symbol", "₹"),
-          date_format: getSettingValue(flat, "date_format", "DD MMM YYYY"),
+          date_format: activeFmt,
           time_zone: getSettingValue(flat, "time_zone", "Asia/Kolkata"),
         });
       } catch (err: any) {
@@ -74,6 +77,7 @@ function LocalizationSettingsContent() {
         method: "POST",
         body: JSON.stringify({ settings: itemsToUpdate }),
       });
+      setActiveDateFormat(form.date_format);
       toast.success("Localization & Regional formats updated");
     } catch (err: any) {
       toast.error(err.message || "Failed to save settings");

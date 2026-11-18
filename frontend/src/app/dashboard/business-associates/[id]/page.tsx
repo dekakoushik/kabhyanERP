@@ -13,6 +13,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { formatDate } from "@/lib/date";
 import {
   Handshake,
   ArrowLeft,
@@ -40,6 +41,8 @@ import {
   Building2,
   Check,
   X,
+  Copy,
+  Link2,
 } from "lucide-react";
 
 export default function BusinessAssociateDossierPage({
@@ -252,11 +255,18 @@ export default function BusinessAssociateDossierPage({
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              {associate.email ? `${associate.email} • ` : ""}{associate.phone} &bull; Onboarded on {associate.joining_date}
+              {associate.email ? `${associate.email} • ` : ""}{associate.phone} &bull; Onboarded on {formatDate(associate.joining_date)}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
+            <Link
+              href={`/dashboard/business-associates/${associate.id}/add-client`}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs tracking-wide shadow-xs transition cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ Add Client</span>
+            </Link>
             <Link
               href={`/dashboard/business-associates/${associate.id}/edit`}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs transition cursor-pointer"
@@ -266,12 +276,45 @@ export default function BusinessAssociateDossierPage({
             </Link>
             <button
               onClick={() => setShowPayoutModal(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs tracking-wide shadow-xs transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs transition cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               <span>Record Payout</span>
             </button>
           </div>
+        </div>
+
+        {/* Shareable Referral Link Widget */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-blue-50/70 border border-blue-200/80 shadow-2xs">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-blue-600 text-white shrink-0">
+              <Link2 className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-900">Partner Client Referral Link</span>
+                <span className="text-[10px] font-bold uppercase text-blue-700 bg-blue-100/80 px-2 py-0.2 rounded-full border border-blue-200">
+                  {associate.associate_code}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-600 font-mono mt-0.5 select-all">
+                {typeof window !== "undefined"
+                  ? `${window.location.origin}/dashboard/clients/create?ref=${associate.associate_code}`
+                  : `https://erp.kabhyan.com/dashboard/clients/create?ref=${associate.associate_code}`}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              const url = `${window.location.origin}/dashboard/clients/create?ref=${associate.associate_code}`;
+              navigator.clipboard.writeText(url);
+              toast.success(`Referral link for ${associate.name} copied to clipboard!`);
+            }}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-blue-200 bg-white hover:bg-blue-50 text-blue-700 text-xs font-bold transition shrink-0 cursor-pointer shadow-2xs"
+          >
+            <Copy className="w-3.5 h-3.5" />
+            <span>Copy Referral Link</span>
+          </button>
         </div>
 
         {/* 4 Financial Performance Metric Cards */}
@@ -436,7 +479,7 @@ export default function BusinessAssociateDossierPage({
                 <div className="py-2.5 flex justify-between">
                   <dt className="text-slate-500 font-medium">Contract Period</dt>
                   <dd className="font-semibold text-slate-800">
-                    {associate.joining_date} to {associate.contract_end_date || "Ongoing (No expiry)"}
+                    {formatDate(associate.joining_date)} to {associate.contract_end_date ? formatDate(associate.contract_end_date) : "Ongoing (No expiry)"}
                   </dd>
                 </div>
               </dl>
@@ -484,13 +527,34 @@ export default function BusinessAssociateDossierPage({
         {/* Tab 2: Referred Clients */}
         {activeTab === "clients" && (
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-xs font-bold text-slate-900">Clients Attributed to {associate.name}</h3>
+                <p className="text-[11px] text-slate-500">Corporate clients referred and mapped for automated commission accruals.</p>
+              </div>
+              <Link
+                href={`/dashboard/business-associates/${associate.id}/add-client`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Add Client</span>
+              </Link>
+            </div>
+
             {clients.length === 0 ? (
               <div className="py-16 px-4 text-center">
                 <Building className="w-8 h-8 text-slate-400 mx-auto mb-2" />
                 <h3 className="text-sm font-bold text-slate-900 mb-1">No Clients Referred Yet</h3>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  When creating new clients in the CRM, link this associate to automatically track deals and compute performance commissions.
+                <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">
+                  Onboard an enterprise client under this associate to automatically track deals and compute performance commissions.
                 </p>
+                <Link
+                  href={`/dashboard/business-associates/${associate.id}/add-client`}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Add Client for this Partner</span>
+                </Link>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -502,7 +566,6 @@ export default function BusinessAssociateDossierPage({
                       <th className="py-3 px-4">Invoices Issued</th>
                       <th className="py-3 px-4">Paid Revenue Delivered</th>
                       <th className="py-3 px-4">Onboarded</th>
-                      <th className="py-3 px-4 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
@@ -513,7 +576,7 @@ export default function BusinessAssociateDossierPage({
                           <div className="text-[11px] text-slate-500">{c.name}</div>
                         </td>
                         <td className="py-3 px-4">
-                          <div>{c.email}</div>
+                          <div>{c.email || "—"}</div>
                           <div className="text-[11px] text-slate-500">{c.phone || "No phone"}</div>
                         </td>
                         <td className="py-3 px-4 font-semibold text-slate-900">
@@ -523,15 +586,7 @@ export default function BusinessAssociateDossierPage({
                           ₹{Number(c.total_revenue_paid || 0).toLocaleString()}
                         </td>
                         <td className="py-3 px-4 text-slate-500">
-                          {c.created_at ? new Date(c.created_at).toLocaleDateString() : "—"}
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <Link
-                            href={`/dashboard/clients/${c.id}`}
-                            className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-700"
-                          >
-                            <span>View CRM Record</span>
-                          </Link>
+                          {formatDate(c.created_at)}
                         </td>
                       </tr>
                     ))}
@@ -601,7 +656,9 @@ export default function BusinessAssociateDossierPage({
                         </td>
                         <td className="py-3 px-4">
                           <span className="font-semibold capitalize text-slate-900">{p.type}</span>
-                          <div className="text-[11px] text-slate-500">{p.period_month || "—"}</div>
+                          <div className="text-[11px] text-slate-500">
+                            {p.period_month ? `Period: ${p.period_month}` : (p.created_at ? formatDate(p.created_at) : "—")}
+                          </div>
                         </td>
                         <td className="py-3 px-4 font-mono font-semibold text-slate-900">
                           ₹{Number(p.gross_amount).toLocaleString()}
@@ -705,7 +762,7 @@ export default function BusinessAssociateDossierPage({
                           {d.created_at && (
                             <>
                               <span>&bull;</span>
-                              <span>Uploaded {new Date(d.created_at).toLocaleDateString()}</span>
+                              <span>Uploaded {formatDate(d.created_at)}</span>
                             </>
                           )}
                         </div>
