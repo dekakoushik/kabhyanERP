@@ -227,22 +227,29 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
       : []),
   ];
 
+  const cleanNotes = estimate.notes
+    ?.split("\n")
+    .filter(
+      (line) =>
+        !line.trim().toLowerCase().startsWith("client acceptance:") &&
+        !line.trim().toLowerCase().startsWith("client note:")
+    )
+    .join("\n")
+    .trim();
+
   return (
     <View style={styles.screenWrapper}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: isPending ? Math.max(insets.bottom, 12) + 72 : 40 },
+          { paddingBottom: isPending ? Math.max(insets.bottom, 18) + 84 : 40 },
         ]}
       >
         {/* 1. Hero Valuation Card */}
         <Card style={styles.heroCard}>
           <View style={styles.heroHeaderRow}>
-            <View style={styles.heroDocGroup}>
-              <Text style={styles.heroDocNumber}>{estimate.estimate_number}</Text>
-              <Badge label="QUOTATION" variant="warning" size="sm" />
-            </View>
+            <Text style={styles.heroDocNumber}>{estimate.estimate_number}</Text>
             <Badge
               label={
                 isConverted
@@ -272,7 +279,7 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
           <View style={styles.heroDivider} />
 
           <View style={styles.heroFooterRow}>
-            <View style={{ flex: 1, marginRight: 10 }}>
+            <View style={{ flex: 1, marginRight: 12 }}>
               {estimate.project?.name ? (
                 <Text style={styles.projectText} numberOfLines={1}>
                   Project: {estimate.project.name}
@@ -280,8 +287,12 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
               ) : null}
               <Text style={styles.dateMetaText}>
                 Issued: {formatDate(estimate.estimate_date)}
-                {estimate.expiry_date ? ` • Valid until: ${formatDate(estimate.expiry_date)}` : ""}
               </Text>
+              {estimate.expiry_date ? (
+                <Text style={styles.dateMetaSubText}>
+                  Valid until: {formatDate(estimate.expiry_date)}
+                </Text>
+              ) : null}
             </View>
 
             <Button
@@ -298,11 +309,18 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
         {/* 2. Scope & Deliverables Section */}
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionTitle}>Scope & Deliverables</Text>
-          <Badge
-            label={`${items.length} ${items.length === 1 ? "item" : "items"}`}
-            variant="neutral"
-            size="sm"
-          />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Badge
+              label={isInclusive ? "GST INCLUSIVE" : "TAX EXCLUSIVE"}
+              variant={isInclusive ? "purple" : "neutral"}
+              size="sm"
+            />
+            <Badge
+              label={`${items.length} ${items.length === 1 ? "item" : "items"}`}
+              variant="neutral"
+              size="sm"
+            />
+          </View>
         </View>
 
         {items.length === 0 ? (
@@ -312,6 +330,19 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
         ) : (
           items.map((item, idx) => {
             const itemTaxRate = item.tax_rate ?? estimate.tax_rate ?? 18;
+            const itemTaxRateNum = Number(itemTaxRate);
+            const qtyNum = Number(item.quantity) || 1;
+            const unitLabel = item.unit
+              ? (qtyNum === 1 && item.unit.toLowerCase() === "units" ? "unit" : item.unit)
+              : (qtyNum === 1 ? "unit" : "units");
+
+            const taxLabel =
+              itemTaxRateNum === 0
+                ? "0% Exempt"
+                : isInclusive
+                ? `Incl. ${itemTaxRateNum}% GST`
+                : `+${itemTaxRateNum}% GST`;
+
             return (
               <Card key={item.id || idx} style={styles.itemCard}>
                 <View style={styles.itemHeaderRow}>
@@ -330,10 +361,17 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
                 <View style={styles.itemPillRow}>
                   <View style={styles.itemCalcPill}>
                     <Text style={styles.itemCalcText}>
-                      {item.quantity} {item.unit || "units"} × {formatCurrency(item.unit_price)}
+                      {qtyNum} {unitLabel} × {formatCurrency(item.unit_price)}
                     </Text>
                     <Text style={styles.itemCalcDot}>•</Text>
-                    <Text style={styles.itemGstText}>+{itemTaxRate}% GST</Text>
+                    <Text
+                      style={[
+                        styles.itemGstText,
+                        isInclusive && { color: colors.purple },
+                      ]}
+                    >
+                      {taxLabel}
+                    </Text>
                   </View>
                 </View>
               </Card>
@@ -395,93 +433,100 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
         </Card>
 
         {/* Terms & Conditions (if present) */}
-        {estimate.notes || estimate.terms_and_conditions ? (
+        {cleanNotes || estimate.terms_and_conditions ? (
           <Card style={styles.termsCard}>
             <Text style={styles.termsTitle}>Terms & Scope Notes</Text>
-            {estimate.notes ? (
-              <Text style={styles.termsText}>{estimate.notes}</Text>
+            {cleanNotes ? (
+              <Text style={styles.termsText}>{cleanNotes}</Text>
             ) : null}
             {estimate.terms_and_conditions ? (
-              <Text style={[styles.termsText, estimate.notes ? { marginTop: 6 } : null]}>
+              <Text style={[styles.termsText, cleanNotes ? { marginTop: 6 } : null]}>
                 {estimate.terms_and_conditions}
               </Text>
             ) : null}
           </Card>
         ) : null}
 
-        {/* 4. Commercial Document Lifecycle Timeline (Completed only) */}
-        <Card style={styles.timelineCard}>
-          <View style={styles.timelineHeaderRow}>
-            <Text style={styles.timelineTitle}>Commercial Timeline</Text>
-            <Badge
-              label={`${timelineItems.length} ${timelineItems.length === 1 ? "record" : "records"}`}
-              variant="neutral"
-              size="sm"
-            />
-          </View>
+        {/* 4. Commercial Document Lifecycle Timeline (History Only) */}
+        {timelineItems.length > 1 && (
+          <Card style={styles.timelineCard}>
+            <View style={styles.timelineHeaderRow}>
+              <Text style={styles.timelineTitle}>Commercial Progression</Text>
+              <Badge
+                label={`${timelineItems.length} records`}
+                variant="neutral"
+                size="sm"
+              />
+            </View>
 
-          <View style={styles.timelineList}>
-            {timelineItems.map((item, index) => {
-              const isLast = index === timelineItems.length - 1;
-              return (
-                <View key={item.key} style={styles.timelineRow}>
-                  {/* Left Column: Node dot & vertical line */}
-                  <View style={styles.nodeColumn}>
-                    <View
-                      style={[
-                        styles.timelineDot,
-                        item.isCurrent ? styles.dotCurrent : styles.dotCompleted,
-                      ]}
-                    >
+            <View style={styles.timelineList}>
+              {timelineItems.map((item, index) => {
+                const isLast = index === timelineItems.length - 1;
+                return (
+                  <View key={item.key} style={styles.timelineRow}>
+                    {/* Left Column: Node dot & vertical line */}
+                    <View style={styles.nodeColumn}>
                       <View
                         style={[
-                          styles.timelineDotInner,
-                          item.isCurrent ? styles.dotInnerCurrent : styles.dotInnerCompleted,
+                          styles.timelineDot,
+                          item.isCurrent ? styles.dotCurrent : styles.dotCompleted,
                         ]}
-                      />
-                    </View>
-                    {!isLast && <View style={styles.verticalLine} />}
-                  </View>
-
-                  {/* Right Column: Record Details */}
-                  <TouchableOpacity
-                    style={[styles.timelineContentBox, isLast && { marginBottom: 0 }]}
-                    onPress={item.onPress}
-                    disabled={!item.onPress}
-                    activeOpacity={item.onPress ? 0.7 : 1}
-                  >
-                    <View style={styles.timelineMainInfo}>
-                      <View style={styles.timelineTitleRow}>
-                        <Text style={styles.timelineItemTitle}>{item.title}</Text>
-                        <Badge label={item.status} variant={item.badgeVariant} size="sm" />
+                      >
+                        <View
+                          style={[
+                            styles.timelineDotInner,
+                            item.isCurrent ? styles.dotInnerCurrent : styles.dotInnerCompleted,
+                          ]}
+                        />
                       </View>
-                      <Text style={styles.timelineItemNumber}>
-                        {item.number} • {item.date}
-                      </Text>
+                      {!isLast && <View style={styles.verticalLine} />}
                     </View>
 
-                    <View style={styles.timelineActionCol}>
-                      <Text style={styles.timelineAmount}>{formatCurrency(item.amount)}</Text>
-                      {item.isCurrent ? (
-                        <Text style={styles.currentViewingText}>Viewing</Text>
-                      ) : item.onPress ? (
-                        <View style={styles.viewRow}>
-                          <Text style={styles.viewText}>View</Text>
-                          <Ionicons name="chevron-forward" size={12} color={colors.primary} />
+                    {/* Right Column: Record Details */}
+                    <TouchableOpacity
+                      style={[styles.timelineContentBox, isLast && { marginBottom: 0 }]}
+                      onPress={item.onPress}
+                      disabled={!item.onPress}
+                      activeOpacity={item.onPress ? 0.7 : 1}
+                    >
+                      <View style={styles.timelineMainInfo}>
+                        <View style={styles.timelineTitleRow}>
+                          <Text style={styles.timelineItemTitle}>{item.title}</Text>
+                          <Badge label={item.status} variant={item.badgeVariant} size="sm" />
                         </View>
-                      ) : null}
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
-          </View>
-        </Card>
+                        <Text style={styles.timelineItemNumber}>
+                          {item.number} • {item.date}
+                        </Text>
+                      </View>
+
+                      <View style={styles.timelineActionCol}>
+                        <Text style={styles.timelineAmount}>{formatCurrency(item.amount)}</Text>
+                        {item.isCurrent ? (
+                          <Text style={styles.currentViewingText}>Viewing</Text>
+                        ) : item.onPress ? (
+                          <View style={styles.viewRow}>
+                            <Text style={styles.viewText}>View</Text>
+                            <Ionicons name="chevron-forward" size={12} color={colors.primary} />
+                          </View>
+                        ) : null}
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+            </View>
+          </Card>
+        )}
       </ScrollView>
 
       {/* Floating Compact Decision Dock (When awaiting approval) */}
       {isPending && (
-        <View style={[styles.floatingDecisionBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+        <View
+          style={[
+            styles.floatingDecisionBar,
+            { paddingBottom: Math.max(insets.bottom, 18) + 6 },
+          ]}
+        >
           <View style={styles.floatingPriceBox}>
             <Text style={styles.floatingPriceLabel}>TOTAL PROPOSAL</Text>
             <Text style={styles.floatingPriceValue}>{formatCurrency(totalAmountNum)}</Text>
@@ -604,6 +649,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontSize: 11,
     color: colors.textSecondary,
+  },
+  dateMetaSubText: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 1,
   },
   compactDownloadBtn: {
     paddingVertical: 5,
@@ -791,9 +842,9 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   timelineDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
@@ -806,9 +857,9 @@ const styles = StyleSheet.create({
     borderColor: colors.success,
   },
   timelineDotInner: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   dotInnerCurrent: {
     backgroundColor: colors.primary,
@@ -890,16 +941,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
     borderTopColor: "#E2E8F0",
-    paddingTop: 10,
+    paddingTop: 12,
     paddingHorizontal: 16,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 8,
   },
   floatingPriceBox: {
     justifyContent: "center",

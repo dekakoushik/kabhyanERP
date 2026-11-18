@@ -774,11 +774,10 @@ class ClientPortalController extends Controller
                     ]);
                 }
 
-                // Update estimate status to invoiced with audit note
-                $acceptanceNote = ($updatedNotes ? $updatedNotes . "\n" : "") . "Client Acceptance: Approved on " . now()->toFormattedDateString() . " via Client Portal.";
+                // Update estimate status to invoiced
                 $estimate->update([
                     'status' => 'invoiced',
-                    'notes' => $acceptanceNote,
+                    'notes' => $updatedNotes,
                 ]);
 
                 return $newProforma;
