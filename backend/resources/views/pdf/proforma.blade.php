@@ -137,10 +137,17 @@
                 </div>
 
                 <!-- Commercial Terms Card -->
+                @php
+                    $rawTerms = $proforma->terms_and_conditions ?: "• This Proforma Invoice serves as an advance demand notice for project milestone initiation.\n• Valid for 30 days from date of issuance.";
+                    $rawTerms = preg_replace('/(?<!^|\n)\s*•\s*/u', "\n• ", $rawTerms);
+                    $termsList = array_filter(array_map('trim', explode("\n", $rawTerms)));
+                @endphp
                 <div class="note-card">
                     <div class="note-card-title">COMMERCIAL TERMS &amp; NOTES</div>
                     <div class="note-card-body">
-                        {{ $proforma->terms_and_conditions ?: 'This Proforma Invoice serves as an advance demand notice for project milestone initiation. Valid for 30 days.' }}
+                        @foreach($termsList as $termLine)
+                            <div style="margin-bottom: 3px; line-height: 1.45;">{{ $termLine }}</div>
+                        @endforeach
                     </div>
                 </div>
 

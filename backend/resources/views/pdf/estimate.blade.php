@@ -120,10 +120,17 @@
         <tr>
             <td style="width: 50%; vertical-align: top; padding-right: 14px;">
                 <!-- Commercial Terms Card -->
+                @php
+                    $rawTerms = $estimate->terms_and_conditions ?: "• Payment Terms: 50% mobilization advance upon project agreement sign-off.\n• Balance 50% upon successful completion and User Acceptance Testing (UAT) deployment.";
+                    $rawTerms = preg_replace('/(?<!^|\n)\s*•\s*/u', "\n• ", $rawTerms);
+                    $termsList = array_filter(array_map('trim', explode("\n", $rawTerms)));
+                @endphp
                 <div class="note-card">
                     <div class="note-card-title">COMMERCIAL TERMS OF ENGAGEMENT</div>
                     <div class="note-card-body">
-                        {{ $estimate->terms_and_conditions ?: 'Payment terms: 50% mobilization advance upon project kickoff, 50% upon milestone deliverables completion and UAT sign-off. Proposal valid for 30 days.' }}
+                        @foreach($termsList as $termLine)
+                            <div style="margin-bottom: 3px; line-height: 1.45;">{{ $termLine }}</div>
+                        @endforeach
                     </div>
                 </div>
 

@@ -139,10 +139,17 @@
                 </div>
 
                 <!-- Terms Card -->
+                @php
+                    $rawTerms = $invoice->terms_and_conditions ?: "• Invoice issued under Section 31 of CGST Act 2017 for supply of IT & Software Engineering Services (SAC 998314).\n• All disputes subject to Guwahati, Assam jurisdiction.";
+                    $rawTerms = preg_replace('/(?<!^|\n)\s*•\s*/u', "\n• ", $rawTerms);
+                    $termsList = array_filter(array_map('trim', explode("\n", $rawTerms)));
+                @endphp
                 <div class="note-card">
                     <div class="note-card-title">STATUTORY GST DECLARATION &amp; TERMS</div>
                     <div class="note-card-body">
-                        {{ $invoice->terms_and_conditions ?: 'Invoice issued under Section 31 of CGST Act 2017 for supply of IT & Software Engineering Services (SAC 998314). All disputes subject to Guwahati, Assam jurisdiction.' }}
+                        @foreach($termsList as $termLine)
+                            <div style="margin-bottom: 3px; line-height: 1.45;">{{ $termLine }}</div>
+                        @endforeach
                     </div>
                 </div>
 
