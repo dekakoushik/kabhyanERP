@@ -72,22 +72,12 @@
             font-weight: bold;
             color: #0f172a;
             margin-top: 3px;
+            margin-bottom: 3px;
         }
-        .company-tagline {
-            font-size: 8pt;
-            color: #64748b;
-            margin-top: 1px;
-        }
-        .company-contact {
-            font-size: 7.8pt;
-            color: #64748b;
-            margin-top: 2px;
-        }
-        .company-statutory {
+        .company-meta-line {
             font-size: 7.2pt;
             color: #64748b;
-            margin-top: 3px;
-            line-height: 1.35;
+            line-height: 1.45;
         }
 
         /* Badge Pills */
@@ -235,16 +225,14 @@
                     <div style="font-size: 6.5pt; font-weight: bold; color: #64748b; letter-spacing: 2px; margin-bottom: 5px;">TECHNOLOGIES</div>
                 @endif
                 <div class="company-legal-name">{{ $company['name'] }}</div>
-                <div class="company-tagline">{{ $company['tagline'] }}</div>
-                <div class="company-contact">
-                    {{ $company['email'] }} &bull; {{ str_replace(['https://', 'http://'], '', $company['website']) }}
-                    @if(!empty($company['phone']))
-                        &bull; {{ $company['phone'] }}
-                    @endif
-                </div>
-                <div class="company-statutory">
-                    GSTIN: <strong style="color: #334155;">{{ $company['gstin'] }}</strong> &bull; CIN: <strong style="color: #334155;">{{ $company['cin'] }}</strong> &bull; State: <strong>18 (Assam)</strong><br/>
+                <div class="company-meta-line">
                     Regd. Office: {{ $company['registered_office'] }}
+                </div>
+                <div class="company-meta-line">
+                    GSTIN: <strong style="color: #334155;">{{ $company['gstin'] }}</strong> &bull; CIN: <strong style="color: #334155;">{{ $company['cin'] }}</strong> &bull; State: <strong>18 (Assam)</strong>
+                </div>
+                <div class="company-meta-line">
+                    {{ $company['email'] }} &bull; {{ str_replace(['https://', 'http://'], '', $company['website']) }}@if(!empty($company['phone'])) &bull; {{ $company['phone'] }}@endif
                 </div>
             </td>
             <td style="width: 42%; vertical-align: top; padding-bottom: 12px;" class="text-right">
@@ -266,12 +254,9 @@
     <!-- Signatures & Acceptance Footer -->
     <table style="width: 100%; border-collapse: collapse; margin-top: 32px; page-break-inside: avoid;">
         <tr>
-            <td style="width: 50%; vertical-align: top;">
+            <td style="width: 100%; vertical-align: top;">
                 <div class="sign-title">Authorized Signatory</div>
-                <div class="sign-sub">Kabhyan Technologies Pvt. Ltd.</div>
-            </td>
-            <td style="width: 50%; vertical-align: top;" class="text-right">
-                @yield('signature-right')
+                <div class="sign-sub">{{ $company['name'] }}</div>
             </td>
         </tr>
     </table>
