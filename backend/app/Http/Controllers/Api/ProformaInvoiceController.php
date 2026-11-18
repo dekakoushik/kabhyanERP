@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\Estimate;
 use App\Models\ProformaInvoice;
 use App\Models\ProformaInvoiceItem;
+use App\Models\ReceiptVoucher;
 use App\Services\DocumentNumberService;
 use App\Services\PushNotificationService;
 use Illuminate\Http\JsonResponse;
