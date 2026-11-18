@@ -9,11 +9,19 @@ import { ProjectsScreen } from "../screens/projects/ProjectsScreen";
 import { EstimatesScreen } from "../screens/estimates/EstimatesScreen";
 import { TicketsScreen } from "../screens/tickets/TicketsScreen";
 import { useAuth } from "../context/AuthContext";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const Tab = createBottomTabNavigator();
 
 export const BottomTabNavigator: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
+
+  // Adaptive bottom clearance:
+  // - Gesture navigation / Home Indicator (insets.bottom > 0): clearance matching device insets (20-34px)
+  // - 3-button software navigation / hardware buttons (insets.bottom === 0): standard 8px clearance
+  const bottomBarPadding = insets.bottom > 0 ? insets.bottom : 8;
+  const bottomBarHeight = 56 + bottomBarPadding;
 
   const renderHeaderRight = () => (
     <TouchableOpacity
@@ -56,13 +64,18 @@ export const BottomTabNavigator: React.FC<{ navigation: any }> = ({ navigation }
           color: colors.text,
         },
         headerRight: renderHeaderRight,
+        tabBarHideOnKeyboard: true,
+        tabBarLabelPosition: "below-icon",
         tabBarStyle: {
           backgroundColor: colors.card,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
+          height: bottomBarHeight,
+          paddingBottom: bottomBarPadding,
           paddingTop: 6,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 2,
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,

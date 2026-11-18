@@ -1,9 +1,13 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { AuthProvider } from "./src/context/AuthContext";
+import * as SplashScreen from "expo-splash-screen";
+import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { RootNavigator } from "./src/navigation/RootNavigator";
+
+// Prevent native splash screen from auto-hiding before authentication session is verified
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 class GlobalErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -54,13 +58,35 @@ class GlobalErrorBoundary extends React.Component<
   }
 }
 
+function AppContent() {
+  const { loading } = useAuth();
+
+  // Hide splash screen smoothly ONLY when the first frame of the app is laid out
+  const onLayoutRootView = useCallback(async () => {
+    if (!loading) {
+      await SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [loading]);
+
+  if (loading) {
+    // Keep native splash screen visible; avoids blank white flash or jumping spinner
+    return null;
+  }
+
+  return (
+    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+      <RootNavigator />
+    </View>
+  );
+}
+
 export default function App() {
   return (
     <GlobalErrorBoundary>
       <SafeAreaProvider>
         <AuthProvider>
           <StatusBar style="dark" />
-          <RootNavigator />
+          <AppContent />
         </AuthProvider>
       </SafeAreaProvider>
     </GlobalErrorBoundary>
