@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreInvoiceRequest;
 use App\Http\Requests\RecordPaymentRequest;
+use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
 use App\Models\ProformaInvoice;
 use App\Models\Estimate;
 use App\Services\DocumentNumberService;
+use App\Services\PushNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -225,6 +227,8 @@ class InvoiceController extends Controller
             return $newInvoice;
         });
 
+        $this->notifyClientInvoiceIssued($invoice);
+
         return response()->json([
             'message' => 'Tax Invoice successfully created from Proforma Invoice.',
             'invoice' => $invoice->fresh()->load(['items', 'payments', 'project:id,name,code', 'proformaInvoice:id,proforma_number']),
@@ -327,6 +331,10 @@ class InvoiceController extends Controller
 
                 return $newInvoice;
             });
+
+            if ($invoice->status !== 'draft') {
+                $this->notifyClientInvoiceIssued($invoice);
+            }
 
             return response()->json([
                 'message' => 'Tax Invoice created successfully',
@@ -574,6 +582,43 @@ class InvoiceController extends Controller
         return response()->json([
             'message' => 'Invoice deleted successfully',
         ]);
+    }
+
+    /**
+     * Notify client via push notification when a tax invoice is issued.
+     */
+    private function notifyClientInvoiceIssued(Invoice $invoice): void
+    {
+        try {
+            $client = null;
+            if ($invoice->client_email) {
+                $client = Client::where('email', $invoice->client_email)->first();
+            }
+            if (!$client && $invoice->client_company) {
+                $client = Client::where('company_name', $invoice->client_company)->first();
+            }
+            if (!$client && $invoice->client_name) {
+                $client = Client::where('name', $invoice->client_name)->first();
+            }
+
+            if ($client) {
+                $formattedTotal = '₹' . number_format((float) ($invoice->total_amount ?? 0), 2);
+                PushNotificationService::sendToClient(
+                    $client,
+                    "Tax Invoice Issued",
+                    "Tax Invoice #{$invoice->invoice_number} ({$formattedTotal}) has been issued.",
+                    [
+                        'type' => 'invoice',
+                        'screen' => 'InvoiceDetail',
+                        'invoiceId' => $invoice->id,
+                        'invoice_number' => $invoice->invoice_number,
+                        'total' => (float) ($invoice->total_amount ?? 0),
+                    ]
+                );
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[InvoiceController] Push notification failed: ' . $e->getMessage());
+        }
     }
 
     /**

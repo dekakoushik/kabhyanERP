@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreEstimateRequest;
+use App\Models\Client;
 use App\Models\Estimate;
 use App\Models\EstimateItem;
 use App\Services\DocumentNumberService;
+use App\Services\PushNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -140,6 +142,10 @@ class EstimateController extends Controller
                 return $newEstimate;
             });
 
+            if ($estimate->status === 'sent') {
+                $this->notifyClientEstimateSent($estimate);
+            }
+
             return response()->json([
                 'message' => 'Estimate generated successfully',
                 'estimate' => $estimate->fresh()->load(['items', 'project:id,name,code', 'creator:id,name,email']),
@@ -206,6 +212,7 @@ class EstimateController extends Controller
         ]);
 
         try {
+            $oldStatus = $estimate->status;
             $estimate->update([
                 'estimate_number' => $validated['estimate_number'],
                 'project_id' => !empty($validated['project_id']) ? (int) $validated['project_id'] : null,
@@ -267,6 +274,10 @@ class EstimateController extends Controller
 
             $estimate->recalculateTotals();
 
+            if ($oldStatus !== 'sent' && $estimate->status === 'sent') {
+                $this->notifyClientEstimateSent($estimate);
+            }
+
             return response()->json([
                 'message' => 'Estimate updated successfully',
                 'estimate' => $estimate->fresh()->load(['items', 'project:id,name,code', 'creator:id,name,email']),
@@ -292,12 +303,54 @@ class EstimateController extends Controller
             'status' => ['required', Rule::in(['draft', 'sent', 'accepted', 'declined', 'invoiced'])],
         ]);
 
+        $oldStatus = $estimate->status;
         $estimate->update(['status' => $validated['status']]);
+
+        if ($oldStatus !== 'sent' && $validated['status'] === 'sent') {
+            $this->notifyClientEstimateSent($estimate);
+        }
 
         return response()->json([
             'message' => 'Estimate status updated to ' . $validated['status'],
             'estimate' => $estimate->fresh(),
         ]);
+    }
+
+    /**
+     * Notify client via push notification when an estimate is sent.
+     */
+    private function notifyClientEstimateSent(Estimate $estimate): void
+    {
+        try {
+            $client = null;
+            if ($estimate->client_email) {
+                $client = Client::where('email', $estimate->client_email)->first();
+            }
+            if (!$client && $estimate->client_company) {
+                $client = Client::where('company_name', $estimate->client_company)->first();
+            }
+            if (!$client && $estimate->client_name) {
+                $client = Client::where('name', $estimate->client_name)->first();
+            }
+
+            if ($client) {
+                $formattedTotal = '₹' . number_format((float) ($estimate->total ?? 0), 2);
+                PushNotificationService::sendToClient(
+                    $client,
+                    "New Quotation: {$estimate->estimate_number}",
+                    "Kabhyan Technologies has sent you Quotation #{$estimate->estimate_number} ({$formattedTotal}). Please review the deliverables.",
+                    [
+                        'type' => 'estimate',
+                        'screen' => 'EstimateDetail',
+                        'estimateId' => $estimate->id,
+                        'estimate_number' => $estimate->estimate_number,
+                        'total' => (float) ($estimate->total ?? 0),
+                    ]
+                );
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[EstimateController] Failed to dispatch push notification: ' . $e->getMessage());
+        }
     }
 
     /**

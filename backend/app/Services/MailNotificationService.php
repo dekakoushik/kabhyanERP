@@ -552,6 +552,26 @@ class MailNotificationService
 
                 self::send($clientEmail, $subject, $html, $clientName, $portalUrl, "Reply via Portal");
             }
+
+            // Mobile push notification to client device
+            if ($client) {
+                try {
+                    $snippet = mb_substr(strip_tags($reply->message), 0, 90);
+                    PushNotificationService::sendToClient(
+                        $client,
+                        "Support Update #{$ticket->ticket_number}",
+                        "Support replied: \"{$snippet}\"",
+                        [
+                            'type' => 'ticket',
+                            'screen' => 'TicketDetail',
+                            'ticketId' => $ticket->id,
+                            'ticket_number' => $ticket->ticket_number,
+                        ]
+                    );
+                } catch (\Throwable $e) {
+                    Log::warning('[MailNotificationService] Push notification failed for ticket reply: ' . $e->getMessage());
+                }
+            }
         } else {
             // Client replied -> Notify Staff / Assignee / Admin
             $staffRecipient = $ticket->assignee?->email ?? SystemSetting::get('mail_from_address', 'alerts@kabhyan.com');

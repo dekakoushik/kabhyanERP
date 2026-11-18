@@ -326,4 +326,17 @@ export const portalApi = {
       method: "POST",
       body: JSON.stringify({ message }),
     }),
+
+  // Push Notification Device Tokens
+  registerDeviceToken: (data: { push_token: string; platform: string; device_name?: string }) =>
+    apiClient<{ success: boolean; message: string }>("/portal/device-tokens", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  removeDeviceToken: (push_token: string) =>
+    apiClient<{ success: boolean; message: string }>("/portal/device-tokens/remove", {
+      method: "POST",
+      body: JSON.stringify({ push_token }),
+    }),
 };

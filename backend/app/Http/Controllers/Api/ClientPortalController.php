@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Client;
+use App\Models\ClientDeviceToken;
 use App\Models\Estimate;
 use App\Models\Invoice;
 use App\Models\ProformaInvoice;
@@ -939,6 +940,59 @@ class ClientPortalController extends Controller
         }
 
         return app(PdfController::class)->downloadInvoice($request, $invoice->id);
+    }
+
+    /**
+     * Register or update mobile push device token for authenticated user.
+     */
+    public function registerDeviceToken(Request $request)
+    {
+        $validated = $request->validate([
+            'push_token' => ['required', 'string', 'max:255'],
+            'platform' => ['nullable', 'string', 'max:20'],
+            'device_name' => ['nullable', 'string', 'max:150'],
+        ]);
+
+        $user = $request->user();
+        $client = null;
+        try {
+            $client = $this->getClient($request);
+        } catch (\Throwable $e) {
+            // User may not be directly tied to client, fallback gracefully
+        }
+
+        $token = ClientDeviceToken::registerToken(
+            $user,
+            $validated['push_token'],
+            $validated['platform'] ?? 'android',
+            $validated['device_name'] ?? null,
+            $client?->id
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Device token registered successfully',
+            'token_id' => $token->id,
+        ]);
+    }
+
+    /**
+     * Deregister / remove mobile push device token on logout.
+     */
+    public function removeDeviceToken(Request $request)
+    {
+        $validated = $request->validate([
+            'push_token' => ['required', 'string', 'max:255'],
+        ]);
+
+        $user = $request->user();
+        $deleted = ClientDeviceToken::removeToken($validated['push_token'], $user->id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Device token removed successfully',
+            'deleted' => $deleted,
+        ]);
     }
 }
 

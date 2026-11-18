@@ -92,6 +92,10 @@ Route::prefix('v1')->group(function () {
             Route::post('tickets', [ClientPortalController::class, 'createTicket']);
             Route::get('tickets/{ticket}', [ClientPortalController::class, 'showTicket']);
             Route::post('tickets/{ticket}/reply', [ClientPortalController::class, 'replyTicket']);
+
+            // Mobile Push Notification Tokens
+            Route::post('device-tokens', [ClientPortalController::class, 'registerDeviceToken']);
+            Route::post('device-tokens/remove', [ClientPortalController::class, 'removeDeviceToken']);
         });
 
         // ====================================================================

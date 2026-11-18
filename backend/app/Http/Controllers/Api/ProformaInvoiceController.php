@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Client;
 use App\Models\Estimate;
 use App\Models\ProformaInvoice;
 use App\Models\ProformaInvoiceItem;
 use App\Services\DocumentNumberService;
+use App\Services\PushNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -134,6 +136,8 @@ class ProformaInvoiceController extends Controller
             return $newProforma;
         });
 
+        $this->notifyClientProformaSent($proforma);
+
         return response()->json([
             'message' => 'Proforma Invoice generated successfully from estimate.',
             'proforma_invoice' => $proforma->fresh()->load(['items', 'project:id,name,code', 'estimate:id,estimate_number']),
@@ -253,6 +257,10 @@ class ProformaInvoiceController extends Controller
 
                 return $proforma;
             });
+
+            if ($proforma->status !== 'draft') {
+                $this->notifyClientProformaSent($proforma);
+            }
 
             return response()->json([
                 'message' => 'Proforma Invoice generated successfully',
@@ -426,6 +434,43 @@ class ProformaInvoiceController extends Controller
             'message' => 'Status updated successfully',
             'proforma_invoice' => $proformaInvoice->fresh(),
         ]);
+    }
+
+    /**
+     * Notify client via push notification when a proforma invoice is ready.
+     */
+    private function notifyClientProformaSent(ProformaInvoice $proforma): void
+    {
+        try {
+            $client = null;
+            if ($proforma->client_email) {
+                $client = Client::where('email', $proforma->client_email)->first();
+            }
+            if (!$client && $proforma->client_company) {
+                $client = Client::where('company_name', $proforma->client_company)->first();
+            }
+            if (!$client && $proforma->client_name) {
+                $client = Client::where('name', $proforma->client_name)->first();
+            }
+
+            if ($client) {
+                $formattedTotal = '₹' . number_format((float) ($proforma->total_amount ?? 0), 2);
+                PushNotificationService::sendToClient(
+                    $client,
+                    "Proforma Invoice Ready",
+                    "Milestone Proforma #{$proforma->proforma_number} ({$formattedTotal}) is ready for review.",
+                    [
+                        'type' => 'proforma',
+                        'screen' => 'InvoiceDetail',
+                        'invoiceId' => $proforma->id,
+                        'proforma_number' => $proforma->proforma_number,
+                        'total' => (float) ($proforma->total_amount ?? 0),
+                    ]
+                );
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[ProformaInvoiceController] Push notification failed: ' . $e->getMessage());
+        }
     }
 
     /**

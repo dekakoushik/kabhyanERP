@@ -18,6 +18,9 @@
     },
     "android": {
       "package": "com.kabhyan.kconnect",
+      "permissions": [
+        "NOTIFICATIONS"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -31,6 +34,14 @@
     },
     "plugins": [
       "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#2563EB",
+          "sounds": ["default"]
+        }
+      ],
       [
         "expo-splash-screen",
         {
