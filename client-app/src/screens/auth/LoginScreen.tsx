@@ -14,6 +14,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../theme/colors";
+import { fonts } from "../../theme/typography";
+import { shadows } from "../../theme/shadows";
 import { Button } from "../../components/Button";
 import { useAuth } from "../../context/AuthContext";
 
@@ -205,19 +207,16 @@ const styles = StyleSheet.create({
     padding: 24,
     borderWidth: 1,
     borderColor: colors.border,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 3,
+    ...shadows.card,
   },
   welcomeTitle: {
+    fontFamily: fonts.bold,
     fontSize: 18,
-    fontWeight: "700",
     color: colors.text,
     marginBottom: 4,
   },
   welcomeSubtitle: {
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: colors.textSecondary,
     lineHeight: 18,

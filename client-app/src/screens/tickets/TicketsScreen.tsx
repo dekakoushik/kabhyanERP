@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../theme/colors";
+import { fonts } from "../../theme/typography";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
@@ -426,13 +427,13 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   filterChipText: {
+    fontFamily: fonts.medium,
     fontSize: 12,
-    fontWeight: "600",
     color: colors.textSecondary,
   },
   filterChipTextActive: {
+    fontFamily: fonts.bold,
     color: colors.textLight,
-    fontWeight: "700",
   },
   filterCountBadge: {
     backgroundColor: colors.border,
@@ -444,11 +445,12 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.25)",
   },
   filterCountText: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: "700",
     color: colors.textSecondary,
   },
   filterCountTextActive: {
+    fontFamily: fonts.bold,
     color: colors.textLight,
   },
   listContent: {
@@ -462,6 +464,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 10,
+    fontFamily: fonts.medium,
     fontSize: 13,
     color: colors.textSecondary,
   },
@@ -493,9 +496,8 @@ const styles = StyleSheet.create({
   },
   ticketIdText: {
     fontSize: 11,
-    fontWeight: "800",
+    fontFamily: fonts.bold,
     color: colors.primary,
-    fontFamily: "monospace",
   },
   projectBadge: {
     backgroundColor: colors.background,
@@ -507,13 +509,13 @@ const styles = StyleSheet.create({
     maxWidth: 120,
   },
   projectBadgeText: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: "700",
     color: colors.textSecondary,
   },
   subject: {
+    fontFamily: fonts.bold,
     fontSize: 15,
-    fontWeight: "800",
     color: colors.text,
     lineHeight: 20,
     marginBottom: 6,
@@ -531,12 +533,13 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   typeText: {
+    fontFamily: fonts.bold,
     fontSize: 9,
-    fontWeight: "800",
     color: "#475569",
     letterSpacing: 0.5,
   },
   dateText: {
+    fontFamily: fonts.regular,
     fontSize: 11,
     color: colors.textMuted,
   },
@@ -564,8 +567,8 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   priorityText: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: "800",
     letterSpacing: 0.5,
   },
   repliesGroup: {
@@ -574,11 +577,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   repliesText: {
+    fontFamily: fonts.medium,
     fontSize: 11,
     color: colors.textSecondary,
-    fontWeight: "600",
   },
   noRepliesText: {
+    fontFamily: fonts.regular,
     fontSize: 11,
     color: colors.textMuted,
   },
@@ -588,8 +592,8 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   chatLinkText: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: "700",
     color: colors.primary,
   },
 });

@@ -3,6 +3,7 @@ import { View, ActivityIndicator } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { colors } from "../theme/colors";
+import { fonts } from "../theme/typography";
 import { useAuth } from "../context/AuthContext";
 import { LoginScreen } from "../screens/auth/LoginScreen";
 import { BottomTabNavigator } from "./BottomTabNavigator";
@@ -30,8 +31,8 @@ export const RootNavigator: React.FC = () => {
             backgroundColor: colors.card,
           },
           headerTitleStyle: {
+            fontFamily: fonts.bold,
             fontSize: 16,
-            fontWeight: "800",
             color: colors.text,
           },
           headerTintColor: colors.primary,

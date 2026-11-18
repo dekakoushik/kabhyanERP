@@ -13,6 +13,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
 import { colors } from "../../theme/colors";
+import { fonts } from "../../theme/typography";
+import { shadows } from "../../theme/shadows";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
@@ -435,15 +437,15 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   welcomeSub: {
+    fontFamily: fonts.medium,
     fontSize: 12,
-    fontWeight: "600",
     color: colors.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   clientTitle: {
+    fontFamily: fonts.bold,
     fontSize: 20,
-    fontWeight: "800",
     color: colors.text,
     marginTop: 2,
   },
@@ -470,11 +472,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     marginBottom: 14,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
+    ...shadows.card,
   },
   heroTopRow: {
     flexDirection: "row",
@@ -483,8 +481,8 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   heroLabel: {
+    fontFamily: fonts.medium,
     fontSize: 12,
-    fontWeight: "700",
     color: colors.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -501,13 +499,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   dueBadgeText: {
+    fontFamily: fonts.bold,
     fontSize: 11,
-    fontWeight: "700",
     color: colors.warning,
   },
   heroAmount: {
+    fontFamily: fonts.bold,
     fontSize: 30,
-    fontWeight: "800",
     color: colors.text,
     letterSpacing: -0.5,
     marginVertical: 4,
@@ -523,15 +521,15 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   heroFooterText: {
+    fontFamily: fonts.regular,
     fontSize: 12,
     color: colors.textSecondary,
-    fontWeight: "500",
     flex: 1,
     marginRight: 8,
   },
   heroActionBtnText: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: "700",
     color: colors.primary,
   },
 
@@ -546,11 +544,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
+    ...shadows.card,
   },
   statChip: {
     flex: 1,
@@ -563,16 +557,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.borderLight,
   },
   statLabel: {
+    fontFamily: fonts.medium,
     fontSize: 10,
-    fontWeight: "700",
     color: colors.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.3,
     marginBottom: 3,
   },
   statValue: {
+    fontFamily: fonts.bold,
     fontSize: 15,
-    fontWeight: "800",
   },
 
   // 4. Action Required Banner
@@ -585,11 +579,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
+    ...shadows.card,
   },
   actionBannerIconBg: {
     width: 38,
@@ -609,11 +599,12 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   actionBannerTitle: {
+    fontFamily: fonts.bold,
     fontSize: 13,
-    fontWeight: "700",
     color: colors.text,
   },
   actionBannerSub: {
+    fontFamily: fonts.regular,
     fontSize: 11,
     color: colors.textSecondary,
   },
@@ -628,13 +619,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   sectionTitle: {
+    fontFamily: fonts.bold,
     fontSize: 15,
-    fontWeight: "800",
     color: colors.text,
   },
   viewAllText: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: "700",
     color: colors.primary,
   },
 
@@ -646,12 +637,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   emptyCardTitle: {
+    fontFamily: fonts.bold,
     fontSize: 13,
-    fontWeight: "700",
     color: colors.text,
     marginTop: 8,
   },
   emptyCardSub: {
+    fontFamily: fonts.regular,
     fontSize: 11,
     color: colors.textSecondary,
     textAlign: "center",
@@ -670,11 +662,12 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   invoiceNumber: {
+    fontFamily: fonts.bold,
     fontSize: 14,
-    fontWeight: "700",
     color: colors.text,
   },
   invoiceDate: {
+    fontFamily: fonts.regular,
     fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
@@ -690,15 +683,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   invoiceAmountLabel: {
+    fontFamily: fonts.medium,
     fontSize: 9,
     color: colors.textMuted,
-    fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   invoiceAmount: {
+    fontFamily: fonts.bold,
     fontSize: 16,
-    fontWeight: "800",
     color: colors.text,
     marginTop: 1,
   },
@@ -719,8 +712,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   paidIndicatorText: {
+    fontFamily: fonts.bold,
     fontSize: 11,
-    fontWeight: "700",
     color: colors.success,
   },
 
@@ -736,13 +729,14 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   projectName: {
+    fontFamily: fonts.bold,
     fontSize: 14,
-    fontWeight: "700",
     color: colors.text,
     flex: 1,
     marginRight: 8,
   },
   projectDesc: {
+    fontFamily: fonts.regular,
     fontSize: 11,
     color: colors.textSecondary,
     lineHeight: 16,
@@ -760,6 +754,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   projectMetaText: {
+    fontFamily: fonts.regular,
     fontSize: 11,
     color: colors.textMuted,
   },

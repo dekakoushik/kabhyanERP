@@ -13,6 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
 import { colors } from "../../theme/colors";
+import { fonts } from "../../theme/typography";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
@@ -106,76 +107,56 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
   const renderThreadCard = ({ item }: { item: CommercialThread }) => {
     const isTax = item.stage === "tax_invoice";
-    const isProforma = item.stage === "proforma";
     const isPaid = item.headline_status === "paid";
     const isPaying = payingId === item.headline_id;
+    const dateFormatted = formatDate(item.due_date || item.headline_date);
 
     return (
       <TouchableOpacity
-        activeOpacity={0.85}
+        activeOpacity={0.75}
         onPress={() => navigateToDocument(item)}
       >
         <Card style={styles.threadCard}>
-          {/* Top Row: Type Badge + Document Number + Status */}
-          <View style={styles.topRow}>
-            <View style={styles.stageNumberRow}>
+          {/* Tier 1: Document Number + Stage & Status Badges */}
+          <View style={styles.cardHeaderRow}>
+            <Text style={styles.documentNumber}>{item.headline_number}</Text>
+            <View style={styles.badgeCluster}>
               {renderStageBadge(item.stage)}
-              <Text style={styles.documentNumber}>{item.headline_number}</Text>
+              {renderStatusBadge(item.headline_status)}
             </View>
-            {renderStatusBadge(item.headline_status)}
           </View>
 
-          {/* Project & Scope Title */}
-          {item.project_name ? (
-            <View style={styles.projectRow}>
-              <Ionicons name="briefcase-outline" size={13} color={colors.textMuted} />
-              <Text style={styles.projectName} numberOfLines={1}>
-                {item.project_name}
-              </Text>
-            </View>
-          ) : null}
+          {/* Tier 2: Project Context & Due/Issued Date */}
+          <View style={styles.contextRow}>
+            <Text style={styles.contextText} numberOfLines={1}>
+              {item.project_name
+                ? `${item.project_name} • ${item.due_date ? `Due ${dateFormatted}` : dateFormatted}`
+                : item.due_date
+                ? `Due: ${dateFormatted}`
+                : `Issued: ${dateFormatted}`}
+            </Text>
+          </View>
 
-          {/* Date & Valuation Row */}
-          <View style={styles.metaRow}>
-            <View style={styles.dateCol}>
-              <Text style={styles.dateLabel}>
-                {item.due_date ? "Payment Due" : "Document Date"}
-              </Text>
-              <Text style={styles.dateValue}>
-                {formatDate(item.due_date || item.headline_date)}
-              </Text>
-            </View>
-
-            <View style={styles.amountCol}>
-              <Text style={styles.amountLabel}>Total Value</Text>
+          {/* Tier 3: Prominent Valuation & Action CTA */}
+          <View style={styles.bottomRow}>
+            <View style={{ flex: 1, marginRight: 10 }}>
               <Text style={styles.amountValue}>
                 {formatCurrency(item.total_amount)}
               </Text>
+              {item.history && item.history.length > 0 ? (
+                <View style={styles.lineageRow}>
+                  <Ionicons name="git-branch-outline" size={12} color={colors.primary} />
+                  <Text style={styles.lineageText} numberOfLines={1}>
+                    From:{" "}
+                    {item.history
+                      .map((h: DocumentHistoryItem) =>
+                        h.stage === "proforma" ? `PI #${h.number}` : `Quote #${h.number}`
+                      )
+                      .join(" • ")}
+                  </Text>
+                </View>
+              ) : null}
             </View>
-          </View>
-
-          {/* History & Evolutionary Lineage Strip */}
-          {item.history && item.history.length > 0 ? (
-            <View style={styles.historyContainer}>
-              <View style={styles.historyLine}>
-                <Ionicons name="git-branch-outline" size={13} color={colors.primary} />
-                <Text style={styles.historyText} numberOfLines={1}>
-                  From:{" "}
-                  {item.history
-                    .map((h: DocumentHistoryItem) =>
-                      h.stage === "proforma" ? `PI #${h.number}` : `Quote #${h.number}`
-                    )
-                    .join(" • ")}
-                </Text>
-              </View>
-            </View>
-          ) : null}
-
-          <View style={styles.divider} />
-
-          {/* Card Footer with Direct Action */}
-          <View style={styles.footerRow}>
-            <View style={{ flex: 1 }} />
 
             {isTax && !isPaid ? (
               <Button
@@ -187,13 +168,10 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                 style={styles.payBtn}
               />
             ) : (
-              <TouchableOpacity
-                onPress={() => navigateToDocument(item)}
-                style={styles.detailsLink}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.detailsLinkText}>View Details →</Text>
-              </TouchableOpacity>
+              <View style={styles.viewLinkRow}>
+                <Text style={styles.viewLinkText}>Details</Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+              </View>
             )}
           </View>
         </Card>
@@ -287,20 +265,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: colors.card,
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: 12,
     marginHorizontal: 16,
     marginTop: 12,
     marginBottom: 8,
-    height: 44,
+    height: 42,
   },
   searchIcon: {
     marginRight: 8,
   },
   searchInput: {
     flex: 1,
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: colors.text,
     height: "100%",
@@ -324,11 +303,12 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   filterChipText: {
+    fontFamily: fonts.medium,
     fontSize: 11,
-    fontWeight: "700",
     color: colors.textSecondary,
   },
   filterChipTextActive: {
+    fontFamily: fonts.bold,
     color: colors.textLight,
   },
   listContent: {
@@ -342,127 +322,81 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 10,
+    fontFamily: fonts.medium,
     fontSize: 13,
     color: colors.textSecondary,
-    fontWeight: "600",
   },
+
+  // 3-Tier Simple & Crisp Thread Card
   threadCard: {
-    padding: 16,
-    marginBottom: 12,
+    padding: 14,
+    marginBottom: 10,
     borderRadius: 16,
   },
-  topRow: {
+  cardHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
-  },
-  stageNumberRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    flex: 1,
-    marginRight: 8,
+    marginBottom: 4,
   },
   documentNumber: {
-    fontSize: 14,
-    fontWeight: "800",
+    fontFamily: fonts.bold,
+    fontSize: 15,
     color: colors.text,
+    letterSpacing: -0.2,
   },
-  projectRow: {
+  badgeCluster: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
+    gap: 6,
+  },
+  contextRow: {
     marginBottom: 10,
   },
-  projectName: {
+  contextText: {
+    fontFamily: fonts.regular,
     fontSize: 12,
     color: colors.textSecondary,
-    fontWeight: "600",
   },
-  metaRow: {
+  bottomRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
-    backgroundColor: colors.borderLight,
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  dateCol: {
-    flex: 1,
-  },
-  dateLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: colors.textMuted,
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-  },
-  dateValue: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: colors.text,
-    marginTop: 2,
-  },
-  amountCol: {
-    alignItems: "flex-end",
-  },
-  amountLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: colors.textMuted,
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
   },
   amountValue: {
-    fontSize: 16,
-    fontWeight: "800",
+    fontFamily: fonts.bold,
+    fontSize: 17,
     color: colors.text,
-    marginTop: 2,
+    letterSpacing: -0.3,
   },
-  historyContainer: {
-    backgroundColor: colors.primaryLight,
-    borderColor: "#C7D2FE",
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    marginBottom: 6,
-  },
-  historyLine: {
+  lineageRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
+    gap: 4,
+    marginTop: 4,
   },
-  historyText: {
+  lineageText: {
+    fontFamily: fonts.medium,
     fontSize: 11,
-    fontWeight: "700",
     color: colors.primary,
-    flex: 1,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.borderLight,
-    marginVertical: 10,
-  },
-  footerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
   },
   payBtn: {
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 8,
   },
-  detailsLink: {
+  viewLinkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
     paddingVertical: 4,
-    paddingHorizontal: 6,
   },
-  detailsLinkText: {
+  viewLinkText: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: "700",
     color: colors.primary,
   },
 });

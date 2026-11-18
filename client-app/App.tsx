@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as SplashScreen from "expo-splash-screen";
+import { useFonts } from "expo-font";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { RootNavigator } from "./src/navigation/RootNavigator";
 
@@ -61,15 +62,23 @@ class GlobalErrorBoundary extends React.Component<
 function AppContent() {
   const { loading } = useAuth();
 
-  // Hide splash screen smoothly ONLY when the first frame of the app is laid out
+  const [fontsLoaded, fontError] = useFonts({
+    "GoogleSans-Regular": require("./assets/fonts/GoogleSans-Regular.ttf"),
+    "GoogleSans-Medium": require("./assets/fonts/GoogleSans-Medium.ttf"),
+    "GoogleSans-Bold": require("./assets/fonts/GoogleSans-Bold.ttf"),
+  });
+
+  const isReady = !loading && (fontsLoaded || Boolean(fontError));
+
+  // Hide splash screen smoothly ONLY when the first frame of the app is laid out and fonts are ready
   const onLayoutRootView = useCallback(async () => {
-    if (!loading) {
+    if (isReady) {
       await SplashScreen.hideAsync().catch(() => {});
     }
-  }, [loading]);
+  }, [isReady]);
 
-  if (loading) {
-    // Keep native splash screen visible; avoids blank white flash or jumping spinner
+  if (!isReady) {
+    // Keep native splash screen visible; avoids blank white flash, FOUT, or jumping spinner
     return null;
   }
 

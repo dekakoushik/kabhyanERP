@@ -1,6 +1,7 @@
 import React from "react";
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from "react-native";
 import { colors } from "../theme/colors";
+import { fonts } from "../theme/typography";
 
 interface ButtonProps {
   title: string;
@@ -92,8 +93,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   text: {
+    fontFamily: fonts.bold,
     fontSize: 14,
-    fontWeight: "700",
   },
   disabled: {
     opacity: 0.5,

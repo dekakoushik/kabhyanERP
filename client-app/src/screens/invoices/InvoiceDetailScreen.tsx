@@ -10,6 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
 import { colors } from "../../theme/colors";
+import { fonts } from "../../theme/typography";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
@@ -563,6 +564,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 10,
+    fontFamily: fonts.medium,
     fontSize: 13,
     color: colors.textSecondary,
   },
@@ -578,9 +580,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   proformaBannerText: {
+    fontFamily: fonts.medium,
     fontSize: 12,
     color: colors.purple,
-    fontWeight: "600",
     flex: 1,
   },
   statusCard: {
@@ -592,11 +594,12 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   invoiceNumber: {
+    fontFamily: fonts.bold,
     fontSize: 18,
-    fontWeight: "800",
     color: colors.text,
   },
   dateText: {
+    fontFamily: fonts.regular,
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 2,
@@ -620,14 +623,14 @@ const styles = StyleSheet.create({
     borderTopColor: colors.borderLight,
   },
   dueLabel: {
+    fontFamily: fonts.bold,
     fontSize: 11,
     color: colors.textMuted,
-    fontWeight: "700",
     textTransform: "uppercase",
   },
   dueAmount: {
+    fontFamily: fonts.bold,
     fontSize: 20,
-    fontWeight: "900",
     color: colors.text,
   },
   payNowBtn: {
@@ -640,20 +643,21 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   sectionTitle: {
+    fontFamily: fonts.bold,
     fontSize: 15,
-    fontWeight: "800",
     color: colors.text,
   },
   itemCard: {
     marginBottom: 10,
   },
   itemTitle: {
+    fontFamily: fonts.bold,
     fontSize: 14,
-    fontWeight: "700",
     color: colors.text,
     marginBottom: 4,
   },
   itemSubDesc: {
+    fontFamily: fonts.regular,
     fontSize: 12,
     color: colors.textSecondary,
     marginBottom: 6,
@@ -665,6 +669,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   itemQty: {
+    fontFamily: fonts.regular,
     fontSize: 12,
     color: colors.textSecondary,
   },
@@ -675,8 +680,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   gstBadgeText: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: "700",
     color: colors.primary,
   },
   itemDivider: {
@@ -690,15 +695,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   itemTaxable: {
+    fontFamily: fonts.regular,
     fontSize: 11,
     color: colors.textMuted,
   },
   itemTotal: {
+    fontFamily: fonts.bold,
     fontSize: 14,
-    fontWeight: "800",
     color: colors.text,
   },
   noItemsText: {
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: colors.textMuted,
     textAlign: "center",
@@ -708,8 +715,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   breakdownTitle: {
+    fontFamily: fonts.bold,
     fontSize: 14,
-    fontWeight: "800",
     color: colors.text,
     marginBottom: 12,
   },
@@ -720,12 +727,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   summaryLabel: {
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: colors.textSecondary,
   },
   summaryValue: {
+    fontFamily: fonts.medium,
     fontSize: 13,
-    fontWeight: "600",
     color: colors.text,
   },
   summaryDivider: {
@@ -734,13 +742,13 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   grossLabel: {
+    fontFamily: fonts.bold,
     fontSize: 15,
-    fontWeight: "800",
     color: colors.text,
   },
   grossValue: {
+    fontFamily: fonts.bold,
     fontSize: 18,
-    fontWeight: "900",
     color: colors.primary,
   },
   taxInvCard: {
@@ -763,15 +771,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   taxInvCardTitle: {
+    fontFamily: fonts.bold,
     fontSize: 13,
-    fontWeight: "800",
     color: "#6B21A8",
   },
   taxInvCardSub: {
+    fontFamily: fonts.medium,
     fontSize: 11,
     color: "#7E22CE",
     marginTop: 2,
-    fontWeight: "500",
   },
   originCard: {
     backgroundColor: colors.card,
@@ -785,11 +793,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   originTitle: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: "800",
     color: colors.text,
   },
   originSub: {
+    fontFamily: fonts.regular,
     fontSize: 10,
     color: colors.textMuted,
     marginTop: 2,
@@ -810,8 +819,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   settledText: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: "800",
     color: "#166534",
   },
 });

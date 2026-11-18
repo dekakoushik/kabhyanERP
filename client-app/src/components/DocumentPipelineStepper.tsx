@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../theme/colors";
+import { fonts } from "../theme/typography";
 
 export interface DocumentPipelineStepperProps {
   currentStep: "estimate" | "proforma" | "invoice";
@@ -218,36 +219,35 @@ const styles = StyleSheet.create({
     backgroundColor: colors.warning,
   },
   stepNumber: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: "800",
     color: colors.textMuted,
   },
   stepNumberActive: {
     color: colors.textLight,
   },
   stepTitle: {
+    fontFamily: fonts.bold,
     fontSize: 11,
-    fontWeight: "700",
     color: colors.textMuted,
   },
   stepTitleActive: {
     color: colors.text,
-    fontWeight: "800",
   },
   stepDocNumber: {
+    fontFamily: fonts.medium,
     fontSize: 9,
-    fontWeight: "600",
     color: colors.textSecondary,
     marginTop: 2,
     textAlign: "center",
   },
   statusPaidText: {
     color: colors.success,
-    fontWeight: "800",
+    fontFamily: fonts.bold,
   },
   statusUnpaidText: {
     color: colors.warning,
-    fontWeight: "800",
+    fontFamily: fonts.bold,
   },
   connector: {
     flex: 1,

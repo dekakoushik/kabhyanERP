@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, ViewStyle } from "react-native";
 import { colors } from "../theme/colors";
+import { fonts } from "../theme/typography";
 
 interface BadgeProps {
   label: string;
@@ -44,9 +45,9 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   text: {
-    fontSize: 11,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
+    fontSize: 10,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
 });

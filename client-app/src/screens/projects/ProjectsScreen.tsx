@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../theme/colors";
+import { fonts } from "../../theme/typography";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { EmptyState } from "../../components/EmptyState";
@@ -131,6 +132,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 10,
+    fontFamily: fonts.medium,
     fontSize: 13,
     color: colors.textSecondary,
   },
@@ -148,8 +150,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   projectName: {
-    fontSize: 16,
-    fontWeight: "800",
+    fontFamily: fonts.bold,
+    fontSize: 15,
     color: colors.text,
   },
   projectCode: {
@@ -159,7 +161,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   desc: {
-    fontSize: 13,
+    fontFamily: fonts.regular,
+    fontSize: 12,
     color: colors.textSecondary,
     lineHeight: 18,
     marginBottom: 8,
@@ -180,6 +183,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   metaText: {
+    fontFamily: fonts.regular,
     fontSize: 12,
     color: colors.textMuted,
   },
@@ -189,8 +193,8 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   viewLinkText: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: "700",
     color: colors.primary,
   },
 });

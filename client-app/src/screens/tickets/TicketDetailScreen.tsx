@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../theme/colors";
+import { fonts } from "../../theme/typography";
 import { Badge } from "../../components/Badge";
 import { portalApi, SupportTicket, TicketMessage } from "../../api/portal";
 
@@ -164,6 +165,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 10,
+    fontFamily: fonts.medium,
     fontSize: 13,
     color: colors.textSecondary,
   },
@@ -180,14 +182,13 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   ticketNum: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: "700",
     color: colors.primary,
-    fontFamily: "monospace",
   },
   subject: {
+    fontFamily: fonts.bold,
     fontSize: 15,
-    fontWeight: "800",
     color: colors.text,
   },
   messagesList: {
@@ -205,8 +206,8 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
   },
   senderName: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: "700",
     color: colors.textMuted,
     marginBottom: 3,
   },
@@ -226,6 +227,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 4,
   },
   messageText: {
+    fontFamily: fonts.regular,
     fontSize: 13,
     lineHeight: 18,
   },
@@ -236,6 +238,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   timeText: {
+    fontFamily: fonts.regular,
     fontSize: 10,
     color: colors.textMuted,
     marginTop: 3,
@@ -246,6 +249,7 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   emptyMessagesText: {
+    fontFamily: fonts.regular,
     fontSize: 12,
     color: colors.textMuted,
   },
@@ -267,6 +271,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     maxHeight: 100,
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: colors.text,
   },

@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../theme/colors";
+import { fonts } from "../../theme/typography";
 import { Card } from "../../components/Card";
 import { Button } from "../../components/Button";
 import { portalApi, ClientProfile } from "../../api/portal";
@@ -151,16 +152,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   avatarText: {
+    fontFamily: fonts.bold,
     color: colors.textLight,
     fontSize: 22,
-    fontWeight: "900",
   },
   userName: {
+    fontFamily: fonts.bold,
     fontSize: 18,
-    fontWeight: "800",
     color: colors.text,
   },
   userEmail: {
+    fontFamily: fonts.regular,
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 2,
@@ -175,8 +177,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   roleText: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: "800",
     color: colors.primary,
   },
   sectionHeader: {
@@ -184,8 +186,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   sectionTitle: {
+    fontFamily: fonts.bold,
     fontSize: 15,
-    fontWeight: "800",
     color: colors.text,
   },
   detailsCard: {
@@ -198,12 +200,13 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   label: {
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: colors.textSecondary,
   },
   value: {
+    fontFamily: fonts.medium,
     fontSize: 13,
-    fontWeight: "600",
     color: colors.text,
   },
   mono: {

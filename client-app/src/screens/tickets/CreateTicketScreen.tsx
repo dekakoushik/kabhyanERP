@@ -9,6 +9,7 @@ import {
   Alert,
 } from "react-native";
 import { colors } from "../../theme/colors";
+import { fonts } from "../../theme/typography";
 import { Card } from "../../components/Card";
 import { Button } from "../../components/Button";
 import { portalApi } from "../../api/portal";
@@ -130,11 +131,12 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
+    fontFamily: fonts.bold,
     fontSize: 18,
-    fontWeight: "800",
     color: colors.text,
   },
   subtitle: {
+    fontFamily: fonts.regular,
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 4,
@@ -142,8 +144,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   label: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: "700",
     color: colors.textSecondary,
     marginBottom: 6,
   },
@@ -170,14 +172,16 @@ const styles = StyleSheet.create({
     borderColor: colors.danger,
   },
   priorityText: {
+    fontFamily: fonts.medium,
     fontSize: 11,
-    fontWeight: "700",
     color: colors.textSecondary,
   },
   priorityTextActive: {
+    fontFamily: fonts.bold,
     color: colors.textLight,
   },
   priorityTextUrgent: {
+    fontFamily: fonts.bold,
     color: colors.textLight,
   },
   input: {
@@ -187,6 +191,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
+    fontFamily: fonts.regular,
     fontSize: 14,
     color: colors.text,
     marginBottom: 16,

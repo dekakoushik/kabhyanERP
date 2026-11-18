@@ -10,6 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
 import { colors } from "../../theme/colors";
+import { fonts } from "../../theme/typography";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
@@ -368,15 +369,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   conversionTitle: {
+    fontFamily: fonts.bold,
     fontSize: 14,
-    fontWeight: "800",
     color: "#6B21A8",
   },
   conversionSub: {
+    fontFamily: fonts.medium,
     fontSize: 11,
     color: "#7E22CE",
     marginTop: 2,
-    fontWeight: "500",
   },
   conversionBtn: {
     marginTop: 12,
@@ -390,11 +391,12 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   estNumber: {
+    fontFamily: fonts.bold,
     fontSize: 18,
-    fontWeight: "800",
     color: colors.text,
   },
   dateText: {
+    fontFamily: fonts.regular,
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 2,
@@ -417,20 +419,21 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   sectionTitle: {
+    fontFamily: fonts.bold,
     fontSize: 15,
-    fontWeight: "800",
     color: colors.text,
   },
   itemCard: {
     marginBottom: 10,
   },
   itemTitle: {
+    fontFamily: fonts.bold,
     fontSize: 14,
-    fontWeight: "700",
     color: colors.text,
     marginBottom: 4,
   },
   itemDescription: {
+    fontFamily: fonts.regular,
     fontSize: 12,
     color: colors.textSecondary,
     marginBottom: 6,
@@ -442,6 +445,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   itemQty: {
+    fontFamily: fonts.regular,
     fontSize: 12,
     color: colors.textSecondary,
   },
@@ -452,8 +456,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   gstBadgeText: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: "700",
     color: colors.primary,
   },
   itemDivider: {
@@ -467,15 +471,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   itemTaxable: {
+    fontFamily: fonts.regular,
     fontSize: 11,
     color: colors.textMuted,
   },
   itemTotal: {
+    fontFamily: fonts.bold,
     fontSize: 14,
-    fontWeight: "800",
     color: colors.text,
   },
   noItemsText: {
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: colors.textMuted,
     textAlign: "center",
@@ -484,8 +490,8 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   breakdownTitle: {
+    fontFamily: fonts.bold,
     fontSize: 14,
-    fontWeight: "800",
     color: colors.text,
     marginBottom: 12,
   },
@@ -496,12 +502,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   summaryLabel: {
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: colors.textSecondary,
   },
   summaryValue: {
+    fontFamily: fonts.medium,
     fontSize: 13,
-    fontWeight: "600",
     color: colors.text,
   },
   summaryDivider: {
@@ -510,13 +517,13 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   grossLabel: {
+    fontFamily: fonts.bold,
     fontSize: 15,
-    fontWeight: "800",
     color: colors.text,
   },
   grossValue: {
+    fontFamily: fonts.bold,
     fontSize: 18,
-    fontWeight: "900",
     color: colors.primary,
   },
 });

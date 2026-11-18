@@ -3,6 +3,7 @@ import { TouchableOpacity, View, Text, StyleSheet, Image } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../theme/colors";
+import { fonts } from "../theme/typography";
 import { DashboardScreen } from "../screens/dashboard/DashboardScreen";
 import { ProjectsScreen } from "../screens/projects/ProjectsScreen";
 import { TicketsScreen } from "../screens/tickets/TicketsScreen";
@@ -58,8 +59,8 @@ export const BottomTabNavigator: React.FC<{ navigation: any }> = ({ navigation }
           borderBottomColor: colors.border,
         },
         headerTitleStyle: {
+          fontFamily: fonts.bold,
           fontSize: 16,
-          fontWeight: "800",
           color: colors.text,
         },
         headerRight: renderHeaderRight,
@@ -79,8 +80,8 @@ export const BottomTabNavigator: React.FC<{ navigation: any }> = ({ navigation }
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: {
+          fontFamily: fonts.bold,
           fontSize: 11,
-          fontWeight: "700",
         },
       }}
     >
@@ -152,15 +153,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
   },
   avatarText: {
+    fontFamily: fonts.bold,
     color: colors.textLight,
     fontSize: 12,
-    fontWeight: "800",
   },
 });
