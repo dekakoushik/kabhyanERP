@@ -16,9 +16,16 @@ import { colors } from "../../theme/colors";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
-import { DocumentPipelineStepper } from "../../components/DocumentPipelineStepper";
-import { portalApi, DashboardResponse, Invoice, Project, Estimate, ProformaInvoice } from "../../api/portal";
+import {
+  portalApi,
+  DashboardResponse,
+  Invoice,
+  Project,
+  Estimate,
+  ProformaInvoice,
+} from "../../api/portal";
 import { useAuth } from "../../context/AuthContext";
+import { formatCurrency, formatDate } from "../../utils/date";
 
 export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { user } = useAuth();
@@ -54,7 +61,6 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
       const res = await portalApi.getPaymentLink(invoiceId);
       if (res.success && res.payment_link?.link_url) {
         await WebBrowser.openBrowserAsync(res.payment_link.link_url);
-        // Refresh dashboard on return to catch paid webhook status
         fetchDashboard();
       } else {
         Alert.alert("Notice", "Payment gateway is being prepared. Please contact support.");
@@ -77,255 +83,205 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
   const client = data?.client;
   const stats = data?.stats;
-  const recentInvoices = Array.isArray(data?.recent_invoices)
-    ? data.recent_invoices
-    : (data?.recent_invoices as any)?.data || [];
-  const projects = Array.isArray(data?.projects)
+
+  // Safe defensive filtering (defense-in-depth against drafts)
+  const recentInvoices: Invoice[] = (
+    Array.isArray(data?.recent_invoices)
+      ? data.recent_invoices
+      : (data?.recent_invoices as any)?.data || []
+  ).filter((inv: Invoice) => inv.status !== "draft");
+
+  const projects: Project[] = Array.isArray(data?.projects)
     ? data.projects
     : (data?.projects as any)?.data || [];
-  const activeEstimates: Estimate[] = Array.isArray(data?.active_estimates)
-    ? data.active_estimates
-    : [];
-  const activeProformas: ProformaInvoice[] = Array.isArray(data?.active_proformas)
-    ? data.active_proformas
-    : [];
+
+  const activeEstimates: Estimate[] = (
+    Array.isArray(data?.active_estimates) ? data.active_estimates : []
+  ).filter((est: Estimate) => est.status !== "draft");
+
+  const activeProformas: ProformaInvoice[] = (
+    Array.isArray(data?.active_proformas) ? data.active_proformas : []
+  ).filter((pi: ProformaInvoice) => pi.status !== "draft");
+
+  // Outstanding balance & Settled figures with full zero/NaN defense
+  const outstandingBalance = stats?.total_due ?? stats?.unpaid_amount ?? 0;
+  const paidTotal =
+    stats?.paid_amount ?? Math.max(0, (stats?.total_invoiced ?? 0) - outstandingBalance);
+  const activeProjectsCount =
+    stats?.active_projects ??
+    projects.filter((p) => p.status === "in_progress" || p.status === "planning").length;
+  const openTicketsCount = stats?.open_tickets ?? 0;
+  const unpaidCount =
+    stats?.unpaid_invoices_count ??
+    recentInvoices.filter(
+      (i) => i.status === "unpaid" || i.status === "partially_paid" || i.status === "overdue"
+    ).length;
+
+  // Active milestone action (if any)
+  const pendingEst = activeEstimates.find((e) => e.status === "sent");
+  const pendingProforma = activeProformas.find(
+    (p) => p.status === "unpaid" || p.status === "partially_paid"
+  );
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[colors.primary]}
+        />
+      }
     >
-      {/* Welcome Banner */}
-      <Card style={styles.welcomeCard}>
-        <View style={styles.welcomeTopRow}>
-          <View style={styles.verifiedBadge}>
-            <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-            <Text style={styles.verifiedText}>Verified Corporate Account</Text>
+      {/* 1. Clean Header Greeting */}
+      <View style={styles.headerArea}>
+        <View style={styles.greetingCol}>
+          <Text style={styles.welcomeSub}>Welcome back,</Text>
+          <Text style={styles.clientTitle} numberOfLines={1}>
+            {client?.company_name || client?.name || user?.name || "Client Partner"}
+          </Text>
+        </View>
+        <View style={styles.headerBadges}>
+          <View style={styles.verifiedChip}>
+            <Ionicons name="checkmark-circle" size={13} color={colors.success} />
+            <Text style={styles.verifiedText}>Verified</Text>
           </View>
-          {client?.gstin && (
-            <Text style={styles.gstinText}>GSTIN: {client.gstin}</Text>
+          {client?.gstin ? (
+            <View style={styles.gstinChip}>
+              <Text style={styles.gstinText}>{client.gstin}</Text>
+            </View>
+          ) : null}
+        </View>
+      </View>
+
+      {/* 2. Hero Account Health Card */}
+      <View style={styles.heroBalanceCard}>
+        <View style={styles.heroTopRow}>
+          <Text style={styles.heroLabel}>Outstanding Balance</Text>
+          {outstandingBalance > 0 ? (
+            <View style={styles.dueBadge}>
+              <Ionicons name="alert-circle" size={13} color={colors.warning} />
+              <Text style={styles.dueBadgeText}>
+                {unpaidCount > 0 ? `${unpaidCount} due` : "Payment Pending"}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.settledBadge}>
+              <Ionicons name="checkmark-circle" size={13} color={colors.success} />
+              <Text style={styles.settledBadgeText}>All Settled</Text>
+            </View>
           )}
         </View>
 
-        <Text style={styles.companyName}>
-          {client?.company_name || client?.name || user?.name || "Client Partner"}
-        </Text>
-        <Text style={styles.welcomeSubtitle}>
-          Track active milestones, review deliverables, manage proforma & tax invoices, and approve project scope.
-        </Text>
-      </Card>
+        <Text style={styles.heroAmount}>{formatCurrency(outstandingBalance)}</Text>
 
-      {/* KPI Metric Cards Grid */}
-      <View style={styles.metricsGrid}>
-        {/* Outstanding Balance */}
-        <View style={[styles.metricCard, { borderLeftColor: (stats?.unpaid_amount || 0) > 0 ? colors.warning : colors.success }]}>
-          <Text style={styles.metricLabel}>Outstanding Balance</Text>
-          <Text style={[styles.metricValue, { color: (stats?.unpaid_amount || 0) > 0 ? colors.warning : colors.success }]}>
-            ₹{Number(stats?.unpaid_amount || 0).toLocaleString()}
-          </Text>
-          <Text style={styles.metricSub}>{stats?.unpaid_invoices_count || 0} invoice(s) due</Text>
-        </View>
+        <View style={styles.heroDivider} />
 
-        {/* Paid Revenue */}
-        <View style={[styles.metricCard, { borderLeftColor: colors.success }]}>
-          <Text style={styles.metricLabel}>Total Settled</Text>
-          <Text style={[styles.metricValue, { color: colors.success }]}>
-            ₹{Number(stats?.paid_amount || 0).toLocaleString()}
+        <View style={styles.heroFooter}>
+          <Text style={styles.heroFooterText}>
+            {outstandingBalance > 0
+              ? "Pending milestone invoice settlement"
+              : "All project invoices up to date"}
           </Text>
-          <Text style={styles.metricSub}>Lifetime payments</Text>
-        </View>
-
-        {/* Active Projects */}
-        <View style={[styles.metricCard, { borderLeftColor: colors.primary }]}>
-          <Text style={styles.metricLabel}>Active Projects</Text>
-          <Text style={[styles.metricValue, { color: colors.primary }]}>
-            {stats?.active_projects || 0}
-          </Text>
-          <Text style={styles.metricSub}>Ongoing deliverables</Text>
-        </View>
-
-        {/* Open Tickets */}
-        <View style={[styles.metricCard, { borderLeftColor: colors.purple }]}>
-          <Text style={styles.metricLabel}>Support Tickets</Text>
-          <Text style={[styles.metricValue, { color: colors.purple }]}>
-            {stats?.open_tickets || 0}
-          </Text>
-          <Text style={styles.metricSub}>Active inquiries</Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("InvoicesTab")}
+            activeOpacity={0.8}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={styles.heroActionBtnText}>
+              {outstandingBalance > 0 ? "View Invoices →" : "History →"}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Quick Action Navigation Buttons */}
-      <View style={styles.quickActionsContainer}>
-        <TouchableOpacity
-          style={styles.quickActionBtn}
-          onPress={() => navigation.navigate("InvoicesTab")}
-        >
-          <View style={[styles.actionIconBg, { backgroundColor: colors.primaryLight }]}>
-            <Ionicons name="receipt-outline" size={20} color={colors.primary} />
-          </View>
-          <Text style={styles.actionBtnLabel}>Invoices</Text>
-        </TouchableOpacity>
+      {/* 3. Crisp Secondary Metrics Row */}
+      <View style={styles.statsStrip}>
+        <View style={styles.statChip}>
+          <Text style={styles.statLabel}>Paid to Date</Text>
+          <Text style={[styles.statValue, { color: colors.success }]}>
+            {formatCurrency(paidTotal)}
+          </Text>
+        </View>
+
+        <View style={styles.statDivider} />
 
         <TouchableOpacity
-          style={styles.quickActionBtn}
+          style={styles.statChip}
           onPress={() => navigation.navigate("ProjectsTab")}
+          activeOpacity={0.7}
         >
-          <View style={[styles.actionIconBg, { backgroundColor: colors.infoBg }]}>
-            <Ionicons name="briefcase-outline" size={20} color={colors.info} />
-          </View>
-          <Text style={styles.actionBtnLabel}>Projects</Text>
+          <Text style={styles.statLabel}>Active Projects</Text>
+          <Text style={[styles.statValue, { color: colors.primary }]}>
+            {activeProjectsCount}
+          </Text>
         </TouchableOpacity>
 
+        <View style={styles.statDivider} />
+
         <TouchableOpacity
-          style={styles.quickActionBtn}
-          onPress={() => navigation.navigate("EstimatesTab")}
+          style={styles.statChip}
+          onPress={() => navigation.navigate("TicketsTab")}
+          activeOpacity={0.7}
         >
-          <View style={[styles.actionIconBg, { backgroundColor: colors.warningBg }]}>
+          <Text style={styles.statLabel}>Support</Text>
+          <Text style={[styles.statValue, { color: colors.purple }]}>
+            {openTicketsCount > 0 ? `${openTicketsCount} open` : "Clear"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* 4. Action Required Milestone Banner (Conditional) */}
+      {pendingEst ? (
+        <TouchableOpacity
+          style={styles.actionBanner}
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate("EstimateDetail", { estimateId: pendingEst.id })}
+        >
+          <View style={[styles.actionBannerIconBg, { backgroundColor: colors.warningBg }]}>
             <Ionicons name="document-text-outline" size={20} color={colors.warning} />
           </View>
-          <Text style={styles.actionBtnLabel}>Quotes</Text>
+          <View style={styles.actionBannerContent}>
+            <View style={styles.actionBannerHeadingRow}>
+              <Text style={styles.actionBannerTitle}>Proposal Awaiting Review</Text>
+              <Badge label="REVIEW" variant="warning" />
+            </View>
+            <Text style={styles.actionBannerSub}>
+              {pendingEst.estimate_number} • {formatCurrency(pendingEst.total_amount ?? pendingEst.total ?? 0)}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </TouchableOpacity>
-
+      ) : pendingProforma ? (
         <TouchableOpacity
-          style={styles.quickActionBtn}
-          onPress={() => navigation.navigate("TicketsTab")}
+          style={styles.actionBanner}
+          activeOpacity={0.85}
+          onPress={() =>
+            navigation.navigate("InvoiceDetail", {
+              proformaId: pendingProforma.id,
+              type: "proforma",
+            })
+          }
         >
-          <View style={[styles.actionIconBg, { backgroundColor: colors.purpleBg }]}>
-            <Ionicons name="help-buoy-outline" size={20} color={colors.purple} />
+          <View style={[styles.actionBannerIconBg, { backgroundColor: colors.purpleBg }]}>
+            <Ionicons name="flash-outline" size={20} color={colors.purple} />
           </View>
-          <Text style={styles.actionBtnLabel}>Support</Text>
+          <View style={styles.actionBannerContent}>
+            <View style={styles.actionBannerHeadingRow}>
+              <Text style={styles.actionBannerTitle}>Active Milestone Proforma</Text>
+              <Badge label="IN PROGRESS" variant="purple" />
+            </View>
+            <Text style={styles.actionBannerSub}>
+              {pendingProforma.proforma_number} • {formatCurrency(pendingProforma.total_amount ?? 0)}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </TouchableOpacity>
-      </View>
+      ) : null}
 
-      {/* Ongoing Commercial Pipeline Section */}
-      {(activeEstimates.length > 0 || activeProformas.length > 0) && (
-        <View style={styles.pipelineSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Ongoing Works & Milestones</Text>
-            <TouchableOpacity onPress={() => navigation.navigate("InvoicesTab")}>
-              <Text style={styles.viewAllText}>Invoices Hub</Text>
-            </TouchableOpacity>
-          </View>
-
-          {activeProformas.slice(0, 2).map((pi) => {
-            const linkedTax = pi.tax_invoices && pi.tax_invoices[0];
-            const isFullyInvoiced = pi.status === "fully_invoiced" || Boolean(linkedTax);
-
-            return (
-              <Card key={`pi-${pi.id}`} style={styles.pipelineCard}>
-                <View style={styles.pipelineHeader}>
-                  <View style={{ flex: 1, marginRight: 8 }}>
-                    <Text style={styles.pipelineDocNumber}>{pi.proforma_number}</Text>
-                    <Text style={styles.pipelineSub}>
-                      {isFullyInvoiced
-                        ? `Converted to Tax Invoice #${linkedTax?.invoice_number || ""}`
-                        : "Preliminary mobilization proforma for active milestone"}
-                    </Text>
-                  </View>
-                  <Badge
-                    label={isFullyInvoiced ? (linkedTax?.status === "paid" ? "TAX INV: PAID" : "TAX INV: UNPAID") : "PROFORMA ACTIVE"}
-                    variant={linkedTax?.status === "paid" ? "success" : isFullyInvoiced ? "warning" : "purple"}
-                  />
-                </View>
-
-                <DocumentPipelineStepper
-                  currentStep={isFullyInvoiced ? "invoice" : "proforma"}
-                  estimateNumber={pi.estimate?.estimate_number}
-                  estimateId={pi.estimate?.id}
-                  proformaNumber={pi.proforma_number}
-                  proformaId={pi.id}
-                  invoiceNumber={linkedTax?.invoice_number}
-                  invoiceId={linkedTax?.id}
-                  invoiceStatus={linkedTax?.status}
-                  onNavigate={(type, id) => {
-                    if (type === "estimate") {
-                      navigation.navigate("EstimateDetail", { estimateId: id });
-                    } else if (type === "proforma") {
-                      navigation.navigate("InvoiceDetail", { proformaId: id, type: "proforma" });
-                    } else if (type === "invoice") {
-                      navigation.navigate("InvoiceDetail", { invoiceId: id, type: "tax" });
-                    }
-                  }}
-                />
-
-                <View style={styles.pipelineFooter}>
-                  <View>
-                    <Text style={styles.pipelineAmountLabel}>Milestone Value</Text>
-                    <Text style={styles.pipelineAmount}>₹{Number(pi.total_amount).toLocaleString()}</Text>
-                  </View>
-                  <Button
-                    title={isFullyInvoiced ? "View Tax Invoice →" : "View Proforma →"}
-                    variant={isFullyInvoiced && linkedTax?.status !== "paid" ? "primary" : "outline"}
-                    onPress={() => {
-                      if (isFullyInvoiced && linkedTax) {
-                        navigation.navigate("InvoiceDetail", { invoiceId: linkedTax.id, type: "tax" });
-                      } else {
-                        navigation.navigate("InvoiceDetail", { proformaId: pi.id, type: "proforma" });
-                      }
-                    }}
-                    style={styles.pipelineBtn}
-                  />
-                </View>
-              </Card>
-            );
-          })}
-
-          {activeEstimates.slice(0, 1).map((est) => {
-            const linkedPI = est.proforma_invoices && est.proforma_invoices[0];
-            const isConverted = est.status === "invoiced" || Boolean(linkedPI);
-
-            return (
-              <Card key={`est-${est.id}`} style={styles.pipelineCard}>
-                <View style={styles.pipelineHeader}>
-                  <View style={{ flex: 1, marginRight: 8 }}>
-                    <Text style={styles.pipelineDocNumber}>{est.estimate_number}</Text>
-                    <Text style={styles.pipelineSub}>
-                      {isConverted
-                        ? `Scope mobilized under Proforma #${linkedPI?.proforma_number || ""}`
-                        : "Scope quotation pending client approval"}
-                    </Text>
-                  </View>
-                  <Badge
-                    label={isConverted ? "CONVERTED TO PI" : est.status.toUpperCase()}
-                    variant={isConverted ? "purple" : est.status === "accepted" ? "success" : "warning"}
-                  />
-                </View>
-
-                <DocumentPipelineStepper
-                  currentStep="estimate"
-                  estimateNumber={est.estimate_number}
-                  estimateId={est.id}
-                  proformaNumber={linkedPI?.proforma_number}
-                  proformaId={linkedPI?.id}
-                  onNavigate={(type, id) => {
-                    if (type === "estimate") {
-                      navigation.navigate("EstimateDetail", { estimateId: id });
-                    } else if (type === "proforma") {
-                      navigation.navigate("InvoiceDetail", { proformaId: id, type: "proforma" });
-                    }
-                  }}
-                />
-
-                <View style={styles.pipelineFooter}>
-                  <View>
-                    <Text style={styles.pipelineAmountLabel}>Scope Total</Text>
-                    <Text style={styles.pipelineAmount}>₹{Number(est.total).toLocaleString()}</Text>
-                  </View>
-                  <Button
-                    title={isConverted ? "View Progression →" : "Review Scope →"}
-                    variant={isConverted ? "outline" : "success"}
-                    onPress={() => navigation.navigate("EstimateDetail", { estimateId: est.id })}
-                    style={styles.pipelineBtn}
-                  />
-                </View>
-              </Card>
-            );
-          })}
-        </View>
-      )}
-
-      {/* Recent Invoices Section */}
+      {/* 5. Recent Invoices Section */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Recent Invoices</Text>
         <TouchableOpacity onPress={() => navigation.navigate("InvoicesTab")}>
@@ -335,53 +291,74 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
       {recentInvoices.length === 0 ? (
         <Card style={styles.emptyCard}>
-          <Ionicons name="receipt-outline" size={28} color={colors.textMuted} />
+          <Ionicons name="receipt-outline" size={26} color={colors.textMuted} />
           <Text style={styles.emptyCardTitle}>No Invoices Issued Yet</Text>
-          <Text style={styles.emptyCardSub}>When tax invoices are generated for milestones, they will appear here.</Text>
+          <Text style={styles.emptyCardSub}>
+            Tax invoices generated for project milestones will appear here.
+          </Text>
         </Card>
       ) : (
-        recentInvoices.map((inv: Invoice) => {
+        recentInvoices.slice(0, 3).map((inv: Invoice) => {
           const isPaid = inv.status === "paid";
           const isPaying = payingInvoiceId === inv.id;
 
           return (
-            <Card key={inv.id} style={styles.invoiceCard}>
-              <View style={styles.invoiceHeader}>
-                <View>
-                  <Text style={styles.invoiceNumber}>{inv.invoice_number}</Text>
-                  <Text style={styles.invoiceDate}>Due: {inv.due_date || "Upon receipt"}</Text>
-                </View>
-                <Badge
-                  label={(inv.status || "pending").replace("_", " ")}
-                  variant={isPaid ? "success" : inv.status === "overdue" ? "danger" : "warning"}
-                />
-              </View>
-
-              <View style={styles.invoiceDivider} />
-
-              <View style={styles.invoiceBottomRow}>
-                <View>
-                  <Text style={styles.invoiceAmountLabel}>Total Gross</Text>
-                  <Text style={styles.invoiceAmount}>₹{Number(inv.total).toLocaleString()}</Text>
-                </View>
-
-                {!isPaid && (
-                  <Button
-                    title="Pay Now"
-                    onPress={() => handlePayInvoice(inv.id)}
-                    loading={isPaying}
-                    variant="primary"
-                    icon={<Ionicons name="card-outline" size={16} color={colors.textLight} />}
-                    style={styles.payButton}
+            <TouchableOpacity
+              key={inv.id}
+              activeOpacity={0.85}
+              onPress={() =>
+                navigation.navigate("InvoiceDetail", { invoiceId: inv.id, type: "tax" })
+              }
+            >
+              <Card style={styles.invoiceCard}>
+                <View style={styles.invoiceTopRow}>
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <Text style={styles.invoiceNumber}>{inv.invoice_number}</Text>
+                    <Text style={styles.invoiceDate}>
+                      {inv.due_date
+                        ? `Due: ${formatDate(inv.due_date)}`
+                        : `Date: ${formatDate(inv.invoice_date)}`}
+                    </Text>
+                  </View>
+                  <Badge
+                    label={(inv.status || "pending").replace("_", " ").toUpperCase()}
+                    variant={isPaid ? "success" : inv.status === "overdue" ? "danger" : "warning"}
                   />
-                )}
-              </View>
-            </Card>
+                </View>
+
+                <View style={styles.invoiceDivider} />
+
+                <View style={styles.invoiceBottomRow}>
+                  <View>
+                    <Text style={styles.invoiceAmountLabel}>Amount</Text>
+                    <Text style={styles.invoiceAmount}>
+                      {formatCurrency(inv.total_amount ?? inv.total ?? 0)}
+                    </Text>
+                  </View>
+
+                  {!isPaid ? (
+                    <Button
+                      title="Pay Now"
+                      onPress={() => handlePayInvoice(inv.id)}
+                      loading={isPaying}
+                      variant="primary"
+                      icon={<Ionicons name="card-outline" size={14} color={colors.textLight} />}
+                      style={styles.payButton}
+                    />
+                  ) : (
+                    <View style={styles.paidIndicator}>
+                      <Ionicons name="checkmark-done" size={14} color={colors.success} />
+                      <Text style={styles.paidIndicatorText}>Settled</Text>
+                    </View>
+                  )}
+                </View>
+              </Card>
+            </TouchableOpacity>
           );
         })
       )}
 
-      {/* Active Projects Section */}
+      {/* 6. Active Projects Section */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Active Projects</Text>
         <TouchableOpacity onPress={() => navigation.navigate("ProjectsTab")}>
@@ -391,31 +368,45 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
       {projects.length === 0 ? (
         <Card style={styles.emptyCard}>
-          <Ionicons name="briefcase-outline" size={28} color={colors.textMuted} />
+          <Ionicons name="briefcase-outline" size={26} color={colors.textMuted} />
           <Text style={styles.emptyCardTitle}>No Active Projects</Text>
-          <Text style={styles.emptyCardSub}>Active technology engagements and project sprints will appear here.</Text>
+          <Text style={styles.emptyCardSub}>
+            Technology engagements and sprints will appear here.
+          </Text>
         </Card>
       ) : (
-        projects.slice(0, 3).map((proj: Project) => (
-          <Card key={proj.id} style={styles.projectCard}>
-            <View style={styles.projectHeader}>
-              <Text style={styles.projectName}>{proj.name}</Text>
-              <Badge label={(proj.status || "active").replace("_", " ")} variant="info" />
-            </View>
-            {proj.description && (
-              <Text style={styles.projectDesc} numberOfLines={2}>
-                {proj.description}
-              </Text>
-            )}
-            <View style={styles.projectFooter}>
-              <View style={styles.projectMeta}>
-                <Ionicons name="calendar-outline" size={14} color={colors.textMuted} />
-                <Text style={styles.projectMetaText}>
-                  {proj.deadline ? `Target: ${proj.deadline}` : "Ongoing Scope"}
+        projects.slice(0, 2).map((proj: Project) => (
+          <TouchableOpacity
+            key={proj.id}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate("ProjectDetail", { projectId: proj.id })}
+          >
+            <Card style={styles.projectCard}>
+              <View style={styles.projectHeader}>
+                <Text style={styles.projectName} numberOfLines={1}>
+                  {proj.name}
                 </Text>
+                <Badge
+                  label={(proj.status || "active").replace("_", " ").toUpperCase()}
+                  variant="info"
+                />
               </View>
-            </View>
-          </Card>
+              {proj.description ? (
+                <Text style={styles.projectDesc} numberOfLines={2}>
+                  {proj.description}
+                </Text>
+              ) : null}
+              <View style={styles.projectFooter}>
+                <View style={styles.projectMeta}>
+                  <Ionicons name="calendar-outline" size={13} color={colors.textMuted} />
+                  <Text style={styles.projectMetaText}>
+                    {proj.deadline ? `Target: ${formatDate(proj.deadline)}` : "Ongoing Engagement"}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+              </View>
+            </Card>
+          </TouchableOpacity>
         ))
       )}
     </ScrollView>
@@ -429,7 +420,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 28,
   },
   centerContainer: {
     flex: 1,
@@ -443,19 +434,37 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontWeight: "600",
   },
-  welcomeCard: {
-    backgroundColor: colors.card,
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 16,
-  },
-  welcomeTopRow: {
+
+  // 1. Clean Header Area
+  headerArea: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 8,
+    marginBottom: 16,
+    paddingHorizontal: 2,
   },
-  verifiedBadge: {
+  greetingCol: {
+    flex: 1,
+    marginRight: 10,
+  },
+  welcomeSub: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  clientTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: colors.text,
+    marginTop: 2,
+  },
+  headerBadges: {
+    alignItems: "flex-end",
+    gap: 4,
+  },
+  verifiedChip: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: colors.successBg,
@@ -471,94 +480,204 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: colors.success,
   },
-  gstinText: {
-    fontSize: 10,
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-    color: colors.textMuted,
-  },
-  companyName: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: colors.text,
-    marginBottom: 4,
-  },
-  welcomeSubtitle: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-  metricsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-    marginBottom: 16,
-  },
-  metricCard: {
-    width: "48%",
+  gstinChip: {
     backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 14,
+    borderColor: colors.border,
+    borderWidth: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  gstinText: {
+    fontSize: 9,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    color: colors.textSecondary,
+    fontWeight: "600",
+  },
+
+  // 2. Hero Account Health Card
+  heroBalanceCard: {
+    backgroundColor: colors.card,
+    borderRadius: 20,
+    padding: 18,
     borderWidth: 1,
     borderColor: colors.border,
-    borderLeftWidth: 4,
+    marginBottom: 14,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
-    shadowRadius: 2,
+    shadowRadius: 4,
     elevation: 2,
   },
-  metricLabel: {
+  heroTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  heroLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: colors.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  dueBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.warningBg,
+    borderColor: colors.warningBorder,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    gap: 4,
+  },
+  dueBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: colors.warning,
+  },
+  settledBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.successBg,
+    borderColor: colors.successBorder,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    gap: 4,
+  },
+  settledBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: colors.success,
+  },
+  heroAmount: {
+    fontSize: 30,
+    fontWeight: "800",
+    color: colors.text,
+    letterSpacing: -0.5,
+    marginVertical: 4,
+  },
+  heroDivider: {
+    height: 1,
+    backgroundColor: colors.borderLight,
+    marginVertical: 12,
+  },
+  heroFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  heroFooterText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: "500",
+    flex: 1,
+    marginRight: 8,
+  },
+  heroActionBtnText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: colors.primary,
+  },
+
+  // 3. Crisp Secondary Metrics Row
+  statsStrip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  statChip: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: colors.borderLight,
+  },
+  statLabel: {
     fontSize: 10,
     fontWeight: "700",
     color: colors.textMuted,
-    letterSpacing: 0.5,
-    marginBottom: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+    marginBottom: 3,
   },
-  metricValue: {
-    fontSize: 18,
+  statValue: {
+    fontSize: 15,
     fontWeight: "800",
-    marginBottom: 2,
   },
-  metricSub: {
-    fontSize: 11,
-    color: colors.textSecondary,
-  },
-  quickActionsContainer: {
+
+  // 4. Action Required Banner
+  actionBanner: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
+    alignItems: "center",
     backgroundColor: colors.card,
-    padding: 14,
     borderRadius: 16,
+    padding: 14,
     borderWidth: 1,
     borderColor: colors.border,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  quickActionBtn: {
-    alignItems: "center",
-    flex: 1,
-  },
-  actionIconBg: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+  actionBannerIconBg: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 6,
+    marginRight: 12,
   },
-  actionBtnLabel: {
-    fontSize: 11,
+  actionBannerContent: {
+    flex: 1,
+  },
+  actionBannerHeadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 2,
+  },
+  actionBannerTitle: {
+    fontSize: 13,
     fontWeight: "700",
+    color: colors.text,
+  },
+  actionBannerSub: {
+    fontSize: 11,
     color: colors.textSecondary,
   },
+
+  // Section Headers
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 10,
-    marginTop: 8,
+    marginTop: 4,
+    paddingHorizontal: 2,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "800",
     color: colors.text,
   },
@@ -567,28 +686,34 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.primary,
   },
+
+  // Empty State
   emptyCard: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 24,
+    paddingVertical: 22,
+    marginBottom: 12,
   },
   emptyCardTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: colors.text,
     marginTop: 8,
   },
   emptyCardSub: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textSecondary,
     textAlign: "center",
-    marginTop: 4,
+    marginTop: 3,
     maxWidth: 240,
   },
+
+  // Invoices List
   invoiceCard: {
     marginBottom: 10,
+    padding: 14,
   },
-  invoiceHeader: {
+  invoiceTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
@@ -614,29 +739,50 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   invoiceAmountLabel: {
-    fontSize: 10,
+    fontSize: 9,
     color: colors.textMuted,
-    fontWeight: "600",
+    fontWeight: "700",
     textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   invoiceAmount: {
     fontSize: 16,
     fontWeight: "800",
     color: colors.text,
+    marginTop: 1,
   },
   payButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
   },
+  paidIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.successBg,
+    borderColor: colors.successBorder,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  paidIndicatorText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: colors.success,
+  },
+
+  // Projects List
   projectCard: {
     marginBottom: 10,
+    padding: 14,
   },
   projectHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   projectName: {
     fontSize: 14,
@@ -646,7 +792,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   projectDesc: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textSecondary,
     lineHeight: 16,
     marginBottom: 8,
@@ -655,6 +801,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    marginTop: 2,
   },
   projectMeta: {
     flexDirection: "row",
@@ -664,53 +811,5 @@ const styles = StyleSheet.create({
   projectMetaText: {
     fontSize: 11,
     color: colors.textMuted,
-  },
-  pipelineSection: {
-    marginBottom: 16,
-  },
-  pipelineCard: {
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  pipelineHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 12,
-  },
-  pipelineDocNumber: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: colors.text,
-  },
-  pipelineSub: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  pipelineFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
-  },
-  pipelineAmountLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: colors.textMuted,
-    textTransform: "uppercase",
-  },
-  pipelineAmount: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: colors.text,
-  },
-  pipelineBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
   },
 });

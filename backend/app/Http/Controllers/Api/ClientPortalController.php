@@ -94,13 +94,24 @@ class ClientPortalController extends Controller
             ->take(3)
             ->get();
 
+        $invoicesQuery = Invoice::where('client_email', $client->email)
+            ->where('status', '!=', 'draft');
+        $totalInvoiced = (float) (clone $invoicesQuery)->sum('total_amount');
+        $totalDue = (float) (clone $invoicesQuery)->sum('due_amount');
+        $totalPaid = (float) (clone $invoicesQuery)->sum('paid_amount');
+        $unpaidCount = (clone $invoicesQuery)->whereIn('status', ['unpaid', 'partially_paid', 'overdue'])->count();
+
         $stats = [
             'total_projects' => $projects->count(),
             'active_projects' => $projects->whereIn('status', ['planning', 'in_progress'])->count(),
             'completed_projects' => $projects->where('status', 'completed')->count(),
             'open_tickets' => Ticket::where('client_id', $client->id)->whereIn('status', ['open', 'in_progress', 'awaiting_client_reply'])->count(),
-            'total_invoiced' => (float) Invoice::where('client_email', $client->email)->sum('total_amount'),
-            'total_due' => (float) Invoice::where('client_email', $client->email)->sum('due_amount'),
+            'total_invoiced' => $totalInvoiced,
+            'total_due' => $totalDue,
+            'unpaid_amount' => $totalDue,
+            'paid_amount' => $totalPaid,
+            'unpaid_invoices_count' => $unpaidCount,
+            'total_invoices' => (clone $invoicesQuery)->count(),
         ];
 
         return response()->json([

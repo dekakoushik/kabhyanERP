@@ -24,12 +24,14 @@ export interface ClientProfile {
 }
 
 export interface DashboardStats {
-  total_invoices: number;
-  unpaid_invoices_count: number;
-  unpaid_amount: number;
-  paid_amount: number;
-  active_projects: number;
-  open_tickets: number;
+  total_invoices?: number;
+  unpaid_invoices_count?: number;
+  unpaid_amount?: number;
+  paid_amount?: number;
+  active_projects?: number;
+  open_tickets?: number;
+  total_due?: number;
+  total_invoiced?: number;
 }
 
 export interface InvoiceItem {
