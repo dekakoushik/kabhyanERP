@@ -46,12 +46,24 @@ class AppServiceProvider extends ServiceProvider
         // Auto-run pending migrations and auto-heal schema constraints seamlessly without manual CLI commands
         try {
             if (Schema::hasTable('migrations')) {
-                // 1. Instantly drop PostgreSQL status check constraint if present
+                // 1. Instantly drop PostgreSQL status check constraint if present and drop not-null on line items
                 if (\Illuminate\Support\Facades\DB::getDriverName() === 'pgsql') {
                     try {
                         \Illuminate\Support\Facades\DB::statement('ALTER TABLE proforma_invoices DROP CONSTRAINT IF EXISTS proforma_invoices_status_check');
                         if (Schema::hasTable('business_associates')) {
                             \Illuminate\Support\Facades\DB::statement('ALTER TABLE business_associates ALTER COLUMN email DROP NOT NULL');
+                        }
+                        if (Schema::hasTable('estimate_items')) {
+                            \Illuminate\Support\Facades\DB::statement('ALTER TABLE estimate_items ALTER COLUMN tax_rate DROP NOT NULL');
+                            \Illuminate\Support\Facades\DB::statement('ALTER TABLE estimate_items ALTER COLUMN tax_amount DROP NOT NULL');
+                        }
+                        if (Schema::hasTable('proforma_invoice_items')) {
+                            \Illuminate\Support\Facades\DB::statement('ALTER TABLE proforma_invoice_items ALTER COLUMN tax_rate DROP NOT NULL');
+                            \Illuminate\Support\Facades\DB::statement('ALTER TABLE proforma_invoice_items ALTER COLUMN tax_amount DROP NOT NULL');
+                        }
+                        if (Schema::hasTable('invoice_items')) {
+                            \Illuminate\Support\Facades\DB::statement('ALTER TABLE invoice_items ALTER COLUMN tax_rate DROP NOT NULL');
+                            \Illuminate\Support\Facades\DB::statement('ALTER TABLE invoice_items ALTER COLUMN tax_amount DROP NOT NULL');
                         }
                     } catch (\Throwable $e) {
                         // Safe ignore

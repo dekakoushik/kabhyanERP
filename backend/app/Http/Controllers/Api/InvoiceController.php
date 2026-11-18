@@ -197,8 +197,8 @@ class InvoiceController extends Controller
                         'quantity' => $item->quantity,
                         'unit' => $item->unit,
                         'unit_price' => $item->unit_price,
-                        'tax_rate' => $item->tax_rate ?? null,
-                        'tax_amount' => $item->tax_amount ?? null,
+                        'tax_rate' => $item->tax_rate ?? $proformaInvoice->tax_rate ?? 18.00,
+                        'tax_amount' => $item->tax_amount ?? 0.00,
                         'amount' => $item->amount,
                     ]);
                 }
@@ -275,13 +275,28 @@ class InvoiceController extends Controller
                     'bank_details' => $validated['bank_details'] ?? null,
                 ]);
 
+                $docTaxRate = isset($validated['tax_rate']) && $validated['tax_rate'] !== null && $validated['tax_rate'] !== ''
+                    ? (float) $validated['tax_rate']
+                    : 18.00;
+                $isInclusive = ($validated['tax_calculation_type'] ?? 'exclusive') === 'inclusive';
+
                 foreach ($validated['items'] as $item) {
                     $qty = (float) ($item['quantity'] ?? 1);
                     $unitPrice = (float) ($item['unit_price'] ?? 0);
                     $amount = $qty * $unitPrice;
                     $itemTaxRate = isset($item['tax_rate']) && $item['tax_rate'] !== null && $item['tax_rate'] !== ''
                         ? (float) $item['tax_rate']
-                        : null;
+                        : $docTaxRate;
+
+                    $itemTaxAmount = 0.00;
+                    if ($itemTaxRate > 0) {
+                        if ($isInclusive) {
+                            $taxable = round($amount / (1 + ($itemTaxRate / 100)), 2);
+                            $itemTaxAmount = round($amount - $taxable, 2);
+                        } else {
+                            $itemTaxAmount = round(($amount * $itemTaxRate) / 100, 2);
+                        }
+                    }
 
                     $newInvoice->items()->create([
                         'item_name' => $item['item_name'],
@@ -291,6 +306,7 @@ class InvoiceController extends Controller
                         'unit' => $item['unit'] ?? 'hours',
                         'unit_price' => $unitPrice,
                         'tax_rate' => $itemTaxRate,
+                        'tax_amount' => $itemTaxAmount,
                         'amount' => $amount,
                     ]);
                 }
@@ -405,17 +421,39 @@ class InvoiceController extends Controller
                 'bank_details' => $validated['bank_details'] ?? null,
             ]);
 
+            $docTaxRate = isset($validated['tax_rate']) && $validated['tax_rate'] !== null && $validated['tax_rate'] !== ''
+                ? (float) $validated['tax_rate']
+                : 18.00;
+            $isInclusive = ($validated['tax_calculation_type'] ?? 'exclusive') === 'inclusive';
+
             $invoice->items()->delete();
             foreach ($validated['items'] as $item) {
-                $amount = $item['quantity'] * $item['unit_price'];
+                $qty = (float) ($item['quantity'] ?? 1);
+                $unitPrice = (float) ($item['unit_price'] ?? 0);
+                $amount = $qty * $unitPrice;
+                $itemTaxRate = isset($item['tax_rate']) && $item['tax_rate'] !== null && $item['tax_rate'] !== ''
+                    ? (float) $item['tax_rate']
+                    : $docTaxRate;
+
+                $itemTaxAmount = 0.00;
+                if ($itemTaxRate > 0) {
+                    if ($isInclusive) {
+                        $taxable = round($amount / (1 + ($itemTaxRate / 100)), 2);
+                        $itemTaxAmount = round($amount - $taxable, 2);
+                    } else {
+                        $itemTaxAmount = round(($amount * $itemTaxRate) / 100, 2);
+                    }
+                }
+
                 $invoice->items()->create([
                     'item_name' => $item['item_name'],
                     'hsn_sac' => $item['hsn_sac'] ?? '998314',
                     'description' => $item['description'] ?? null,
-                    'quantity' => $item['quantity'],
+                    'quantity' => $qty,
                     'unit' => $item['unit'] ?? 'hours',
-                    'unit_price' => $item['unit_price'],
-                    'tax_rate' => $item['tax_rate'] ?? null,
+                    'unit_price' => $unitPrice,
+                    'tax_rate' => $itemTaxRate,
+                    'tax_amount' => $itemTaxAmount,
                     'amount' => $amount,
                 ]);
             }

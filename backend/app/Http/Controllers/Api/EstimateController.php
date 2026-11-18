@@ -100,13 +100,28 @@ class EstimateController extends Controller
                     'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
                 ]);
 
+                $docTaxRate = isset($validated['tax_rate']) && $validated['tax_rate'] !== null && $validated['tax_rate'] !== ''
+                    ? (float) $validated['tax_rate']
+                    : 18.00;
+                $isInclusive = ($validated['tax_calculation_type'] ?? 'exclusive') === 'inclusive';
+
                 foreach ($validated['items'] as $item) {
                     $qty = (float) ($item['quantity'] ?? 1);
                     $unitPrice = (float) ($item['unit_price'] ?? 0);
                     $amount = $qty * $unitPrice;
                     $itemTaxRate = isset($item['tax_rate']) && $item['tax_rate'] !== null && $item['tax_rate'] !== ''
                         ? (float) $item['tax_rate']
-                        : null;
+                        : $docTaxRate;
+
+                    $itemTaxAmount = 0.00;
+                    if ($itemTaxRate > 0) {
+                        if ($isInclusive) {
+                            $taxable = round($amount / (1 + ($itemTaxRate / 100)), 2);
+                            $itemTaxAmount = round($amount - $taxable, 2);
+                        } else {
+                            $itemTaxAmount = round(($amount * $itemTaxRate) / 100, 2);
+                        }
+                    }
 
                     $newEstimate->items()->create([
                         'item_name' => $item['item_name'],
@@ -116,6 +131,7 @@ class EstimateController extends Controller
                         'unit_price' => $unitPrice,
                         'amount' => $amount,
                         'tax_rate' => $itemTaxRate,
+                        'tax_amount' => $itemTaxAmount,
                     ]);
                 }
 
@@ -212,6 +228,11 @@ class EstimateController extends Controller
                 'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
             ]);
 
+            $docTaxRate = isset($validated['tax_rate']) && $validated['tax_rate'] !== null && $validated['tax_rate'] !== ''
+                ? (float) $validated['tax_rate']
+                : 18.00;
+            $isInclusive = ($validated['tax_calculation_type'] ?? 'exclusive') === 'inclusive';
+
             // Recreate items
             $estimate->items()->delete();
             foreach ($validated['items'] as $item) {
@@ -220,7 +241,17 @@ class EstimateController extends Controller
                 $amount = $qty * $unitPrice;
                 $itemTaxRate = isset($item['tax_rate']) && $item['tax_rate'] !== null && $item['tax_rate'] !== ''
                     ? (float) $item['tax_rate']
-                    : null;
+                    : $docTaxRate;
+
+                $itemTaxAmount = 0.00;
+                if ($itemTaxRate > 0) {
+                    if ($isInclusive) {
+                        $taxable = round($amount / (1 + ($itemTaxRate / 100)), 2);
+                        $itemTaxAmount = round($amount - $taxable, 2);
+                    } else {
+                        $itemTaxAmount = round(($amount * $itemTaxRate) / 100, 2);
+                    }
+                }
 
                 $estimate->items()->create([
                     'item_name' => $item['item_name'],
@@ -230,6 +261,7 @@ class EstimateController extends Controller
                     'unit_price' => $unitPrice,
                     'amount' => $amount,
                     'tax_rate' => $itemTaxRate,
+                    'tax_amount' => $itemTaxAmount,
                 ]);
             }
 
