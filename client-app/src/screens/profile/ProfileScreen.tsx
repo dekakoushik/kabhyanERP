@@ -55,18 +55,18 @@ export const ProfileScreen: React.FC = () => {
         <Text style={styles.userName}>{user?.name || "Client Partner"}</Text>
         <Text style={styles.userEmail}>{user?.email}</Text>
         <View style={styles.roleBadge}>
-          <Text style={styles.roleText}>Verified Client Account</Text>
+          <Text style={styles.roleText}>Client Account</Text>
         </View>
       </Card>
 
       {/* Corporate Metadata */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Corporate Coordinates</Text>
+        <Text style={styles.sectionTitle}>Company Details</Text>
       </View>
 
       <Card style={styles.detailsCard}>
         <View style={styles.row}>
-          <Text style={styles.label}>Company Entity</Text>
+          <Text style={styles.label}>Company Name</Text>
           <Text style={styles.value}>{profile?.company_name || profile?.name || "—"}</Text>
         </View>
 
@@ -80,14 +80,14 @@ export const ProfileScreen: React.FC = () => {
         <View style={styles.divider} />
 
         <View style={styles.row}>
-          <Text style={styles.label}>Income Tax PAN</Text>
+          <Text style={styles.label}>PAN</Text>
           <Text style={[styles.value, styles.mono]}>{profile?.pan || "—"}</Text>
         </View>
 
         <View style={styles.divider} />
 
         <View style={styles.row}>
-          <Text style={styles.label}>Registered Phone</Text>
+          <Text style={styles.label}>Phone</Text>
           <Text style={styles.value}>{profile?.phone || "—"}</Text>
         </View>
 
@@ -96,7 +96,7 @@ export const ProfileScreen: React.FC = () => {
         <View style={styles.row}>
           <Text style={styles.label}>Billing Address</Text>
           <Text style={[styles.value, { maxWidth: "60%", textAlign: "right" }]}>
-            {profile?.billing_address || profile?.city || "Registered Corporate Office"}
+            {profile?.billing_address || profile?.city || "—"}
           </Text>
         </View>
       </Card>

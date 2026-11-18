@@ -15,6 +15,7 @@ import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { EmptyState } from "../../components/EmptyState";
 import { portalApi, Project } from "../../api/portal";
+import { formatDate } from "../../utils/date";
 
 export const ProjectsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -77,7 +78,7 @@ export const ProjectsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             <View style={styles.metaCol}>
               <Ionicons name="calendar-outline" size={14} color={colors.textMuted} />
               <Text style={styles.metaText}>
-                {item.deadline ? `Due: ${item.deadline}` : "Ongoing Scope"}
+                {item.deadline ? `Due: ${formatDate(item.deadline)}` : "Ongoing"}
               </Text>
             </View>
 
@@ -96,7 +97,7 @@ export const ProjectsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
       {loading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Fetching project portfolio...</Text>
+          <Text style={styles.loadingText}>Loading projects...</Text>
         </View>
       ) : (
         <FlatList

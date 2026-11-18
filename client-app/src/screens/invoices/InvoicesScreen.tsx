@@ -355,7 +355,7 @@ export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           : [
               { key: "all", label: "All Proformas" },
               { key: "sent", label: "Pending Advance" },
-              { key: "paid", label: "Settled" },
+              { key: "paid", label: "Paid" },
               { key: "converted", label: "Converted" },
             ]
         ).map((tab) => {

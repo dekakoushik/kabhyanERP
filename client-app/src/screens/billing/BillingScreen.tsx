@@ -160,7 +160,7 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
               <View style={styles.historyLine}>
                 <Ionicons name="git-branch-outline" size={13} color={colors.primary} />
                 <Text style={styles.historyText} numberOfLines={1}>
-                  Lineage:{" "}
+                  From:{" "}
                   {item.history
                     .map((h: DocumentHistoryItem) =>
                       h.stage === "proforma" ? `PI #${h.number}` : `Quote #${h.number}`
@@ -175,15 +175,7 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
           {/* Card Footer with Direct Action */}
           <View style={styles.footerRow}>
-            <Text style={styles.footerHint}>
-              {isTax && isPaid
-                ? "Tax invoice paid & fully certified"
-                : isTax && !isPaid
-                ? "Tax invoice awaiting settlement"
-                : isProforma
-                ? "Preliminary milestone mobilization"
-                : "Quotation scope awaiting review"}
-            </Text>
+            <View style={{ flex: 1 }} />
 
             {isTax && !isPaid ? (
               <Button
@@ -233,10 +225,10 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       {/* Filter Chips Bar (Zero Tabs: Quick filter chips only) */}
       <View style={styles.filterBar}>
         {[
-          { key: "all", label: "All Documents" },
-          { key: "action_required", label: "Action Needed" },
+          { key: "all", label: "All" },
+          { key: "action_required", label: "Action Required" },
           { key: "unpaid", label: "Unpaid" },
-          { key: "settled", label: "Settled" },
+          { key: "settled", label: "Paid" },
         ].map((chip) => {
           const isSelected = statusFilter === chip.key;
           return (
@@ -258,7 +250,7 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       {loading && !refreshing ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading billing lifecycle records...</Text>
+          <Text style={styles.loadingText}>Loading billing records...</Text>
         </View>
       ) : (
         <FlatList
@@ -272,11 +264,11 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           ListEmptyComponent={
             <EmptyState
               icon="receipt-outline"
-              title="No Billing Records Found"
+              title="No Documents Yet"
               description={
                 searchQuery
-                  ? "No documents match your search criteria. Try a different term."
-                  : "Commercial proposals, proforma invoices, and tax invoices will appear here."
+                  ? "No documents match your search criteria."
+                  : "Your quotes and invoices will appear here."
               }
             />
           }
@@ -458,13 +450,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-  },
-  footerHint: {
-    fontSize: 11,
-    color: colors.textMuted,
-    fontWeight: "500",
-    flex: 1,
-    marginRight: 8,
   },
   payBtn: {
     paddingVertical: 6,

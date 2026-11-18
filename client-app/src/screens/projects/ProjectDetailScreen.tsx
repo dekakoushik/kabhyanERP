@@ -12,6 +12,7 @@ import { colors } from "../../theme/colors";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { portalApi, Project } from "../../api/portal";
+import { formatDate } from "../../utils/date";
 
 export const ProjectDetailScreen: React.FC<{ route: any }> = ({ route }) => {
   const { projectId } = route.params;
@@ -37,7 +38,7 @@ export const ProjectDetailScreen: React.FC<{ route: any }> = ({ route }) => {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Loading project milestones...</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
@@ -60,25 +61,25 @@ export const ProjectDetailScreen: React.FC<{ route: any }> = ({ route }) => {
         <View style={styles.timelineRow}>
           <View>
             <Text style={styles.metaLabel}>Start Date</Text>
-            <Text style={styles.metaValue}>{project.start_date || "Kickoff"}</Text>
+            <Text style={styles.metaValue}>{project.start_date ? formatDate(project.start_date) : "—"}</Text>
           </View>
           <View style={{ alignItems: "flex-end" }}>
             <Text style={styles.metaLabel}>Target Deadline</Text>
-            <Text style={styles.metaValue}>{project.deadline || "Continuous Scope"}</Text>
+            <Text style={styles.metaValue}>{project.deadline ? formatDate(project.deadline) : "Ongoing"}</Text>
           </View>
         </View>
       </Card>
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Scope Deliverables & Sprints</Text>
+        <Text style={styles.sectionTitle}>Deliverables</Text>
       </View>
 
       {deliverables.length === 0 ? (
         <Card style={styles.emptyCard}>
           <Ionicons name="checkmark-done-circle-outline" size={32} color={colors.textMuted} />
-          <Text style={styles.emptyTitle}>Deliverables in Motion</Text>
+          <Text style={styles.emptyTitle}>No deliverables yet</Text>
           <Text style={styles.emptySub}>
-            Sprints and milestone deliverables managed by Kabhyan's engineering team will appear here.
+            Project deliverables will appear here.
           </Text>
         </Card>
       ) : (

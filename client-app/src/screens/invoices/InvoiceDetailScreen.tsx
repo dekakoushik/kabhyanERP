@@ -201,9 +201,9 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
                 <Ionicons name="receipt" size={20} color={colors.primary} />
               </View>
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.taxInvCardTitle}>Official GST Tax Invoice Generated</Text>
+                <Text style={styles.taxInvCardTitle}>Tax Invoice Generated</Text>
                 <Text style={styles.taxInvCardSub}>
-                  Invoice #{latestTaxInv.invoice_number} • Issued on {formatDate(latestTaxInv.invoice_date)}
+                  Invoice #{latestTaxInv.invoice_number} • {formatDate(latestTaxInv.invoice_date)}
                 </Text>
               </View>
               <Badge
@@ -236,7 +236,7 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
             <Badge
               label={
                 isConverted
-                  ? "CONVERTED TO TAX INV"
+                  ? "INVOICED"
                   : (proforma.status || "pending").replace("_", " ")
               }
               variant={isConverted ? "purple" : "info"}
@@ -245,7 +245,7 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
 
           <View style={styles.advanceRow}>
             <View>
-              <Text style={styles.dueLabel}>Advance Scope Total</Text>
+              <Text style={styles.dueLabel}>Total Amount</Text>
               <Text style={styles.dueAmount}>{formatCurrency(proforma.total_amount || 0)}</Text>
             </View>
             {proforma.paid_amount ? (
@@ -391,10 +391,7 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           <View style={styles.originRow}>
             <Ionicons name="link-outline" size={18} color={colors.primary} />
             <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={styles.originTitle}>Originated from Proforma #{invoice.proforma_invoice.proforma_number}</Text>
-              <Text style={styles.originSub}>
-                Authorized milestone billing against client approved engagement scope.
-              </Text>
+              <Text style={styles.originTitle}>From Proforma #{invoice.proforma_invoice.proforma_number}</Text>
             </View>
             <Button
               title="View PI"
@@ -429,7 +426,7 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           <View style={styles.settledBox}>
             <Ionicons name="checkmark-circle" size={18} color={colors.success} />
             <Text style={styles.settledText}>
-              Payment Settled • Official Tax Receipt Active
+              Payment Completed
             </Text>
           </View>
         ) : (

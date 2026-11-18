@@ -143,36 +143,23 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
             {client?.company_name || client?.name || user?.name || "Client Partner"}
           </Text>
         </View>
-        <View style={styles.headerBadges}>
-          <View style={styles.verifiedChip}>
-            <Ionicons name="checkmark-circle" size={13} color={colors.success} />
-            <Text style={styles.verifiedText}>Verified</Text>
+        {client?.gstin ? (
+          <View style={styles.gstinChip}>
+            <Text style={styles.gstinText}>{client.gstin}</Text>
           </View>
-          {client?.gstin ? (
-            <View style={styles.gstinChip}>
-              <Text style={styles.gstinText}>{client.gstin}</Text>
-            </View>
-          ) : null}
-        </View>
+        ) : null}
       </View>
 
       {/* 2. Hero Account Health Card */}
       <View style={styles.heroBalanceCard}>
         <View style={styles.heroTopRow}>
           <Text style={styles.heroLabel}>Outstanding Balance</Text>
-          {outstandingBalance > 0 ? (
+          {outstandingBalance > 0 && unpaidCount > 0 ? (
             <View style={styles.dueBadge}>
               <Ionicons name="alert-circle" size={13} color={colors.warning} />
-              <Text style={styles.dueBadgeText}>
-                {unpaidCount > 0 ? `${unpaidCount} due` : "Payment Pending"}
-              </Text>
+              <Text style={styles.dueBadgeText}>{unpaidCount} due</Text>
             </View>
-          ) : (
-            <View style={styles.settledBadge}>
-              <Ionicons name="checkmark-circle" size={13} color={colors.success} />
-              <Text style={styles.settledBadgeText}>All Settled</Text>
-            </View>
-          )}
+          ) : null}
         </View>
 
         <Text style={styles.heroAmount}>{formatCurrency(outstandingBalance)}</Text>
@@ -182,8 +169,8 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         <View style={styles.heroFooter}>
           <Text style={styles.heroFooterText}>
             {outstandingBalance > 0
-              ? "Pending milestone invoice settlement"
-              : "All project invoices up to date"}
+              ? `${unpaidCount} invoice(s) awaiting payment`
+              : "No balance due"}
           </Text>
           <TouchableOpacity
             onPress={() => navigation.navigate("BillingTab")}
@@ -191,7 +178,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Text style={styles.heroActionBtnText}>
-              {outstandingBalance > 0 ? "View Billing →" : "History →"}
+              {outstandingBalance > 0 ? "Pay Invoices →" : "Billing History →"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -200,7 +187,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
       {/* 3. Crisp Secondary Metrics Row */}
       <View style={styles.statsStrip}>
         <View style={styles.statChip}>
-          <Text style={styles.statLabel}>Paid to Date</Text>
+          <Text style={styles.statLabel}>Total Paid</Text>
           <Text style={[styles.statValue, { color: colors.success }]}>
             {formatCurrency(paidTotal)}
           </Text>
@@ -292,9 +279,9 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
       {recentInvoices.length === 0 ? (
         <Card style={styles.emptyCard}>
           <Ionicons name="receipt-outline" size={26} color={colors.textMuted} />
-          <Text style={styles.emptyCardTitle}>No Invoices Issued Yet</Text>
+          <Text style={styles.emptyCardTitle}>No Invoices Yet</Text>
           <Text style={styles.emptyCardSub}>
-            Tax invoices generated for project milestones will appear here.
+            Invoices will appear here.
           </Text>
         </Card>
       ) : (
@@ -348,7 +335,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                   ) : (
                     <View style={styles.paidIndicator}>
                       <Ionicons name="checkmark-done" size={14} color={colors.success} />
-                      <Text style={styles.paidIndicatorText}>Settled</Text>
+                      <Text style={styles.paidIndicatorText}>Paid</Text>
                     </View>
                   )}
                 </View>
@@ -371,7 +358,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           <Ionicons name="briefcase-outline" size={26} color={colors.textMuted} />
           <Text style={styles.emptyCardTitle}>No Active Projects</Text>
           <Text style={styles.emptyCardSub}>
-            Technology engagements and sprints will appear here.
+            Projects will appear here.
           </Text>
         </Card>
       ) : (
@@ -400,7 +387,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                 <View style={styles.projectMeta}>
                   <Ionicons name="calendar-outline" size={13} color={colors.textMuted} />
                   <Text style={styles.projectMetaText}>
-                    {proj.deadline ? `Target: ${formatDate(proj.deadline)}` : "Ongoing Engagement"}
+                    {proj.deadline ? `Target: ${formatDate(proj.deadline)}` : "Ongoing"}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
@@ -460,26 +447,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginTop: 2,
   },
-  headerBadges: {
-    alignItems: "flex-end",
-    gap: 4,
-  },
-  verifiedChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.successBg,
-    borderColor: colors.successBorder,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-    gap: 4,
-  },
-  verifiedText: {
-    fontSize: 10,
-    fontWeight: "800",
-    color: colors.success,
-  },
   gstinChip: {
     backgroundColor: colors.card,
     borderColor: colors.border,
@@ -537,22 +504,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
     color: colors.warning,
-  },
-  settledBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.successBg,
-    borderColor: colors.successBorder,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    gap: 4,
-  },
-  settledBadgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: colors.success,
   },
   heroAmount: {
     fontSize: 30,
