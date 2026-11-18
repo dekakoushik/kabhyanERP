@@ -50,22 +50,30 @@ export const RootNavigator: React.FC = () => {
   useEffect(() => {
     if (!token) return;
 
-    // Handle case where app was launched from cold-start by clicking a notification
-    Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (response) {
-        handleNotificationNavigation(response);
-      }
-    });
+    try {
+      // Handle case where app was launched from cold-start by clicking a notification
+      Notifications.getLastNotificationResponseAsync()
+        .then((response) => {
+          if (response) {
+            handleNotificationNavigation(response);
+          }
+        })
+        .catch(() => {});
 
-    // Handle notification tap while app is backgrounded or active
-    responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
-      handleNotificationNavigation(response);
-    });
+      // Handle notification tap while app is backgrounded or active
+      responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
+        handleNotificationNavigation(response);
+      });
+    } catch (e) {
+      // Safe fallback in environments like Expo Go where listeners may be restricted
+    }
 
     return () => {
-      if (responseListener.current) {
-        responseListener.current.remove();
-      }
+      try {
+        if (responseListener.current) {
+          responseListener.current.remove();
+        }
+      } catch (e) {}
     };
   }, [token]);
 
