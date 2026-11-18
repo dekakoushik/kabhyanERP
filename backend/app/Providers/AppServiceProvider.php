@@ -97,69 +97,69 @@ class AppServiceProvider extends ServiceProvider
                     }
                 }
 
-                // Self-heal tax calculation mode on commercial pipelines (DB-agnostic)
-                if (Schema::hasTable('proforma_invoices') && Schema::hasTable('estimates')) {
-                    try {
-                        $inclusiveEstIds = \Illuminate\Support\Facades\DB::table('estimates')
-                            ->where('tax_calculation_type', 'inclusive')
-                            ->pluck('id');
-
-                        if ($inclusiveEstIds->isNotEmpty()) {
-                            \Illuminate\Support\Facades\DB::table('proforma_invoices')
-                                ->whereIn('estimate_id', $inclusiveEstIds)
-                                ->update(['tax_calculation_type' => 'inclusive']);
-                        }
-
-                        // Also detect inclusive if total equals subtotal while tax_amount is present
-                        \Illuminate\Support\Facades\DB::table('proforma_invoices')
-                            ->where('tax_amount', '>', 0)
-                            ->whereRaw('ABS(total_amount - subtotal) < 1')
-                            ->update(['tax_calculation_type' => 'inclusive']);
-                    } catch (\Throwable $e) {}
-                }
-
-                if (Schema::hasTable('invoices') && Schema::hasTable('proforma_invoices')) {
-                    try {
-                        $inclusivePiIds = \Illuminate\Support\Facades\DB::table('proforma_invoices')
-                            ->where('tax_calculation_type', 'inclusive')
-                            ->pluck('id');
-
-                        if ($inclusivePiIds->isNotEmpty()) {
-                            \Illuminate\Support\Facades\DB::table('invoices')
-                                ->whereIn('proforma_invoice_id', $inclusivePiIds)
-                                ->update(['tax_calculation_type' => 'inclusive']);
-                        }
-
-                        \Illuminate\Support\Facades\DB::table('invoices')
-                            ->where('tax_amount', '>', 0)
-                            ->whereRaw('ABS(total_amount - subtotal) < 1')
-                            ->update(['tax_calculation_type' => 'inclusive']);
-                    } catch (\Throwable $e) {}
-                }
-
-                // Autonomous purge of orphan payments & adjustments from deleted or soft-deleted invoices
-                if (Schema::hasTable('invoice_payments') && Schema::hasTable('invoices')) {
-                    try {
-                        $deletedInvoiceIds = \Illuminate\Support\Facades\DB::table('invoices')
-                            ->whereNotNull('deleted_at')
-                            ->pluck('id');
-                        if ($deletedInvoiceIds->isNotEmpty()) {
-                            \Illuminate\Support\Facades\DB::table('invoice_payments')
-                                ->whereIn('invoice_id', $deletedInvoiceIds)
-                                ->delete();
-                            if (Schema::hasTable('invoice_advance_adjustments')) {
-                                \Illuminate\Support\Facades\DB::table('invoice_advance_adjustments')
-                                    ->whereIn('invoice_id', $deletedInvoiceIds)
-                                    ->delete();
-                            }
-                        }
-                    } catch (\Throwable $e) {}
-                }
-
-                // 2. Auto-run pending database migrations (debounced every 5 minutes to keep requests fast)
-                $cacheKey = 'kabhyan_auto_migration_last_run_v12';
+                // 2. Auto-run pending database migrations & self-healing tasks (debounced every 5 minutes to keep requests fast)
+                $cacheKey = 'kabhyan_auto_migration_last_run_v13';
                 if (!\Illuminate\Support\Facades\Cache::has($cacheKey)) {
                     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+
+                    // Self-heal tax calculation mode on commercial pipelines (DB-agnostic)
+                    if (Schema::hasTable('proforma_invoices') && Schema::hasTable('estimates')) {
+                        try {
+                            $inclusiveEstIds = \Illuminate\Support\Facades\DB::table('estimates')
+                                ->where('tax_calculation_type', 'inclusive')
+                                ->pluck('id');
+
+                            if ($inclusiveEstIds->isNotEmpty()) {
+                                \Illuminate\Support\Facades\DB::table('proforma_invoices')
+                                    ->whereIn('estimate_id', $inclusiveEstIds)
+                                    ->update(['tax_calculation_type' => 'inclusive']);
+                            }
+
+                            // Also detect inclusive if total equals subtotal while tax_amount is present
+                            \Illuminate\Support\Facades\DB::table('proforma_invoices')
+                                ->where('tax_amount', '>', 0)
+                                ->whereRaw('ABS(total_amount - subtotal) < 1')
+                                ->update(['tax_calculation_type' => 'inclusive']);
+                        } catch (\Throwable $e) {}
+                    }
+
+                    if (Schema::hasTable('invoices') && Schema::hasTable('proforma_invoices')) {
+                        try {
+                            $inclusivePiIds = \Illuminate\Support\Facades\DB::table('proforma_invoices')
+                                ->where('tax_calculation_type', 'inclusive')
+                                ->pluck('id');
+
+                            if ($inclusivePiIds->isNotEmpty()) {
+                                \Illuminate\Support\Facades\DB::table('invoices')
+                                    ->whereIn('proforma_invoice_id', $inclusivePiIds)
+                                    ->update(['tax_calculation_type' => 'inclusive']);
+                            }
+
+                            \Illuminate\Support\Facades\DB::table('invoices')
+                                ->where('tax_amount', '>', 0)
+                                ->whereRaw('ABS(total_amount - subtotal) < 1')
+                                ->update(['tax_calculation_type' => 'inclusive']);
+                        } catch (\Throwable $e) {}
+                    }
+
+                    // Autonomous purge of orphan payments & adjustments from deleted or soft-deleted invoices
+                    if (Schema::hasTable('invoice_payments') && Schema::hasTable('invoices')) {
+                        try {
+                            $deletedInvoiceIds = \Illuminate\Support\Facades\DB::table('invoices')
+                                ->whereNotNull('deleted_at')
+                                ->pluck('id');
+                            if ($deletedInvoiceIds->isNotEmpty()) {
+                                \Illuminate\Support\Facades\DB::table('invoice_payments')
+                                    ->whereIn('invoice_id', $deletedInvoiceIds)
+                                    ->delete();
+                                if (Schema::hasTable('invoice_advance_adjustments')) {
+                                    \Illuminate\Support\Facades\DB::table('invoice_advance_adjustments')
+                                        ->whereIn('invoice_id', $deletedInvoiceIds)
+                                        ->delete();
+                                }
+                            }
+                        } catch (\Throwable $e) {}
+                    }
 
                     // One-time autonomous live-mode database reset and dummy data purge (grounded in persistent database flag)
                     $liveModePurgeKey = 'kabhyan_live_mode_purged_at';

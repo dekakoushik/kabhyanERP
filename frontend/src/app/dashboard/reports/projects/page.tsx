@@ -18,14 +18,17 @@ import {
 export default function ProjectProfitabilityReportsPage() {
   const [data, setData] = useState<ReportProjectsResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await api.request<ReportProjectsResponse>("/reports/projects");
       setData(res);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to load project report:", err);
+      setError(err?.message || "Failed to load project margins.");
     } finally {
       setLoading(false);
     }
@@ -53,12 +56,25 @@ export default function ProjectProfitabilityReportsPage() {
         showQuarterFilter={false}
       />
 
-      {loading || !data ? (
+      {loading ? (
         <div className="py-24 flex flex-col items-center justify-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
           <p className="text-xs font-semibold text-slate-500">
             Reconciling project billing schedules and direct expenditures...
           </p>
+        </div>
+      ) : error || !data ? (
+        <div className="py-16 flex flex-col items-center justify-center gap-3 bg-white border border-slate-200 rounded-xl p-8 text-center">
+          <Briefcase className="w-10 h-10 text-rose-500" />
+          <div className="text-base font-bold text-slate-900">Unable to load project margins</div>
+          <p className="text-xs text-slate-500 max-w-sm">{error || "Data is currently unavailable."}</p>
+          <button
+            type="button"
+            onClick={fetchData}
+            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition cursor-pointer"
+          >
+            Retry
+          </button>
         </div>
       ) : (
         <div className="space-y-6">

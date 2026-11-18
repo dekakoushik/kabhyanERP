@@ -224,6 +224,24 @@ class ReportController extends Controller
     {
         [$startDate, $endDate, $periodLabel] = $this->resolveDateRange($request);
 
+        // Bulk load all relevant records once to prevent N+1 loop queries
+        $invoices = Invoice::whereBetween('invoice_date', [$startDate, $endDate])
+            ->where('status', '!=', 'cancelled')
+            ->get(['invoice_date', 'total_amount']);
+
+        $payments = InvoicePayment::whereHas('invoice', function ($q) {
+            $q->where('status', '!=', 'cancelled');
+        })->whereBetween('payment_date', [$startDate, $endDate])
+            ->get(['payment_date', 'amount']);
+
+        $vouchers = ReceiptVoucher::whereBetween('voucher_date', [$startDate, $endDate])
+            ->where('status', '!=', 'cancelled')
+            ->get(['voucher_date', 'amount_received']);
+
+        $expenses = Expense::where('status', 'paid')
+            ->whereBetween('expense_date', [$startDate, $endDate])
+            ->get(['expense_date', 'total_amount']);
+
         // Generate 12-month sequence or month-by-month within range
         $periodMonths = [];
         $cursor = $startDate->copy()->startOfMonth();
@@ -233,21 +251,10 @@ class ReportController extends Controller
             $mStart = $cursor->copy()->startOfMonth();
             $mEnd = $cursor->copy()->endOfMonth();
 
-            $invoiced = (float) Invoice::whereBetween('invoice_date', [$mStart, $mEnd])
-                ->where('status', '!=', 'cancelled')
-                ->sum('total_amount');
-
-            $collected = (float) InvoicePayment::whereHas('invoice', function ($q) {
-                $q->where('status', '!=', 'cancelled');
-            })->whereBetween('payment_date', [$mStart, $mEnd])
-                ->sum('amount');
-
-            $advances = (float) ReceiptVoucher::whereBetween('voucher_date', [$mStart, $mEnd])
-                ->sum('amount_received');
-
-            $expense = (float) Expense::where('status', 'paid')
-                ->whereBetween('expense_date', [$mStart, $mEnd])
-                ->sum('total_amount');
+            $invoiced = (float) $invoices->filter(fn($i) => Carbon::parse($i->invoice_date)->between($mStart, $mEnd))->sum('total_amount');
+            $collected = (float) $payments->filter(fn($p) => Carbon::parse($p->payment_date)->between($mStart, $mEnd))->sum('amount');
+            $advances = (float) $vouchers->filter(fn($v) => Carbon::parse($v->voucher_date)->between($mStart, $mEnd))->sum('amount_received');
+            $expense = (float) $expenses->filter(fn($e) => Carbon::parse($e->expense_date)->between($mStart, $mEnd))->sum('total_amount');
 
             $totalInflow = $collected + $advances;
             $net = $totalInflow - $expense;
@@ -462,7 +469,8 @@ class ReportController extends Controller
         // 3. Table 11B: Advance Adjustments on Invoices
         $advanceAdjustments = InvoiceAdvanceAdjustment::with(['invoice:id,invoice_number,invoice_date,client_name', 'receiptVoucher:id,voucher_number'])
             ->whereHas('invoice', function ($q) use ($startDate, $endDate) {
-                $q->whereBetween('invoice_date', [$startDate, $endDate]);
+                $q->where('status', '!=', 'cancelled')
+                  ->whereBetween('invoice_date', [$startDate, $endDate]);
             })
             ->get();
 
@@ -470,7 +478,7 @@ class ReportController extends Controller
         $total11bAdjusted = 0;
 
         foreach ($advanceAdjustments as $adj) {
-            $amt = (float) $adj->adjusted_amount;
+            $amt = (float) ($adj->amount_adjusted ?? 0);
             $table11bRecords[] = [
                 'id' => $adj->id,
                 'invoice_number' => $adj->invoice->invoice_number ?? 'INV',
@@ -485,7 +493,7 @@ class ReportController extends Controller
         // 4. Table 13: Document Register
         $invRange = Invoice::whereBetween('invoice_date', [$startDate, $endDate])->orderBy('id', 'asc')->get();
         $rvRange = ReceiptVoucher::whereBetween('voucher_date', [$startDate, $endDate])->orderBy('id', 'asc')->get();
-        $rfvRange = RefundVoucher::whereBetween('refund_date', [$startDate, $endDate])->orderBy('id', 'asc')->get();
+        $rfvRange = RefundVoucher::whereBetween('voucher_date', [$startDate, $endDate])->orderBy('id', 'asc')->get();
 
         $docRegister = [
             [
@@ -506,8 +514,8 @@ class ReportController extends Controller
             ],
             [
                 'nature_of_doc' => 'Refund Vouchers (Rule 51)',
-                'sr_from' => $rfvRange->first()->refund_number ?? 'None',
-                'sr_to' => $rfvRange->last()->refund_number ?? 'None',
+                'sr_from' => $rfvRange->first()->voucher_number ?? 'None',
+                'sr_to' => $rfvRange->last()->voucher_number ?? 'None',
                 'total_number' => $rfvRange->count(),
                 'cancelled' => 0,
                 'net_issued' => $rfvRange->count(),
@@ -709,29 +717,29 @@ class ReportController extends Controller
         $clientMetrics = [];
         $totalSystemRevenue = 0;
 
+        // Bulk fetch all relevant transactions in the period to avoid N+1 queries
+        $invoices = Invoice::whereBetween('invoice_date', [$startDate, $endDate])
+            ->where('status', '!=', 'cancelled')
+            ->get(['client_id', 'total_amount', 'due_amount', 'status']);
+
+        $payments = InvoicePayment::whereHas('invoice', function ($q) {
+            $q->where('status', '!=', 'cancelled');
+        })->whereBetween('payment_date', [$startDate, $endDate])
+            ->with('invoice:id,client_id')
+            ->get(['id', 'invoice_id', 'amount']);
+
+        $estimates = Estimate::whereBetween('estimate_date', [$startDate, $endDate])
+            ->get(['client_id', 'status']);
+
         foreach ($clients as $client) {
-            $invoiced = (float) Invoice::where('client_id', $client->id)
-                ->where('status', '!=', 'cancelled')
-                ->whereBetween('invoice_date', [$startDate, $endDate])
-                ->sum('total_amount');
+            $clientInvoices = $invoices->where('client_id', $client->id);
+            $invoiced = (float) $clientInvoices->sum('total_amount');
+            $outstanding = (float) $clientInvoices->where('status', '!=', 'paid')->sum('due_amount');
+            $collected = (float) $payments->filter(fn($p) => $p->invoice && $p->invoice->client_id === $client->id)->sum('amount');
 
-            $collected = (float) InvoicePayment::whereHas('invoice', function ($q) use ($client) {
-                $q->where('client_id', $client->id);
-            })->whereBetween('payment_date', [$startDate, $endDate])->sum('amount');
-
-            $outstanding = (float) Invoice::where('client_id', $client->id)
-                ->where('status', '!=', 'cancelled')
-                ->where('status', '!=', 'paid')
-                ->sum('due_amount');
-
-            $estimatesWon = Estimate::where('client_id', $client->id)
-                ->whereIn('status', ['accepted', 'invoiced'])
-                ->whereBetween('estimate_date', [$startDate, $endDate])
-                ->count();
-
-            $estimatesTotal = Estimate::where('client_id', $client->id)
-                ->whereBetween('estimate_date', [$startDate, $endDate])
-                ->count();
+            $clientEstimates = $estimates->where('client_id', $client->id);
+            $estimatesWon = $clientEstimates->whereIn('status', ['accepted', 'invoiced'])->count();
+            $estimatesTotal = $clientEstimates->count();
 
             $totalSystemRevenue += $invoiced;
 
@@ -795,33 +803,35 @@ class ReportController extends Controller
         $totalTurnover = 0;
         $totalDirectCost = 0;
 
+        // Bulk fetch all project invoices, payments, and expenses once
+        $invoices = Invoice::where('status', '!=', 'cancelled')
+            ->whereNotNull('project_id')
+            ->get(['project_id', 'total_amount', 'due_amount', 'status']);
+
+        $payments = InvoicePayment::whereHas('invoice', function ($q) {
+            $q->where('status', '!=', 'cancelled')->whereNotNull('project_id');
+        })->with('invoice:id,project_id')->get(['id', 'invoice_id', 'amount']);
+
+        $expenses = Expense::where('status', 'paid')
+            ->get(['title', 'description', 'total_amount']);
+
         foreach ($projects as $proj) {
-            $invoiced = (float) Invoice::where('project_id', $proj->id)
-                ->where('status', '!=', 'cancelled')
-                ->sum('total_amount');
+            $projInvoices = $invoices->where('project_id', $proj->id);
+            $invoiced = (float) $projInvoices->sum('total_amount');
+            $outstanding = (float) $projInvoices->where('status', '!=', 'paid')->sum('due_amount');
+            $collected = (float) $payments->filter(fn($p) => $p->invoice && $p->invoice->project_id === $proj->id)->sum('amount');
 
-            $collected = (float) InvoicePayment::whereHas('invoice', function ($q) use ($proj) {
-                $q->where('project_id', $proj->id);
-            })->sum('amount');
+            // Direct expenses logged for this project (via description match or title)
+            $projExpenses = (float) $expenses->filter(function ($e) use ($proj) {
+                return (stripos((string)$e->title, $proj->name) !== false) ||
+                       (stripos((string)$e->description, $proj->name) !== false);
+            })->sum('total_amount');
 
-            $outstanding = (float) Invoice::where('project_id', $proj->id)
-                ->where('status', '!=', 'cancelled')
-                ->where('status', '!=', 'paid')
-                ->sum('due_amount');
-
-            // Direct expenses logged for this project (via description match or future relation)
-            $expenses = (float) Expense::where('status', 'paid')
-                ->where(function ($q) use ($proj) {
-                    $q->where('title', 'like', "%{$proj->name}%")
-                      ->orWhere('description', 'like', "%{$proj->name}%");
-                })
-                ->sum('total_amount');
-
-            $grossMargin = $invoiced - $expenses;
+            $grossMargin = $invoiced - $projExpenses;
             $marginPct = $invoiced > 0 ? round(($grossMargin / $invoiced) * 100, 1) : 0;
 
             $totalTurnover += $invoiced;
-            $totalDirectCost += $expenses;
+            $totalDirectCost += $projExpenses;
 
             $projectMetrics[] = [
                 'id' => $proj->id,
@@ -834,7 +844,7 @@ class ReportController extends Controller
                 'total_invoiced' => $invoiced,
                 'total_collected' => $collected,
                 'total_outstanding' => $outstanding,
-                'total_expenses' => $expenses,
+                'total_expenses' => $projExpenses,
                 'gross_margin' => $grossMargin,
                 'margin_pct' => $marginPct,
             ];

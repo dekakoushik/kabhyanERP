@@ -20,15 +20,18 @@ export default function ClientPortfolioReportsPage() {
   const [quarter, setQuarter] = useState("");
   const [data, setData] = useState<ReportClientsResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const qParam = quarter ? `&quarter=${quarter}` : "";
       const res = await api.request<ReportClientsResponse>(`/reports/clients?fy=${fy}${qParam}`);
       setData(res);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to load client reports:", err);
+      setError(err?.message || "Failed to load client portfolio.");
     } finally {
       setLoading(false);
     }
@@ -62,12 +65,25 @@ export default function ClientPortfolioReportsPage() {
         setQuarter={setQuarter}
       />
 
-      {loading || !data ? (
+      {loading ? (
         <div className="py-24 flex flex-col items-center justify-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
           <p className="text-xs font-semibold text-slate-500">
             Analyzing client lifetime turnover and concentration metrics...
           </p>
+        </div>
+      ) : error || !data ? (
+        <div className="py-16 flex flex-col items-center justify-center gap-3 bg-white border border-slate-200 rounded-xl p-8 text-center">
+          <Users className="w-10 h-10 text-rose-500" />
+          <div className="text-base font-bold text-slate-900">Unable to load client portfolio</div>
+          <p className="text-xs text-slate-500 max-w-sm">{error || "Data is currently unavailable."}</p>
+          <button
+            type="button"
+            onClick={fetchData}
+            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition cursor-pointer"
+          >
+            Retry
+          </button>
         </div>
       ) : (
         <div className="space-y-6">
