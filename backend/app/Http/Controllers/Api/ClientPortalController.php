@@ -70,8 +70,23 @@ class ClientPortalController extends Controller
             ->get();
 
         $invoices = Invoice::where('client_email', $client->email)
+            ->with(['proformaInvoice:id,proforma_number,status', 'payments'])
             ->orderBy('invoice_date', 'desc')
             ->take(5)
+            ->get();
+
+        $activeEstimates = \App\Models\Estimate::where('client_email', $client->email)
+            ->whereIn('status', ['sent', 'accepted', 'invoiced'])
+            ->with(['proformaInvoices:id,estimate_id,proforma_number,status'])
+            ->orderBy('estimate_date', 'desc')
+            ->take(3)
+            ->get();
+
+        $activeProformas = ProformaInvoice::where('client_email', $client->email)
+            ->whereIn('status', ['unpaid', 'partially_paid', 'partially_invoiced', 'fully_invoiced'])
+            ->with(['taxInvoices:id,proforma_invoice_id,invoice_number,status,total_amount,due_amount,paid_amount'])
+            ->orderBy('invoice_date', 'desc')
+            ->take(3)
             ->get();
 
         $stats = [
@@ -88,6 +103,8 @@ class ClientPortalController extends Controller
             'projects' => $projects,
             'recent_tickets' => $tickets,
             'recent_invoices' => $invoices,
+            'active_estimates' => $activeEstimates,
+            'active_proformas' => $activeProformas,
             'stats' => $stats,
         ]);
     }
@@ -270,7 +287,13 @@ class ClientPortalController extends Controller
     {
         $client = $this->getClient($request);
         $invoices = Invoice::where('client_email', $client->email)
-            ->with(['items', 'payments', 'project'])
+            ->with([
+                'items',
+                'payments',
+                'project:id,name,code',
+                'proformaInvoice:id,proforma_number,status,invoice_date,total_amount',
+                'estimate:id,estimate_number,status',
+            ])
             ->orderBy('invoice_date', 'desc')
             ->paginate($request->input('per_page', 20));
 
@@ -287,7 +310,13 @@ class ClientPortalController extends Controller
             abort(403, 'Unauthorized access to this invoice.');
         }
 
-        $invoice->load(['items', 'payments', 'project']);
+        $invoice->load([
+            'items',
+            'payments',
+            'project:id,name,code',
+            'proformaInvoice:id,proforma_number,status,invoice_date,total_amount',
+            'estimate:id,estimate_number,status',
+        ]);
 
         return response()->json(['invoice' => $invoice]);
     }
@@ -299,7 +328,15 @@ class ClientPortalController extends Controller
     {
         $client = $this->getClient($request);
         $proformas = ProformaInvoice::where('client_email', $client->email)
-            ->with(['items', 'project'])
+            ->with([
+                'items',
+                'project:id,name,code',
+                'estimate:id,estimate_number,status',
+                'taxInvoices' => function ($q) {
+                    $q->select('id', 'proforma_invoice_id', 'invoice_number', 'status', 'total_amount', 'due_amount', 'paid_amount', 'invoice_date', 'due_date')
+                        ->orderBy('invoice_date', 'desc');
+                },
+            ])
             ->orderBy('invoice_date', 'desc')
             ->paginate($request->input('per_page', 20));
 
@@ -316,7 +353,12 @@ class ClientPortalController extends Controller
             abort(403, 'Unauthorized access to this proforma invoice.');
         }
 
-        $proformaInvoice->load(['items', 'project']);
+        $proformaInvoice->load([
+            'items',
+            'project:id,name,code',
+            'estimate:id,estimate_number,status',
+            'taxInvoices.payments',
+        ]);
 
         return response()->json(['proforma_invoice' => $proformaInvoice]);
     }
@@ -355,7 +397,14 @@ class ClientPortalController extends Controller
     {
         $client = $this->getClient($request);
         $estimates = \App\Models\Estimate::where('client_email', $client->email)
-            ->with(['items', 'project'])
+            ->with([
+                'items',
+                'project:id,name,code',
+                'proformaInvoices' => function ($q) {
+                    $q->select('id', 'estimate_id', 'proforma_number', 'status', 'total_amount', 'invoice_date')
+                        ->orderBy('invoice_date', 'desc');
+                },
+            ])
             ->orderBy('estimate_date', 'desc')
             ->paginate($request->input('per_page', 20));
 
@@ -372,7 +421,14 @@ class ClientPortalController extends Controller
             abort(403, 'Unauthorized access to this quotation.');
         }
 
-        $estimate->load(['items', 'project']);
+        $estimate->load([
+            'items',
+            'project:id,name,code',
+            'proformaInvoices' => function ($q) {
+                $q->select('id', 'estimate_id', 'proforma_number', 'status', 'total_amount', 'invoice_date')
+                    ->orderBy('invoice_date', 'desc');
+            },
+        ]);
 
         return response()->json(['estimate' => $estimate]);
     }

@@ -12,6 +12,7 @@ import { colors } from "../../theme/colors";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
+import { DocumentPipelineStepper } from "../../components/DocumentPipelineStepper";
 import { portalApi, Estimate } from "../../api/portal";
 
 export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = ({
@@ -76,11 +77,55 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
     );
   }
 
-  const isPending = estimate.status === "sent" || estimate.status === "draft";
+  const linkedProforma = estimate.proforma_invoices && estimate.proforma_invoices[0];
+  const isConverted = estimate.status === "invoiced" || Boolean(linkedProforma);
+  const isPending = !isConverted && (estimate.status === "sent" || estimate.status === "draft");
   const items = estimate.items || [];
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {/* Visual Stepper */}
+      <DocumentPipelineStepper
+        currentStep="estimate"
+        estimateNumber={estimate.estimate_number}
+        estimateId={estimate.id}
+        proformaNumber={linkedProforma?.proforma_number}
+        proformaId={linkedProforma?.id}
+        onNavigate={(type, id) => {
+          if (type === "proforma") {
+            navigation.navigate("InvoiceDetail", { proformaId: id, type: "proforma" });
+          }
+        }}
+      />
+
+      {/* Converted Proforma Notice Card */}
+      {isConverted && linkedProforma && (
+        <Card style={styles.conversionCard}>
+          <View style={styles.conversionRow}>
+            <View style={styles.conversionIconBg}>
+              <Ionicons name="receipt-outline" size={20} color={colors.purple} />
+            </View>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={styles.conversionTitle}>Converted to Proforma Invoice</Text>
+              <Text style={styles.conversionSub}>
+                Scope approved & mobilized under Proforma #{linkedProforma.proforma_number}
+              </Text>
+            </View>
+          </View>
+          <Button
+            title="View Proforma Invoice →"
+            variant="primary"
+            onPress={() =>
+              navigation.navigate("InvoiceDetail", {
+                proformaId: linkedProforma.id,
+                type: "proforma",
+              })
+            }
+            style={styles.conversionBtn}
+          />
+        </Card>
+      )}
+
       <Card style={styles.headerCard}>
         <View style={styles.headerRow}>
           <View>
@@ -91,9 +136,11 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
             )}
           </View>
           <Badge
-            label={estimate.status}
+            label={isConverted ? "CONVERTED TO PROFORMA" : estimate.status}
             variant={
-              estimate.status === "accepted"
+              isConverted
+                ? "purple"
+                : estimate.status === "accepted"
                 ? "success"
                 : estimate.status === "declined"
                 ? "danger"
@@ -202,6 +249,39 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 13,
     color: colors.textSecondary,
+  },
+  conversionCard: {
+    backgroundColor: "#FAF5FF",
+    borderColor: "#E9D5FF",
+    borderWidth: 1,
+    marginBottom: 16,
+    padding: 14,
+  },
+  conversionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  conversionIconBg: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F3E8FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  conversionTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#6B21A8",
+  },
+  conversionSub: {
+    fontSize: 11,
+    color: "#7E22CE",
+    marginTop: 2,
+    fontWeight: "500",
+  },
+  conversionBtn: {
+    marginTop: 12,
   },
   headerCard: {
     marginBottom: 16,

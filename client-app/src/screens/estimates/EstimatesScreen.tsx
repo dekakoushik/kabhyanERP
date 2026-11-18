@@ -46,6 +46,8 @@ export const EstimatesScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   };
 
   const renderEstimateCard = ({ item }: { item: Estimate }) => {
+    const linkedProforma = item.proforma_invoices && item.proforma_invoices[0];
+    const isConverted = item.status === "invoiced" || Boolean(linkedProforma);
     const isAccepted = item.status === "accepted";
     const isDeclined = item.status === "declined";
 
@@ -61,10 +63,19 @@ export const EstimatesScreen: React.FC<{ navigation: any }> = ({ navigation }) =
               <Text style={styles.estDate}>Issued: {item.estimate_date}</Text>
             </View>
             <Badge
-              label={item.status}
-              variant={isAccepted ? "success" : isDeclined ? "danger" : "warning"}
+              label={isConverted ? "CONVERTED TO PROFORMA" : item.status}
+              variant={isConverted ? "purple" : isAccepted ? "success" : isDeclined ? "danger" : "warning"}
             />
           </View>
+
+          {isConverted && linkedProforma && (
+            <View style={styles.proformaBanner}>
+              <Ionicons name="arrow-forward-circle" size={14} color={colors.purple} />
+              <Text style={styles.proformaBannerText}>
+                Mobilized under Proforma #{linkedProforma.proforma_number}
+              </Text>
+            </View>
+          )}
 
           <View style={styles.divider} />
 
@@ -81,10 +92,16 @@ export const EstimatesScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
           <View style={styles.footerRow}>
             <Text style={styles.validityText}>
-              {item.expiry_date ? `Valid until: ${item.expiry_date}` : "Valid for 30 days"}
+              {isConverted
+                ? "Active in Proforma Pipeline"
+                : item.expiry_date
+                ? `Valid until: ${item.expiry_date}`
+                : "Valid for 30 days"}
             </Text>
             <View style={styles.reviewLink}>
-              <Text style={styles.reviewLinkText}>Review Scope</Text>
+              <Text style={styles.reviewLinkText}>
+                {isConverted ? "View Progression" : "Review Scope"}
+              </Text>
               <Ionicons name="chevron-forward" size={14} color={colors.primary} />
             </View>
           </View>
@@ -207,5 +224,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     color: colors.primary,
+  },
+  proformaBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.purpleBg,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginTop: 8,
+    gap: 6,
+  },
+  proformaBannerText: {
+    fontSize: 11,
+    color: colors.purple,
+    fontWeight: "700",
   },
 });

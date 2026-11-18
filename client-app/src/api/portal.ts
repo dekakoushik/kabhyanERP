@@ -44,6 +44,31 @@ export interface InvoiceItem {
   total_amount: number;
 }
 
+export interface ProformaInvoiceSummary {
+  id: number;
+  proforma_number: string;
+  status: string;
+  total_amount?: number;
+  invoice_date?: string;
+}
+
+export interface TaxInvoiceSummary {
+  id: number;
+  invoice_number: string;
+  status: "draft" | "unpaid" | "partially_paid" | "paid" | "overdue" | "cancelled";
+  total_amount: number;
+  due_amount?: number;
+  paid_amount?: number;
+  invoice_date?: string;
+  due_date?: string;
+}
+
+export interface EstimateSummary {
+  id: number;
+  estimate_number: string;
+  status: string;
+}
+
 export interface Invoice {
   id: number;
   invoice_number: string;
@@ -54,8 +79,12 @@ export interface Invoice {
   tax_amount: number;
   total: number;
   paid_amount?: number;
+  due_amount?: number;
   client?: ClientProfile;
   items?: InvoiceItem[];
+  project?: { id: number; name: string; code?: string };
+  proforma_invoice?: ProformaInvoiceSummary;
+  estimate?: EstimateSummary;
 }
 
 export interface ProformaInvoice {
@@ -63,7 +92,7 @@ export interface ProformaInvoice {
   proforma_number: string;
   invoice_date: string;
   due_date: string;
-  status: "draft" | "sent" | "partially_paid" | "paid" | "converted" | "cancelled";
+  status: "draft" | "sent" | "unpaid" | "partially_paid" | "paid" | "converted" | "partially_invoiced" | "fully_invoiced" | "cancelled";
   subtotal: number;
   tax_amount: number;
   total_amount: number;
@@ -73,6 +102,9 @@ export interface ProformaInvoice {
   items?: InvoiceItem[];
   notes?: string;
   terms_and_conditions?: string;
+  project?: { id: number; name: string; code?: string };
+  estimate?: EstimateSummary;
+  tax_invoices?: TaxInvoiceSummary[];
 }
 
 export interface Estimate {
@@ -80,12 +112,14 @@ export interface Estimate {
   estimate_number: string;
   estimate_date: string;
   expiry_date?: string;
-  status: "draft" | "sent" | "accepted" | "declined" | "expired";
+  status: "draft" | "sent" | "accepted" | "declined" | "expired" | "invoiced";
   subtotal: number;
   tax_amount: number;
   total: number;
   items?: InvoiceItem[];
   notes?: string;
+  project?: { id: number; name: string; code?: string };
+  proforma_invoices?: ProformaInvoiceSummary[];
 }
 
 export interface ProjectDeliverable {
@@ -131,6 +165,8 @@ export interface DashboardResponse {
   recent_invoices: Invoice[];
   projects: Project[];
   recent_tickets: SupportTicket[];
+  active_estimates?: Estimate[];
+  active_proformas?: ProformaInvoice[];
 }
 
 export const portalApi = {

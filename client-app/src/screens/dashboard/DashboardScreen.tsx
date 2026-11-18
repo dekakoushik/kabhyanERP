@@ -16,7 +16,8 @@ import { colors } from "../../theme/colors";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
-import { portalApi, DashboardResponse, Invoice, Project } from "../../api/portal";
+import { DocumentPipelineStepper } from "../../components/DocumentPipelineStepper";
+import { portalApi, DashboardResponse, Invoice, Project, Estimate, ProformaInvoice } from "../../api/portal";
 import { useAuth } from "../../context/AuthContext";
 
 export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
@@ -82,6 +83,12 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   const projects = Array.isArray(data?.projects)
     ? data.projects
     : (data?.projects as any)?.data || [];
+  const activeEstimates: Estimate[] = Array.isArray(data?.active_estimates)
+    ? data.active_estimates
+    : [];
+  const activeProformas: ProformaInvoice[] = Array.isArray(data?.active_proformas)
+    ? data.active_proformas
+    : [];
 
   return (
     <ScrollView
@@ -190,6 +197,133 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           <Text style={styles.actionBtnLabel}>Support</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Ongoing Commercial Pipeline Section */}
+      {(activeEstimates.length > 0 || activeProformas.length > 0) && (
+        <View style={styles.pipelineSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Ongoing Works & Milestones</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("InvoicesTab")}>
+              <Text style={styles.viewAllText}>Invoices Hub</Text>
+            </TouchableOpacity>
+          </View>
+
+          {activeProformas.slice(0, 2).map((pi) => {
+            const linkedTax = pi.tax_invoices && pi.tax_invoices[0];
+            const isFullyInvoiced = pi.status === "fully_invoiced" || Boolean(linkedTax);
+
+            return (
+              <Card key={`pi-${pi.id}`} style={styles.pipelineCard}>
+                <View style={styles.pipelineHeader}>
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <Text style={styles.pipelineDocNumber}>{pi.proforma_number}</Text>
+                    <Text style={styles.pipelineSub}>
+                      {isFullyInvoiced
+                        ? `Converted to Tax Invoice #${linkedTax?.invoice_number || ""}`
+                        : "Preliminary mobilization proforma for active milestone"}
+                    </Text>
+                  </View>
+                  <Badge
+                    label={isFullyInvoiced ? (linkedTax?.status === "paid" ? "TAX INV: PAID" : "TAX INV: UNPAID") : "PROFORMA ACTIVE"}
+                    variant={linkedTax?.status === "paid" ? "success" : isFullyInvoiced ? "warning" : "purple"}
+                  />
+                </View>
+
+                <DocumentPipelineStepper
+                  currentStep={isFullyInvoiced ? "invoice" : "proforma"}
+                  estimateNumber={pi.estimate?.estimate_number}
+                  estimateId={pi.estimate?.id}
+                  proformaNumber={pi.proforma_number}
+                  proformaId={pi.id}
+                  invoiceNumber={linkedTax?.invoice_number}
+                  invoiceId={linkedTax?.id}
+                  invoiceStatus={linkedTax?.status}
+                  onNavigate={(type, id) => {
+                    if (type === "estimate") {
+                      navigation.navigate("EstimateDetail", { estimateId: id });
+                    } else if (type === "proforma") {
+                      navigation.navigate("InvoiceDetail", { proformaId: id, type: "proforma" });
+                    } else if (type === "invoice") {
+                      navigation.navigate("InvoiceDetail", { invoiceId: id, type: "tax" });
+                    }
+                  }}
+                />
+
+                <View style={styles.pipelineFooter}>
+                  <View>
+                    <Text style={styles.pipelineAmountLabel}>Milestone Value</Text>
+                    <Text style={styles.pipelineAmount}>₹{Number(pi.total_amount).toLocaleString()}</Text>
+                  </View>
+                  <Button
+                    title={isFullyInvoiced ? "View Tax Invoice →" : "View Proforma →"}
+                    variant={isFullyInvoiced && linkedTax?.status !== "paid" ? "primary" : "outline"}
+                    onPress={() => {
+                      if (isFullyInvoiced && linkedTax) {
+                        navigation.navigate("InvoiceDetail", { invoiceId: linkedTax.id, type: "tax" });
+                      } else {
+                        navigation.navigate("InvoiceDetail", { proformaId: pi.id, type: "proforma" });
+                      }
+                    }}
+                    style={styles.pipelineBtn}
+                  />
+                </View>
+              </Card>
+            );
+          })}
+
+          {activeEstimates.slice(0, 1).map((est) => {
+            const linkedPI = est.proforma_invoices && est.proforma_invoices[0];
+            const isConverted = est.status === "invoiced" || Boolean(linkedPI);
+
+            return (
+              <Card key={`est-${est.id}`} style={styles.pipelineCard}>
+                <View style={styles.pipelineHeader}>
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <Text style={styles.pipelineDocNumber}>{est.estimate_number}</Text>
+                    <Text style={styles.pipelineSub}>
+                      {isConverted
+                        ? `Scope mobilized under Proforma #${linkedPI?.proforma_number || ""}`
+                        : "Scope quotation pending client approval"}
+                    </Text>
+                  </View>
+                  <Badge
+                    label={isConverted ? "CONVERTED TO PI" : est.status.toUpperCase()}
+                    variant={isConverted ? "purple" : est.status === "accepted" ? "success" : "warning"}
+                  />
+                </View>
+
+                <DocumentPipelineStepper
+                  currentStep="estimate"
+                  estimateNumber={est.estimate_number}
+                  estimateId={est.id}
+                  proformaNumber={linkedPI?.proforma_number}
+                  proformaId={linkedPI?.id}
+                  onNavigate={(type, id) => {
+                    if (type === "estimate") {
+                      navigation.navigate("EstimateDetail", { estimateId: id });
+                    } else if (type === "proforma") {
+                      navigation.navigate("InvoiceDetail", { proformaId: id, type: "proforma" });
+                    }
+                  }}
+                />
+
+                <View style={styles.pipelineFooter}>
+                  <View>
+                    <Text style={styles.pipelineAmountLabel}>Scope Total</Text>
+                    <Text style={styles.pipelineAmount}>₹{Number(est.total).toLocaleString()}</Text>
+                  </View>
+                  <Button
+                    title={isConverted ? "View Progression →" : "Review Scope →"}
+                    variant={isConverted ? "outline" : "success"}
+                    onPress={() => navigation.navigate("EstimateDetail", { estimateId: est.id })}
+                    style={styles.pipelineBtn}
+                  />
+                </View>
+              </Card>
+            );
+          })}
+        </View>
+      )}
 
       {/* Recent Invoices Section */}
       <View style={styles.sectionHeader}>
@@ -530,5 +664,53 @@ const styles = StyleSheet.create({
   projectMetaText: {
     fontSize: 11,
     color: colors.textMuted,
+  },
+  pipelineSection: {
+    marginBottom: 16,
+  },
+  pipelineCard: {
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  pipelineHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  pipelineDocNumber: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: colors.text,
+  },
+  pipelineSub: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  pipelineFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+  },
+  pipelineAmountLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: colors.textMuted,
+    textTransform: "uppercase",
+  },
+  pipelineAmount: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: colors.text,
+  },
+  pipelineBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
   },
 });

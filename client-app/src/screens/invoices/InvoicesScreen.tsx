@@ -125,6 +125,15 @@ export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             />
           </View>
 
+          {item.proforma_invoice && (
+            <View style={styles.originBanner}>
+              <Ionicons name="link-outline" size={13} color={colors.primary} />
+              <Text style={styles.originBannerText}>
+                Converted from Proforma #{item.proforma_invoice.proforma_number}
+              </Text>
+            </View>
+          )}
+
           <View style={styles.divider} />
 
           <View style={styles.detailsRow}>
@@ -167,7 +176,12 @@ export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   };
 
   const renderProformaInvoiceCard = ({ item }: { item: ProformaInvoice }) => {
-    const isPaid = item.status === "paid" || item.status === "converted";
+    const linkedTaxInv = item.tax_invoices && item.tax_invoices[0];
+    const isConverted =
+      item.status === "converted" ||
+      item.status === "fully_invoiced" ||
+      Boolean(linkedTaxInv);
+    const isPaid = item.status === "paid" || (linkedTaxInv && linkedTaxInv.status === "paid");
 
     return (
       <Card style={styles.invoiceCard}>
@@ -186,10 +200,43 @@ export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
               <Text style={styles.invoiceDate}>Issued on: {item.invoice_date}</Text>
             </View>
             <Badge
-              label={item.status === "converted" ? "Converted to Tax Inv" : (item.status || "pending").replace("_", " ")}
-              variant={isPaid ? "success" : "info"}
+              label={
+                isConverted
+                  ? "CONVERTED TO TAX INV"
+                  : (item.status || "pending").replace("_", " ")
+              }
+              variant={isConverted ? "purple" : isPaid ? "success" : "info"}
             />
           </View>
+
+          {/* Linked Tax Invoice Banner with Live Paid / Unpaid Status */}
+          {linkedTaxInv && (
+            <View style={styles.taxInvBanner}>
+              <Ionicons
+                name="receipt-outline"
+                size={13}
+                color={linkedTaxInv.status === "paid" ? colors.success : colors.warning}
+              />
+              <Text style={styles.taxInvBannerText}>
+                Official Tax Inv: {linkedTaxInv.invoice_number}
+              </Text>
+              <View
+                style={[
+                  styles.taxInvMiniBadge,
+                  linkedTaxInv.status === "paid" ? styles.bgPaid : styles.bgUnpaid,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.taxInvMiniBadgeText,
+                    linkedTaxInv.status === "paid" ? styles.textPaid : styles.textUnpaid,
+                  ]}
+                >
+                  {linkedTaxInv.status === "paid" ? "PAID" : "UNPAID"}
+                </Text>
+              </View>
+            </View>
+          )}
 
           <View style={styles.divider} />
 
@@ -517,6 +564,60 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: "800",
     color: colors.purple,
+  },
+  originBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginTop: 6,
+    gap: 4,
+  },
+  originBannerText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: colors.primary,
+  },
+  taxInvBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FAF5FF",
+    borderWidth: 1,
+    borderColor: "#E9D5FF",
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+    marginTop: 8,
+    gap: 6,
+  },
+  taxInvBannerText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: colors.purple,
+    flex: 1,
+  },
+  taxInvMiniBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  taxInvMiniBadgeText: {
+    fontSize: 9,
+    fontWeight: "800",
+  },
+  bgPaid: {
+    backgroundColor: "#DCFCE7",
+  },
+  bgUnpaid: {
+    backgroundColor: "#FEF3C7",
+  },
+  textPaid: {
+    color: "#166534",
+  },
+  textUnpaid: {
+    color: "#92400E",
   },
   invoiceDate: {
     fontSize: 11,

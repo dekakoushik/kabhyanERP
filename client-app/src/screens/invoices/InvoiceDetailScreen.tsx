@@ -13,6 +13,7 @@ import { colors } from "../../theme/colors";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
+import { DocumentPipelineStepper } from "../../components/DocumentPipelineStepper";
 import { portalApi, Invoice, ProformaInvoice, InvoiceItem } from "../../api/portal";
 
 export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
@@ -81,18 +82,66 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
 
   // Proforma View
   if (isProforma && proforma) {
-    const isConverted = proforma.status === "converted";
+    const linkedTaxInvoices = proforma.tax_invoices || [];
+    const latestTaxInv = linkedTaxInvoices[0];
+    const isConverted =
+      proforma.status === "converted" ||
+      proforma.status === "fully_invoiced" ||
+      linkedTaxInvoices.length > 0;
     const items = proforma.items || [];
 
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        {/* Document Kind Banner */}
-        <View style={styles.proformaBanner}>
-          <Ionicons name="information-circle" size={18} color={colors.purple} />
-          <Text style={styles.proformaBannerText}>
-            Preliminary Proforma Invoice issued for milestone advance billing.
-          </Text>
-        </View>
+        {/* Visual Stepper */}
+        <DocumentPipelineStepper
+          currentStep="proforma"
+          estimateNumber={proforma.estimate?.estimate_number}
+          estimateId={proforma.estimate?.id}
+          proformaNumber={proforma.proforma_number}
+          proformaId={proforma.id}
+          invoiceNumber={latestTaxInv?.invoice_number}
+          invoiceId={latestTaxInv?.id}
+          invoiceStatus={latestTaxInv?.status}
+          onNavigate={(type, id) => {
+            if (type === "estimate") {
+              navigation.navigate("EstimateDetail", { estimateId: id });
+            } else if (type === "invoice") {
+              navigation.navigate("InvoiceDetail", { invoiceId: id, type: "tax" });
+            }
+          }}
+        />
+
+        {/* Converted to Official Tax Invoice Banner */}
+        {isConverted && latestTaxInv && (
+          <Card style={styles.taxInvCard}>
+            <View style={styles.taxInvCardHeader}>
+              <View style={styles.taxInvIconBg}>
+                <Ionicons name="receipt" size={20} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={styles.taxInvCardTitle}>Official GST Tax Invoice Generated</Text>
+                <Text style={styles.taxInvCardSub}>
+                  Invoice #{latestTaxInv.invoice_number} • Issued on {latestTaxInv.invoice_date}
+                </Text>
+              </View>
+              <Badge
+                label={latestTaxInv.status === "paid" ? "PAID" : "UNPAID"}
+                variant={latestTaxInv.status === "paid" ? "success" : "warning"}
+              />
+            </View>
+            <Button
+              title={`View Tax Invoice (${latestTaxInv.invoice_number}) →`}
+              variant="primary"
+              onPress={() =>
+                navigation.navigate("InvoiceDetail", {
+                  invoiceId: latestTaxInv.id,
+                  type: "tax",
+                })
+              }
+              style={{ marginTop: 12 }}
+            />
+          </Card>
+        )}
 
         {/* Status Card */}
         <Card style={styles.statusCard}>
@@ -103,8 +152,12 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
               <Text style={styles.dateText}>Payment Due: {proforma.due_date || "Upon receipt"}</Text>
             </View>
             <Badge
-              label={isConverted ? "Converted to Tax Invoice" : (proforma.status || "pending").replace("_", " ")}
-              variant={isConverted ? "success" : "purple"}
+              label={
+                isConverted
+                  ? "CONVERTED TO TAX INV"
+                  : (proforma.status || "pending").replace("_", " ")
+              }
+              variant={isConverted ? "purple" : "info"}
             />
           </View>
 
@@ -193,6 +246,51 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {/* Visual Stepper */}
+      <DocumentPipelineStepper
+        currentStep="invoice"
+        estimateNumber={invoice.estimate?.estimate_number}
+        estimateId={invoice.estimate?.id}
+        proformaNumber={invoice.proforma_invoice?.proforma_number}
+        proformaId={invoice.proforma_invoice?.id}
+        invoiceNumber={invoice.invoice_number}
+        invoiceId={invoice.id}
+        invoiceStatus={invoice.status}
+        onNavigate={(type, id) => {
+          if (type === "estimate") {
+            navigation.navigate("EstimateDetail", { estimateId: id });
+          } else if (type === "proforma") {
+            navigation.navigate("InvoiceDetail", { proformaId: id, type: "proforma" });
+          }
+        }}
+      />
+
+      {/* Commercial Origin Card */}
+      {invoice.proforma_invoice && (
+        <Card style={styles.originCard}>
+          <View style={styles.originRow}>
+            <Ionicons name="link-outline" size={18} color={colors.primary} />
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={styles.originTitle}>Originated from Proforma #{invoice.proforma_invoice.proforma_number}</Text>
+              <Text style={styles.originSub}>
+                Authorized milestone billing against client approved engagement scope.
+              </Text>
+            </View>
+            <Button
+              title="View PI"
+              variant="outline"
+              onPress={() =>
+                navigation.navigate("InvoiceDetail", {
+                  proformaId: invoice.proforma_invoice!.id,
+                  type: "proforma",
+                })
+              }
+              style={styles.originBtn}
+            />
+          </View>
+        </Card>
+      )}
+
       {/* Top Status Card */}
       <Card style={styles.statusCard}>
         <View style={styles.headerRow}>
@@ -202,12 +300,19 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
             <Text style={styles.dateText}>Payment Due: {invoice.due_date || "Upon receipt"}</Text>
           </View>
           <Badge
-            label={(invoice.status || "pending").replace("_", " ")}
+            label={isPaid ? "PAID" : (invoice.status || "unpaid").toUpperCase()}
             variant={isPaid ? "success" : invoice.status === "overdue" ? "danger" : "warning"}
           />
         </View>
 
-        {!isPaid && (
+        {isPaid ? (
+          <View style={styles.settledBox}>
+            <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+            <Text style={styles.settledText}>
+              Payment Settled • Official Tax Receipt Active
+            </Text>
+          </View>
+        ) : (
           <View style={styles.payBox}>
             <View>
               <Text style={styles.dueLabel}>Total Amount Due</Text>
@@ -475,5 +580,76 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "900",
     color: colors.primary,
+  },
+  taxInvCard: {
+    backgroundColor: "#FAF5FF",
+    borderWidth: 1,
+    borderColor: "#E9D5FF",
+    marginBottom: 16,
+    padding: 14,
+  },
+  taxInvCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  taxInvIconBg: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F3E8FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  taxInvCardTitle: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#6B21A8",
+  },
+  taxInvCardSub: {
+    fontSize: 11,
+    color: "#7E22CE",
+    marginTop: 2,
+    fontWeight: "500",
+  },
+  originCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 14,
+    padding: 12,
+  },
+  originRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  originTitle: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: colors.text,
+  },
+  originSub: {
+    fontSize: 10,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  originBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  settledBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0FDF4",
+    borderWidth: 1,
+    borderColor: "#BBF7D0",
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 12,
+    gap: 8,
+  },
+  settledText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#166534",
   },
 });
