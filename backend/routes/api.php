@@ -45,6 +45,16 @@ Route::prefix('v1')->group(function () {
     // Cashfree Autonomous Payment Webhook (Signature verified)
     Route::post('/webhooks/cashfree', [InvoiceController::class, 'cashfreeWebhook']);
 
+    // Signed streaming routes for client mobile app direct PDF downloads (HMAC verified, outside auth:sanctum for direct browser streaming)
+    Route::get('portal/estimates/{id}/download-pdf', [ClientPortalController::class, 'downloadEstimatePdfDirect'])
+        ->name('portal.estimate.download-pdf');
+
+    Route::get('portal/proforma-invoices/{id}/download-pdf', [ClientPortalController::class, 'downloadProformaPdfDirect'])
+        ->name('portal.proforma.download-pdf');
+
+    Route::get('portal/invoices/{id}/download-pdf', [ClientPortalController::class, 'downloadInvoicePdfDirect'])
+        ->name('portal.invoice.download-pdf');
+
     // Protected Routes (Requires valid Sanctum Bearer Token)
     Route::middleware('auth:sanctum')->group(function () {
 
@@ -82,19 +92,6 @@ Route::prefix('v1')->group(function () {
             Route::get('tickets/{ticket}', [ClientPortalController::class, 'showTicket']);
             Route::post('tickets/{ticket}/reply', [ClientPortalController::class, 'replyTicket']);
         });
-
-        // Signed streaming routes for client mobile app direct PDF downloads
-        Route::get('portal/estimates/{id}/download-pdf', [ClientPortalController::class, 'downloadEstimatePdfDirect'])
-            ->name('portal.estimate.download-pdf')
-            ->middleware('signed');
-
-        Route::get('portal/proforma-invoices/{id}/download-pdf', [ClientPortalController::class, 'downloadProformaPdfDirect'])
-            ->name('portal.proforma.download-pdf')
-            ->middleware('signed');
-
-        Route::get('portal/invoices/{id}/download-pdf', [ClientPortalController::class, 'downloadInvoicePdfDirect'])
-            ->name('portal.invoice.download-pdf')
-            ->middleware('signed');
 
         // ====================================================================
         // Internal ERP Modules (Guarded: Internal Staff Only, Clients Blocked)

@@ -261,7 +261,7 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           {/* Download Official PDF Action */}
           <View style={{ marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
             <Button
-              title="Download Official Proforma PDF"
+              title="Download Proforma Invoice"
               variant="outline"
               onPress={handleDownloadPdf}
               loading={downloadingPdf}
@@ -451,7 +451,7 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
         {/* Download Official PDF Action */}
         <View style={{ marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
           <Button
-            title="Download Tax Invoice PDF"
+            title="Download Tax Invoice"
             variant="outline"
             onPress={handleDownloadPdf}
             loading={downloadingPdf}

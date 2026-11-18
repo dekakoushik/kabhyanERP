@@ -198,7 +198,7 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
         {/* Download PDF Action Button */}
         <View style={styles.downloadRow}>
           <Button
-            title="Download Official PDF"
+            title="Download Estimate"
             variant="outline"
             onPress={handleDownloadPdf}
             loading={downloadingPdf}

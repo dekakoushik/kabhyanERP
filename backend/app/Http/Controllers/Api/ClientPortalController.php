@@ -509,10 +509,14 @@ class ClientPortalController extends Controller
     }
 
     /**
-     * Download Estimate PDF via signed streaming route or authenticated call.
+     * Download Estimate PDF via signed streaming route.
      */
-    public function downloadEstimatePdfDirect(Request $request, $id, PdfController $pdfController)
+    public function downloadEstimatePdfDirect(Request $request, $id)
     {
+        if (! $request->hasValidSignature() && ! $request->hasValidRelativeSignature()) {
+            abort(403, 'The download link has expired or has an invalid signature. Please request a new link from the app.');
+        }
+
         $estimate = Estimate::where('id', $id)
             ->orWhere('estimate_number', $id)
             ->firstOrFail();
@@ -521,7 +525,7 @@ class ClientPortalController extends Controller
             abort(404, 'Quotation is currently in draft preparation.');
         }
 
-        return $pdfController->downloadEstimate($request, $estimate->id);
+        return app(PdfController::class)->downloadEstimate($request, $estimate->id);
     }
 
     /**
@@ -552,8 +556,12 @@ class ClientPortalController extends Controller
     /**
      * Download Proforma Invoice PDF via signed streaming route.
      */
-    public function downloadProformaPdfDirect(Request $request, $id, PdfController $pdfController)
+    public function downloadProformaPdfDirect(Request $request, $id)
     {
+        if (! $request->hasValidSignature() && ! $request->hasValidRelativeSignature()) {
+            abort(403, 'The download link has expired or has an invalid signature. Please request a new link from the app.');
+        }
+
         $proforma = ProformaInvoice::where('id', $id)
             ->orWhere('proforma_number', $id)
             ->firstOrFail();
@@ -562,7 +570,7 @@ class ClientPortalController extends Controller
             abort(404, 'Proforma invoice is currently in draft preparation.');
         }
 
-        return $pdfController->downloadProforma($request, $proforma->id);
+        return app(PdfController::class)->downloadProforma($request, $proforma->id);
     }
 
     /**
@@ -593,8 +601,12 @@ class ClientPortalController extends Controller
     /**
      * Download Tax Invoice PDF via signed streaming route.
      */
-    public function downloadInvoicePdfDirect(Request $request, $id, PdfController $pdfController)
+    public function downloadInvoicePdfDirect(Request $request, $id)
     {
+        if (! $request->hasValidSignature() && ! $request->hasValidRelativeSignature()) {
+            abort(403, 'The download link has expired or has an invalid signature. Please request a new link from the app.');
+        }
+
         $invoice = Invoice::where('id', $id)
             ->orWhere('invoice_number', $id)
             ->firstOrFail();
@@ -603,7 +615,7 @@ class ClientPortalController extends Controller
             abort(404, 'Invoice is currently in draft preparation.');
         }
 
-        return $pdfController->downloadInvoice($request, $invoice->id);
+        return app(PdfController::class)->downloadInvoice($request, $invoice->id);
     }
 }
 

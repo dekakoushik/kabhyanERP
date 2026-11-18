@@ -24,6 +24,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Enforce HTTPS URL generation behind SSL reverse proxies and in production
+        if (config('app.env') === 'production' || request()->server('HTTP_X_FORWARDED_PROTO') === 'https' || request()->isSecure()) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         // Enable strict model mode outside of production (prevents lazy loading & unfillable mutations)
         Model::shouldBeStrict(! App::isProduction());
 
