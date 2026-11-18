@@ -102,7 +102,23 @@ class ProformaInvoice extends Model
     public function syncInvoicedTotals(): void
     {
         $invoicedTotal = (float) $this->taxInvoices()->where('status', '!=', 'cancelled')->sum('total_amount');
-        $advanceTotal = (float) $this->receiptVouchers()->where('status', '!=', 'cancelled')->sum('amount_received');
+
+        // Automatically associate any vouchers created against the linked estimate
+        if ($this->estimate_id) {
+            ReceiptVoucher::where('estimate_id', $this->estimate_id)
+                ->where('status', '!=', 'cancelled')
+                ->whereNull('proforma_invoice_id')
+                ->update(['proforma_invoice_id' => $this->id]);
+        }
+
+        $directAdvance = (float) $this->receiptVouchers()->where('status', '!=', 'cancelled')->sum('amount_received');
+        $estimateAdvance = 0.0;
+        if ($this->estimate_id) {
+            $estimateAdvance = (float) ReceiptVoucher::where('estimate_id', $this->estimate_id)
+                ->where('status', '!=', 'cancelled')
+                ->sum('amount_received');
+        }
+        $advanceTotal = max($directAdvance, $estimateAdvance);
         $total = (float) $this->total_amount;
         $remaining = max(0, $total - max($invoicedTotal, $advanceTotal));
 

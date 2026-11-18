@@ -27,6 +27,7 @@ class ProformaInvoiceController extends Controller
             'creator:id,name,email',
             'items',
             'taxInvoices:id,proforma_invoice_id,invoice_number,status,total_amount,subtotal,tax_amount,invoice_date',
+            'receiptVouchers:id,proforma_invoice_id,estimate_id,voucher_number,status,amount_received,taxable_amount,voucher_date',
         ]);
 
         if ($search = $request->input('search')) {
@@ -53,14 +54,79 @@ class ProformaInvoiceController extends Controller
         $perPage = (int) $request->input('per_page', 15);
         $invoices = $query->latest('invoice_date')->paginate($perPage);
 
+        // Self-heal and dynamically synchronize proforma financials
+        $allActiveProformas = ProformaInvoice::whereNotIn('status', ['cancelled'])
+            ->with([
+                'receiptVouchers' => function ($q) {
+                    $q->where('status', '!=', 'cancelled');
+                },
+                'taxInvoices' => function ($q) {
+                    $q->where('status', '!=', 'cancelled');
+                },
+            ])
+            ->get();
+
+        $totalProformaValue = 0.0;
+        $totalPaidValue = 0.0;
+        $totalUnpaidValue = 0.0;
+        $paidCount = 0;
+        $partiallyPaidCount = 0;
+        $unpaidCount = 0;
+
+        foreach ($allActiveProformas as $pi) {
+            $total = (float) $pi->total_amount;
+            $voucherAdvance = (float) $pi->receiptVouchers->sum('amount_received');
+
+            if ($voucherAdvance <= 0 && $pi->estimate_id) {
+                $estVoucher = (float) ReceiptVoucher::where('estimate_id', $pi->estimate_id)
+                    ->where('status', '!=', 'cancelled')
+                    ->sum('amount_received');
+                if ($estVoucher > 0) {
+                    $pi->syncInvoicedTotals();
+                    $voucherAdvance = $estVoucher;
+                }
+            } elseif ($voucherAdvance > (float) ($pi->paid_amount ?? 0)) {
+                $pi->syncInvoicedTotals();
+            }
+
+            $paid = max((float) ($pi->paid_amount ?? 0), $voucherAdvance);
+            $remaining = max(0, $total - $paid);
+
+            $totalProformaValue += $total;
+            $totalPaidValue += $paid;
+            $totalUnpaidValue += $remaining;
+
+            if ($remaining <= 0.01) {
+                $paidCount++;
+            } elseif ($paid > 0.01) {
+                $partiallyPaidCount++;
+            } else {
+                $unpaidCount++;
+            }
+        }
+
+        // Ensure each item in the paginated response carries populated paid and due amounts
+        $invoices->getCollection()->transform(function ($pi) {
+            $advance = max((float) ($pi->paid_amount ?? 0), (float) $pi->receiptVouchers->sum('amount_received'));
+            $due = max(0, (float) $pi->total_amount - $advance);
+            $pi->paid_amount = $advance;
+            $pi->remaining_amount = $due;
+            if ($due <= 0.01) {
+                $pi->status = 'paid';
+            } elseif ($advance > 0.01 && in_array($pi->status, ['unpaid', 'sent'])) {
+                $pi->status = 'partially_paid';
+            }
+            return $pi;
+        });
+
         $stats = [
             'total_invoices' => ProformaInvoice::count(),
-            'total_value' => (float) ProformaInvoice::sum('total_amount'),
-            'paid_value' => (float) ProformaInvoice::where('status', 'paid')->sum('total_amount'),
-            'unpaid_value' => (float) ProformaInvoice::whereIn('status', ['unpaid', 'partially_paid'])->sum('total_amount'),
-            'unpaid' => ProformaInvoice::where('status', 'unpaid')->count(),
-            'partially_paid' => ProformaInvoice::where('status', 'partially_paid')->count(),
-            'paid' => ProformaInvoice::where('status', 'paid')->count(),
+            'total_value' => round($totalProformaValue, 2),
+            'paid_value' => round($totalPaidValue, 2),
+            'unpaid_value' => round($totalUnpaidValue, 2),
+            'unpaid' => $unpaidCount,
+            'partially_paid' => $partiallyPaidCount,
+            'paid' => $paidCount,
             'cancelled' => ProformaInvoice::where('status', 'cancelled')->count(),
         ];
 

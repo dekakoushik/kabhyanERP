@@ -664,51 +664,71 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
             </div>
 
             {/* Financial Progress Breakdown */}
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-500 font-medium">Proforma Total:</span>
-                <span className="font-bold text-slate-900">
-                  ₹{Number(proforma.total_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-500 font-medium">Amount Billed So Far:</span>
-                <span className="font-bold text-emerald-600">
-                  ₹{Number(proforma.invoiced_amount ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-xs pt-2 border-t border-slate-200/80">
-                <span className="text-slate-700 font-semibold">Balance Due on Proforma:</span>
-                <span className="font-bold text-purple-700 font-mono">
-                  ₹{Number(proforma.remaining_amount ?? (proforma.total_amount - (proforma.invoiced_amount ?? 0))).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                </span>
-              </div>
+            {(() => {
+              const advanceReceived = Math.max(
+                Number(proforma.paid_amount || 0),
+                (proforma.receipt_vouchers || []).reduce(
+                  (sum: number, rv: any) => sum + Number(rv.amount_received || rv.total_amount || 0),
+                  0
+                )
+              );
+              const billedAmount = Number(proforma.invoiced_amount || 0);
+              const balanceDue = Math.max(
+                0,
+                Number(proforma.total_amount || 0) - Math.max(advanceReceived, billedAmount)
+              );
+              const progressPct = Math.min(
+                100,
+                Math.round((Math.max(advanceReceived, billedAmount) / (Number(proforma.total_amount) || 1)) * 100)
+              );
 
-              {/* Progress Bar */}
-              <div className="space-y-1 pt-1">
-                <div className="flex justify-between text-[10px] text-slate-400 font-semibold">
-                  <span>Invoicing Progress</span>
-                  <span>
-                    {Math.min(
-                      100,
-                      Math.round(((proforma.invoiced_amount ?? 0) / (proforma.total_amount || 1)) * 100)
-                    )}
-                    %
-                  </span>
+              return (
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-500 font-medium">Proforma Total:</span>
+                    <span className="font-bold text-slate-900">
+                      ₹{Number(proforma.total_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  {advanceReceived > 0 && (
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-emerald-700 font-medium">Advance Received (Rule 50):</span>
+                      <span className="font-bold text-emerald-700 font-mono">
+                        ₹{advanceReceived.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  )}
+                  {billedAmount > 0 && (
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-500 font-medium">Milestone Invoiced:</span>
+                      <span className="font-bold text-slate-800 font-mono">
+                        ₹{billedAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center text-xs pt-2 border-t border-slate-200/80">
+                    <span className="text-slate-700 font-semibold">Remaining Balance Due:</span>
+                    <span className="font-bold text-amber-700 font-mono text-sm">
+                      ₹{balanceDue.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="space-y-1 pt-1">
+                    <div className="flex justify-between text-[10px] text-slate-400 font-semibold">
+                      <span>Realization Progress</span>
+                      <span>{progressPct}%</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+                      <div
+                        className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                        style={{ width: `${progressPct}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
-                  <div
-                    className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        Math.round(((proforma.invoiced_amount ?? 0) / (proforma.total_amount || 1)) * 100)
-                      )}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
+              );
+            })()}
 
             <p className="text-[11px] text-slate-500 leading-relaxed">
               When client payment or milestone completion is verified, raise a milestone Tax Invoice for that specific portion. This prevents premature GST liability on unreceived funds.

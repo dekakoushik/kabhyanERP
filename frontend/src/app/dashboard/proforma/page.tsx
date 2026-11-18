@@ -486,9 +486,16 @@ function ProformaContent() {
           <span className="text-[11px] font-semibold uppercase tracking-wider text-purple-600">
             Paid / Total Count
           </span>
-          <p className="text-xl font-bold text-purple-700 mt-1">
-            {stats?.paid ?? 0} <span className="text-xs font-normal text-slate-400">/ {stats?.total_invoices ?? 0}</span>
-          </p>
+          <div className="flex items-baseline gap-1.5 mt-1">
+            <p className="text-xl font-bold text-purple-700">
+              {stats?.paid ?? 0} <span className="text-xs font-normal text-slate-400">/ {stats?.total_invoices ?? invoices.length}</span>
+            </p>
+            {Boolean(stats?.partially_paid) && (
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                {stats?.partially_paid} partial
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -632,7 +639,13 @@ function ProformaContent() {
                         {pi.currency === "INR" ? "₹ " : `${pi.currency} `}
                         {Number(pi.total_amount).toLocaleString(pi.currency === "INR" ? "en-IN" : undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
-                      {pi.invoiced_amount !== undefined && Number(pi.invoiced_amount) > 0 ? (
+                      {Number(pi.paid_amount ?? 0) > 0 ? (
+                        <div className="text-[10px] font-mono mt-0.5 space-x-1 flex items-center">
+                          <span className="text-emerald-700 font-medium">Paid: ₹{Number(pi.paid_amount).toLocaleString("en-IN")}</span>
+                          <span className="text-slate-300">•</span>
+                          <span className="text-amber-700 font-medium">Due: ₹{Number(Math.max(0, pi.total_amount - (pi.paid_amount ?? 0))).toLocaleString("en-IN")}</span>
+                        </div>
+                      ) : pi.invoiced_amount !== undefined && Number(pi.invoiced_amount) > 0 ? (
                         <div className="text-[10px] font-mono mt-0.5 space-x-1 flex items-center">
                           <span className="text-emerald-700 font-medium">Billed: ₹{Number(pi.invoiced_amount).toLocaleString("en-IN")}</span>
                           <span className="text-slate-300">•</span>
