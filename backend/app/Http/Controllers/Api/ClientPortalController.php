@@ -29,13 +29,22 @@ class ClientPortalController extends Controller
             $client = Client::where('email', $user->email)->first();
         }
 
-        // If logged in as staff/superadmin/admin previewing the portal, pick the primary client for preview
+        // If logged in as staff/superadmin/admin previewing the portal, pick any active client
         if (!$client && in_array($user->role, ['superadmin', 'admin', 'manager', 'hr', 'employee'])) {
-            $client = Client::where('portal_access_status', 'active')->first();
+            $client = Client::where('portal_access_status', 'active')->first()
+                ?? Client::orderBy('id', 'desc')->first();
         }
 
         if (!$client) {
-            abort(403, 'No client profile associated with this account. Please register a client first.');
+            // Gracefully construct an ephemeral preview profile so testing accounts never crash
+            $client = new Client([
+                'name' => $user->name,
+                'company_name' => 'Kabhyan Technologies Partner Preview',
+                'email' => $user->email,
+                'phone' => $user->phone ?? '+91 60000 00000',
+                'portal_access_status' => 'active',
+            ]);
+            $client->id = 0;
         }
 
         return $client;
