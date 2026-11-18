@@ -1,9 +1,17 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { Platform } from "react-native";
 import * as Device from "expo-device";
 import { User, portalApi } from "../api/portal";
-import { getStoredToken, getStoredUser, setStoredToken, setStoredUser, removeStoredToken } from "../api/client";
+import {
+  getStoredToken,
+  getStoredUser,
+  setStoredToken,
+  setStoredUser,
+  removeStoredToken,
+  subscribeToUnauthorized,
+} from "../api/client";
 import { registerForPushNotificationsAsync } from "../utils/notifications";
+import { logger } from "../utils/logger";
 
 interface AuthContextType {
   user: User | null;
@@ -35,9 +43,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       }
     } catch (err) {
-      console.warn("[AuthContext] Push token sync skipped or failed:", err);
+      logger.warn("[AuthContext] Push token sync skipped or failed:", err);
     }
   };
+
+  const logout = useCallback(async () => {
+    try {
+      // 1. Remove push notification token from backend if registered
+      if (pushToken) {
+        try {
+          await portalApi.removeDeviceToken(pushToken);
+        } catch (e) {
+          logger.warn("[AuthContext] Push token removal skipped on logout:", e);
+        }
+      }
+
+      // 2. Revoke Sanctum personal access token on the server
+      try {
+        await portalApi.logout();
+      } catch (e) {
+        logger.warn("[AuthContext] Server token revocation skipped (network or expired):", e);
+      }
+
+      // 3. Purge credentials from hardware KeyStore / Keychain & local storage
+      await removeStoredToken();
+
+      // 4. Reset React state
+      setToken(null);
+      setUser(null);
+      setPushToken(null);
+    } catch (err) {
+      logger.error("[AuthContext] Error during logout:", err);
+    }
+  }, [pushToken]);
+
+  // Subscribe to automatic session expiry on 401 Unauthorized
+  useEffect(() => {
+    const unsubscribe = subscribeToUnauthorized(() => {
+      logger.warn("[AuthContext] Session invalid or expired. Performing auto-logout.");
+      logout();
+    });
+    return () => unsubscribe();
+  }, [logout]);
 
   useEffect(() => {
     async function loadSession() {
@@ -51,7 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           syncPushToken();
         }
       } catch (err) {
-        console.error("Failed to load session:", err);
+        logger.error("[AuthContext] Failed to load session:", err);
       } finally {
         setLoading(false);
       }
@@ -68,24 +115,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await setStoredUser(res.user);
       // Register device push token after login
       await syncPushToken();
-    }
-  };
-
-  const logout = async () => {
-    try {
-      if (pushToken) {
-        try {
-          await portalApi.removeDeviceToken(pushToken);
-        } catch (e) {
-          // Ignore network errors on token removal during logout
-        }
-      }
-      await removeStoredToken();
-      setToken(null);
-      setUser(null);
-      setPushToken(null);
-    } catch (err) {
-      console.error("Failed to logout:", err);
     }
   };
 

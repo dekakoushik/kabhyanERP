@@ -18,6 +18,7 @@
     },
     "android": {
       "package": "com.kabhyan.kconnect",
+      "allowBackup": false,
       "permissions": [
         "NOTIFICATIONS"
       ],

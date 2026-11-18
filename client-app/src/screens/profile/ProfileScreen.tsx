@@ -14,6 +14,7 @@ import { Card } from "../../components/Card";
 import { Button } from "../../components/Button";
 import { portalApi, ClientProfile } from "../../api/portal";
 import { useAuth } from "../../context/AuthContext";
+import { logger } from "../../utils/logger";
 
 export const ProfileScreen: React.FC = () => {
   const { user, logout } = useAuth();
@@ -27,7 +28,7 @@ export const ProfileScreen: React.FC = () => {
           setProfile(res.client);
         }
       } catch (err) {
-        console.error("Failed to load profile:", err);
+        logger.error("[ProfileScreen] Failed to load profile:", err);
       }
     }
     load();

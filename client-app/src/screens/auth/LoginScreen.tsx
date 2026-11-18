@@ -96,6 +96,10 @@ export const LoginScreen: React.FC = () => {
                     if (errorMessage) setErrorMessage(null);
                   }}
                   autoCapitalize="none"
+                  autoCorrect={false}
+                  spellCheck={false}
+                  autoComplete="email"
+                  textContentType="emailAddress"
                   keyboardType="email-address"
                 />
               </View>
@@ -116,6 +120,11 @@ export const LoginScreen: React.FC = () => {
                     if (errorMessage) setErrorMessage(null);
                   }}
                   secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  spellCheck={false}
+                  autoComplete="password"
+                  textContentType="password"
                 />
                 <TouchableOpacity
                   onPress={() => setShowPassword(!showPassword)}

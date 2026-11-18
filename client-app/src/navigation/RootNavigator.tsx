@@ -6,6 +6,7 @@ import * as Notifications from "expo-notifications";
 import { colors } from "../theme/colors";
 import { fonts } from "../theme/typography";
 import { useAuth } from "../context/AuthContext";
+import { logger } from "../utils/logger";
 import { LoginScreen } from "../screens/auth/LoginScreen";
 import { BottomTabNavigator } from "./BottomTabNavigator";
 import { InvoiceDetailScreen } from "../screens/billing/InvoiceDetailScreen";
@@ -43,7 +44,7 @@ export const RootNavigator: React.FC = () => {
         navigationRef.navigate("ProjectDetail", { projectId: data.projectId });
       }
     } catch (err) {
-      console.warn("[Navigation] Failed to navigate from notification:", err);
+      logger.warn("[Navigation] Failed to navigate from notification:", err);
     }
   };
 

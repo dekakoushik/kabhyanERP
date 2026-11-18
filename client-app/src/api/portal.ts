@@ -245,6 +245,11 @@ export const portalApi = {
       body: JSON.stringify(credentials),
     }),
 
+  logout: () =>
+    apiClient<{ message: string }>("/auth/logout", {
+      method: "POST",
+    }),
+
   // Dashboard
   getDashboard: () => apiClient<DashboardResponse>("/portal/dashboard"),
 

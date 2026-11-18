@@ -1,25 +1,97 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
+import { logger } from "../utils/logger";
 
 export const API_BASE_URL = "https://erp.kabhyan.com/api/v1";
 
 const TOKEN_KEY = "kabhyan_client_token";
 const USER_KEY = "kabhyan_client_user";
 
+// Event listener mechanism for 401 Unauthorized / Session Expiry
+type UnauthorizedHandler = () => void;
+let unauthorizedHandlers: UnauthorizedHandler[] = [];
+
+export function subscribeToUnauthorized(handler: UnauthorizedHandler): () => void {
+  unauthorizedHandlers.push(handler);
+  return () => {
+    unauthorizedHandlers = unauthorizedHandlers.filter((h) => h !== handler);
+  };
+}
+
+function notifyUnauthorized() {
+  for (const handler of unauthorizedHandlers) {
+    try {
+      handler();
+    } catch (e) {
+      logger.error("[Client] Error in unauthorized handler:", e);
+    }
+  }
+}
+
+/**
+ * Retrieve the Sanctum auth token securely.
+ * Uses hardware-backed Android KeyStore / iOS Keychain via expo-secure-store.
+ * Automatically migrates any legacy plaintext token found in AsyncStorage.
+ */
 export async function getStoredToken(): Promise<string | null> {
   try {
+    if (Platform.OS !== "web") {
+      const secureToken = await SecureStore.getItemAsync(TOKEN_KEY);
+      if (secureToken) {
+        return secureToken;
+      }
+
+      // Check and migrate from legacy AsyncStorage if present
+      const legacyToken = await AsyncStorage.getItem(TOKEN_KEY);
+      if (legacyToken) {
+        await SecureStore.setItemAsync(TOKEN_KEY, legacyToken, {
+          keychainAccessible: SecureStore.WHEN_UNLOCKED,
+        });
+        await AsyncStorage.removeItem(TOKEN_KEY);
+        return legacyToken;
+      }
+      return null;
+    }
     return await AsyncStorage.getItem(TOKEN_KEY);
-  } catch {
+  } catch (err) {
+    logger.warn("[Client] Failed to retrieve secure token:", err);
     return null;
   }
 }
 
+/**
+ * Persist the Sanctum auth token in encrypted secure storage.
+ */
 export async function setStoredToken(token: string): Promise<void> {
-  await AsyncStorage.setItem(TOKEN_KEY, token);
+  try {
+    if (Platform.OS !== "web") {
+      await SecureStore.setItemAsync(TOKEN_KEY, token, {
+        keychainAccessible: SecureStore.WHEN_UNLOCKED,
+      });
+      // Ensure legacy unencrypted copy is purged
+      await AsyncStorage.removeItem(TOKEN_KEY);
+      return;
+    }
+    await AsyncStorage.setItem(TOKEN_KEY, token);
+  } catch (err) {
+    logger.error("[Client] Failed to store secure token:", err);
+  }
 }
 
+/**
+ * Remove stored credentials across all storage layers.
+ */
 export async function removeStoredToken(): Promise<void> {
-  await AsyncStorage.removeItem(TOKEN_KEY);
-  await AsyncStorage.removeItem(USER_KEY);
+  try {
+    if (Platform.OS !== "web") {
+      await SecureStore.deleteItemAsync(TOKEN_KEY);
+    }
+    await AsyncStorage.removeItem(TOKEN_KEY);
+    await AsyncStorage.removeItem(USER_KEY);
+  } catch (err) {
+    logger.error("[Client] Failed to remove stored token:", err);
+  }
 }
 
 export async function getStoredUser(): Promise<any | null> {
@@ -32,7 +104,11 @@ export async function getStoredUser(): Promise<any | null> {
 }
 
 export async function setStoredUser(user: any): Promise<void> {
-  await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
+  try {
+    await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
+  } catch (err) {
+    logger.error("[Client] Failed to store user profile cache:", err);
+  }
 }
 
 interface RequestOptions extends RequestInit {
@@ -42,9 +118,9 @@ interface RequestOptions extends RequestInit {
 export async function apiClient<T = any>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const token = await getStoredToken();
   const headers: Record<string, string> = {
-    "Accept": "application/json",
+    Accept: "application/json",
     "Content-Type": "application/json",
-    ...(options.headers as Record<string, string> || {}),
+    ...((options.headers as Record<string, string>) || {}),
   };
 
   if (token) {
@@ -67,6 +143,12 @@ export async function apiClient<T = any>(endpoint: string, options: RequestOptio
     ...options,
     headers,
   });
+
+  // Handle 401 Unauthorized (Token expired, revoked, or invalid)
+  if (response.status === 401 && !endpoint.includes("/auth/login")) {
+    logger.warn(`[Client] Session expired or unauthorized for ${endpoint}. Triggering auto-logout.`);
+    notifyUnauthorized();
+  }
 
   const contentType = response.headers.get("content-type");
   const isJson = contentType && contentType.includes("application/json");

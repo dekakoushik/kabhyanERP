@@ -2,6 +2,7 @@ import { Platform } from "react-native";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import Constants, { ExecutionEnvironment } from "expo-constants";
+import { logger } from "./logger";
 
 /**
  * Detect if running inside the Expo Go sandbox app.
@@ -37,7 +38,7 @@ try {
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
   // Remote push notifications and native channels cannot run in Expo Go (SDK 53+)
   if (isExpoGo) {
-    console.log(
+    logger.info(
       "[PushNotifications] Info: Running inside Expo Go. Native OS push notifications require a development build (`npx expo run:android`) or standalone APK."
     );
     return null;
@@ -45,7 +46,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
 
   // Push notifications only deliver to physical devices
   if (!Device.isDevice) {
-    console.log("[PushNotifications] Notice: Push notifications require a physical device.");
+    logger.info("[PushNotifications] Notice: Push notifications require a physical device.");
     return null;
   }
 
@@ -66,7 +67,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
         showBadge: true,
       });
     } catch (channelError) {
-      console.warn("[PushNotifications] Notification channel creation skipped:", channelError);
+      logger.warn("[PushNotifications] Notification channel creation skipped:", channelError);
     }
   }
 
@@ -81,7 +82,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     }
 
     if (finalStatus !== "granted") {
-      console.log("[PushNotifications] Permission not granted by user.");
+      logger.info("[PushNotifications] Permission not granted by user.");
       return null;
     }
 
@@ -94,7 +95,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     );
     token = pushTokenResponse.data;
   } catch (error) {
-    console.warn("[PushNotifications] Failed to obtain push token:", error);
+    logger.warn("[PushNotifications] Failed to obtain push token:", error);
   }
 
   return token;
