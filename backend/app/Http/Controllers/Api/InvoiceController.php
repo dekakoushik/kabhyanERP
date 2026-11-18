@@ -405,7 +405,7 @@ class InvoiceController extends Controller
         $validated['created_by'] = $request->user()->id;
 
         try {
-            $invoice = DB::transaction(function () use ($validated) {
+            $invoice = DB::transaction(function () use ($request, $validated) {
                 $invoiceNumber = $validated['invoice_number'] ?? null;
                 if (empty($invoiceNumber) || Invoice::withTrashed()->where('invoice_number', $invoiceNumber)->exists()) {
                     $invoiceNumber = DocumentNumberService::getNextInvoiceNumber(true);
