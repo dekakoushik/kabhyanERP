@@ -143,6 +143,23 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             .join(", ")}`
         : "";
 
+    // Context subtitle cleanly computed outside JSX to prevent nested template parser conflicts
+    let contextSubtitle = dateFormatted;
+    if (isVoucher) {
+      contextSubtitle = `Received ${formatDate(item.headline_date)}`;
+      if (item.project_name) {
+        contextSubtitle += ` • ${item.project_name}`;
+      }
+    } else if (item.project_name) {
+      contextSubtitle = `${item.project_name} • ${item.due_date ? `Due ${dateFormatted}` : dateFormatted}`;
+    } else if (item.due_date) {
+      contextSubtitle = `Due: ${dateFormatted}`;
+    }
+
+    if (lineageText) {
+      contextSubtitle += lineageText;
+    }
+
     return (
       <TouchableOpacity
         activeOpacity={0.75}
@@ -170,14 +187,7 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           {/* Row 2: Context / Date / Lineage (Left) | Status / Action (Right) */}
           <View style={styles.bottomRow}>
             <Text style={styles.contextText} numberOfLines={1}>
-              {isVoucher
-                ? `Received ${formatDate(item.headline_date)}${item.project_name ? ` • ${item.project_name}` : ""}`
-                : item.project_name
-                ? `${item.project_name} • ${item.due_date ? `Due ${dateFormatted}` : dateFormatted}`
-                : item.due_date
-                ? `Due: ${dateFormatted}`
-                : dateFormatted}
-              {lineageText}
+              {contextSubtitle}
             </Text>
 
             <View style={styles.actionGroup}>
