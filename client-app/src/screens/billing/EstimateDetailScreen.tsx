@@ -388,36 +388,46 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
         <Card style={styles.breakdownCard}>
           <Text style={styles.breakdownTitle}>Summary</Text>
 
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Subtotal</Text>
-            <Text style={styles.summaryValue}>{formatCurrency(subtotalNum)}</Text>
-          </View>
-
-          {discountNum > 0 && (
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Discount</Text>
-              <Text style={[styles.summaryValue, { color: colors.success }]}>
-                -{formatCurrency(discountNum)}
-              </Text>
-            </View>
-          )}
-
           {isInclusive ? (
             <>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Taxable Amount</Text>
+                <Text style={styles.summaryLabel}>Taxable Turnover</Text>
                 <Text style={styles.summaryValue}>{formatCurrency(taxableTurnover)}</Text>
               </View>
+              {discountNum > 0 && (
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Discount</Text>
+                  <Text style={[styles.summaryValue, { color: colors.success }]}>
+                    -{formatCurrency(discountNum)}
+                  </Text>
+                </View>
+              )}
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>GST ({estimate.tax_rate || 18}% Included)</Text>
-                <Text style={styles.summaryValue}>{formatCurrency(taxAmountNum)}</Text>
+                <Text style={styles.summaryLabel}>GST Included ({estimate.tax_rate || 18}%)</Text>
+                <Text style={[styles.summaryValue, { color: colors.purple }]}>
+                  {formatCurrency(taxAmountNum)}
+                </Text>
               </View>
             </>
           ) : (
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>GST ({estimate.tax_rate || 18}%)</Text>
-              <Text style={styles.summaryValue}>+{formatCurrency(taxAmountNum)}</Text>
-            </View>
+            <>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Subtotal</Text>
+                <Text style={styles.summaryValue}>{formatCurrency(subtotalNum)}</Text>
+              </View>
+              {discountNum > 0 && (
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Discount</Text>
+                  <Text style={[styles.summaryValue, { color: colors.success }]}>
+                    -{formatCurrency(discountNum)}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>GST ({estimate.tax_rate || 18}%)</Text>
+                <Text style={styles.summaryValue}>+{formatCurrency(taxAmountNum)}</Text>
+              </View>
+            </>
           )}
 
           {roundOffNum !== 0 && (
