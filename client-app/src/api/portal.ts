@@ -119,7 +119,7 @@ export interface DashboardResponse {
 export const portalApi = {
   // Auth
   login: (credentials: { email: string; password: string }) =>
-    apiClient<{ token: string; user: User }>("/login", {
+    apiClient<{ token: string; user: User }>("/auth/login", {
       method: "POST",
       body: JSON.stringify(credentials),
     }),

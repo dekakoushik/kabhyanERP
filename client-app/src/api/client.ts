@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export const API_BASE_URL = "https://erp.kabhyan.com/api";
+export const API_BASE_URL = "https://erp.kabhyan.com/api/v1";
 
 const TOKEN_KEY = "kabhyan_client_token";
 const USER_KEY = "kabhyan_client_user";
@@ -75,7 +75,13 @@ export async function apiClient<T = any>(endpoint: string, options: RequestOptio
   if (!response.ok) {
     let errorMessage = "Network request failed";
     if (typeof data === "object" && data !== null) {
-      errorMessage = (data as any).message || (data as any).error || `Request failed with status ${response.status}`;
+      if ((data as any).errors && typeof (data as any).errors === "object") {
+        const firstErrKey = Object.keys((data as any).errors)[0];
+        const firstErrVal = (data as any).errors[firstErrKey];
+        errorMessage = Array.isArray(firstErrVal) ? firstErrVal[0] : String(firstErrVal);
+      } else {
+        errorMessage = (data as any).message || (data as any).error || `Request failed with status ${response.status}`;
+      }
     } else if (typeof data === "string" && data.length > 0) {
       errorMessage = data;
     }
