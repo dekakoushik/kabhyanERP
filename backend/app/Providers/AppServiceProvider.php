@@ -64,7 +64,8 @@ class AppServiceProvider extends ServiceProvider
                     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
 
                     // One-time autonomous live-mode database reset and dummy data purge (grounded in persistent database flag)
-                    $isAlreadyPurged = Schema::hasTable('system_settings') && \Illuminate\Support\Facades\DB::table('system_settings')->where('key', 'live_mode_purged_at')->exists();
+                    $liveModePurgeKey = 'kabhyan_live_mode_purged_at';
+                    $isAlreadyPurged = \Illuminate\Support\Facades\Cache::has($liveModePurgeKey) || (Schema::hasTable('system_settings') && \Illuminate\Support\Facades\DB::table('system_settings')->where('key', 'live_mode_purged_at')->exists());
                     if (!$isAlreadyPurged) {
                         try {
                             if (Schema::hasTable('personal_access_tokens')) {
