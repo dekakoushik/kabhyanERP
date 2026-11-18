@@ -24,7 +24,11 @@
     <!-- Recipient Client & Project Info Cards -->
     <table style="width: 100%; border-collapse: collapse; margin-top: 2px; margin-bottom: 16px;">
         <tr>
-            <td style="width: {{ $hasProject ? '48.5%' : '100%' }}; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 11px 13px;">
+            @if($hasProject)
+            <td style="width: 48.5%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 11px 13px;">
+            @else
+            <td style="width: 100%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 11px 13px;">
+            @endif
                 <div style="font-size: 7pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 3px;">PREPARED FOR CLIENT</div>
                 <div style="font-size: 10pt; font-weight: bold; color: #0f172a; margin-bottom: 2px;">{{ $estimate->client_name }}</div>
                 <div style="font-size: 8.5pt; font-weight: 500; color: #475569; margin-bottom: 3px;">{{ $estimate->client_company ?? 'Direct Client' }}</div>
