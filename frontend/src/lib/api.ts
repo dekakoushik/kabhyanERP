@@ -667,6 +667,283 @@ export interface FinancialReportResponse {
   recent_transactions: CashflowTransaction[];
 }
 
+export interface ReportPeriod {
+  start_date: string;
+  end_date: string;
+  label: string;
+}
+
+export interface ReportOverviewResponse {
+  period: ReportPeriod;
+  kpis: {
+    invoiced_gross: number;
+    invoiced_taxable: number;
+    collections_cash: number;
+    advances_received: number;
+    advances_unadjusted: number;
+    total_inflow: number;
+    expenses_paid: number;
+    net_profit: number;
+    net_margin_pct: number;
+    realization_rate: number;
+    outstanding_due: number;
+    output_gst: number;
+    input_gst: number;
+    net_gst_payable: number;
+    active_projects: number;
+    total_clients: number;
+    estimate_win_rate: number;
+    accepted_estimates_count: number;
+  };
+  recent_cashflow: Array<{
+    id: string;
+    type: "inflow" | "outflow";
+    title: string;
+    party: string;
+    date: string;
+    amount: number;
+  }>;
+}
+
+export interface ReportRevenueResponse {
+  period: ReportPeriod;
+  summary: {
+    total_invoiced: number;
+    total_inflow: number;
+    total_expense: number;
+    net_profit: number;
+    net_margin_pct: number;
+  };
+  monthly: Array<{
+    month: string;
+    short_month: string;
+    year: number;
+    invoiced: number;
+    collected: number;
+    advances: number;
+    total_inflow: number;
+    expense: number;
+    net_profit: number;
+    margin_pct: number;
+  }>;
+  quarters: Record<string, {
+    invoiced: number;
+    collected: number;
+    expense: number;
+    net: number;
+  }>;
+  expense_categories: CategoryBreakdown[];
+}
+
+export interface ReportGstResponse {
+  period: ReportPeriod;
+  company_info: {
+    gstin: string;
+    state_code: string;
+  };
+  gstr3b_summary: {
+    total_turnover: number;
+    taxable_turnover: number;
+    total_output_tax: number;
+    total_itc_claimed: number;
+    net_gst_payable: number;
+  };
+  table4_b2b: {
+    records: Array<{
+      id: number;
+      invoice_number: string;
+      invoice_date: string;
+      client_name: string;
+      client_company: string;
+      client_gstin: string;
+      place_of_supply: string;
+      invoice_value: number;
+      taxable_value: number;
+      tax_rate: number;
+      igst: number;
+      cgst: number;
+      sgst: number;
+      total_tax: number;
+      reverse_charge: string;
+    }>;
+    totals: {
+      count: number;
+      invoice_value: number;
+      taxable_value: number;
+      igst: number;
+      cgst: number;
+      sgst: number;
+      total_tax: number;
+    };
+  };
+  table7_b2c: {
+    records: Array<{
+      id: number;
+      invoice_number: string;
+      invoice_date: string;
+      client_name: string;
+      client_company: string;
+      client_gstin: string;
+      place_of_supply: string;
+      invoice_value: number;
+      taxable_value: number;
+      tax_rate: number;
+      igst: number;
+      cgst: number;
+      sgst: number;
+      total_tax: number;
+      reverse_charge: string;
+    }>;
+    totals: {
+      count: number;
+      invoice_value: number;
+      taxable_value: number;
+      igst: number;
+      cgst: number;
+      sgst: number;
+      total_tax: number;
+    };
+  };
+  table11a_advances: {
+    records: Array<{
+      id: number;
+      voucher_number: string;
+      voucher_date: string;
+      client_name: string;
+      place_of_supply: string;
+      amount_received: number;
+      taxable_amount: number;
+      tax_rate: number;
+      igst: number;
+      cgst: number;
+      sgst: number;
+      status: string;
+      remaining_advance: number;
+    }>;
+    totals: {
+      count: number;
+      gross_amount: number;
+      taxable_amount: number;
+      igst: number;
+      cgst: number;
+      sgst: number;
+      total_tax: number;
+    };
+  };
+  table11b_adjustments: {
+    records: Array<{
+      id: number;
+      invoice_number: string;
+      voucher_number: string;
+      adjusted_amount: number;
+      invoice_date: string;
+      client_name: string;
+    }>;
+    total_adjusted: number;
+  };
+  table13_documents: Array<{
+    nature_of_doc: string;
+    sr_from: string;
+    sr_to: string;
+    total_number: number;
+    cancelled: number;
+    net_issued: number;
+  }>;
+}
+
+export interface ReportReceivablesResponse {
+  summary: {
+    total_receivables: number;
+    dso_days: number;
+    unpaid_invoices_count: number;
+    debtors_count: number;
+  };
+  aging_buckets: {
+    current_0_30: number;
+    overdue_31_60: number;
+    overdue_61_90: number;
+    overdue_90_plus: number;
+  };
+  debtors: Array<{
+    client_id: number | null;
+    client_name: string;
+    client_company?: string | null;
+    client_email?: string | null;
+    client_phone?: string | null;
+    total_due: number;
+    total_invoiced: number;
+    unpaid_invoices_count: number;
+    oldest_due_date: string;
+    max_days_overdue: number;
+  }>;
+  invoices: Array<{
+    id: number;
+    invoice_number: string;
+    client_name: string;
+    client_company?: string | null;
+    invoice_date: string;
+    due_date: string;
+    total_amount: number;
+    paid_amount: number;
+    due_amount: number;
+    days_overdue: number;
+    bucket: string;
+    status: string;
+  }>;
+}
+
+export interface ReportClientsResponse {
+  period: ReportPeriod;
+  concentration: {
+    total_revenue: number;
+    top_3_revenue: number;
+    top_3_pct: number;
+    top_5_revenue: number;
+    top_5_pct: number;
+  };
+  clients: Array<{
+    id: number;
+    name: string;
+    company_name: string;
+    email: string;
+    phone?: string | null;
+    gstin?: string | null;
+    city?: string | null;
+    state?: string | null;
+    total_invoiced: number;
+    total_collected: number;
+    total_outstanding: number;
+    estimates_won: number;
+    estimates_total: number;
+    conversion_rate: number;
+  }>;
+}
+
+export interface ReportProjectsResponse {
+  summary: {
+    total_projects: number;
+    total_turnover: number;
+    total_direct_cost: number;
+    overall_margin: number;
+    overall_margin_pct: number;
+  };
+  projects: Array<{
+    id: number;
+    name: string;
+    client_name: string;
+    status: string;
+    start_date?: string | null;
+    deadline?: string | null;
+    budget: number;
+    total_invoiced: number;
+    total_collected: number;
+    total_outstanding: number;
+    total_expenses: number;
+    gross_margin: number;
+    margin_pct: number;
+  }>;
+}
+
 export interface Client {
   id: number;
   user_id?: number | null;
@@ -970,7 +1247,7 @@ export const api = {
     }
   },
 
-  request: async (endpoint: string, options: RequestInit = {}) => {
+  request: async <T = any>(endpoint: string, options: RequestInit = {}): Promise<T> => {
     const token = api.getToken();
     const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
     const headers: Record<string, string> = {

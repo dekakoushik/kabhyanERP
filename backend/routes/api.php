@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\ProformaInvoiceController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\ReceiptVoucherController;
 use App\Http\Controllers\Api\RefundVoucherController;
+use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\TaskController;
@@ -233,8 +234,19 @@ Route::prefix('v1')->group(function () {
             // Administrative Only (Admin & SuperAdmin Privileges Required)
             // ================================================================
             Route::middleware(EnsureAdminOrSuperAdmin::class)->group(function () {
-                // Financial Reports & Income vs Expense Analytics
+                // Financial Reports & Income vs Expense Analytics (Legacy & Modern)
                 Route::get('financial-reports/income-vs-expense', [FinancialReportController::class, 'incomeVsExpense']);
+
+                // Enterprise Business Intelligence & Statutory Reports
+                Route::prefix('reports')->group(function () {
+                    Route::get('overview', [ReportController::class, 'overview']);
+                    Route::get('revenue', [ReportController::class, 'revenue']);
+                    Route::get('gst', [ReportController::class, 'gst']);
+                    Route::get('receivables', [ReportController::class, 'receivables']);
+                    Route::get('clients', [ReportController::class, 'clients']);
+                    Route::get('projects', [ReportController::class, 'projects']);
+                    Route::get('export/{type}', [ReportController::class, 'export']);
+                });
 
                 // Client Invitations
                 Route::post('clients/{client}/send-invite', [ClientController::class, 'sendInvite']);

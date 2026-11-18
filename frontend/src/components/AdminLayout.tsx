@@ -65,6 +65,8 @@ import {
   Plus,
   Globe,
   Mail,
+  BarChart3,
+  Clock,
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -232,6 +234,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             { name: "+ Log Expense", href: "/dashboard/expenses/create", icon: Plus, roles: ["superadmin", "admin", "manager", "hr"] },
           ],
         },
+        {
+          name: "Business Reports",
+          icon: BarChart3,
+          roles: ["superadmin", "admin"],
+          children: [
+            { name: "Executive Overview", href: "/dashboard/reports", icon: BarChart3 },
+            { name: "Revenue & P&L", href: "/dashboard/reports/revenue", icon: TrendingUp },
+            { name: "Statutory GST", href: "/dashboard/reports/gst", icon: Receipt },
+            { name: "Receivables Aging", href: "/dashboard/reports/receivables", icon: Clock },
+            { name: "Client Portfolio", href: "/dashboard/reports/clients", icon: Users },
+            { name: "Project Margins", href: "/dashboard/reports/projects", icon: Briefcase },
+          ],
+        },
       ],
     },
     {
@@ -394,6 +409,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       if (section === "tickets") sectionLabel = "Support Tickets";
       if (section === "users") sectionLabel = "Team";
       if (section === "settings") sectionLabel = "Settings";
+      if (section === "reports") sectionLabel = "Reports";
 
       const sectionHref = `/dashboard/${section}`;
       const isCurrent = segments.length === 2;
@@ -438,6 +454,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           crumbs.push({ label: "Email Infrastructure", href: pathname, isCurrent: true });
         } else if (sub === "system") {
           crumbs.push({ label: "System Health", href: pathname, isCurrent: true });
+        } else if (section === "reports" && sub === "revenue") {
+          crumbs.push({ label: "Revenue & P&L", href: pathname, isCurrent: true });
+        } else if (section === "reports" && sub === "gst") {
+          crumbs.push({ label: "Statutory GST", href: pathname, isCurrent: true });
+        } else if (section === "reports" && sub === "receivables") {
+          crumbs.push({ label: "Receivables & Aging", href: pathname, isCurrent: true });
+        } else if (section === "reports" && sub === "clients") {
+          crumbs.push({ label: "Client Portfolio", href: pathname, isCurrent: true });
+        } else if (section === "reports" && sub === "projects") {
+          crumbs.push({ label: "Project Margins", href: pathname, isCurrent: true });
         } else {
           // Dynamic record identifier (e.g. /dashboard/users/1, /dashboard/invoices/5/edit)
           const getEntityLabels = (sec: string) => {
