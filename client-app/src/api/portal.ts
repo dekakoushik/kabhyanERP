@@ -34,14 +34,18 @@ export interface DashboardStats {
 
 export interface InvoiceItem {
   id: number;
-  description: string;
+  item_name?: string;
+  description?: string;
   quantity: number;
   unit?: string;
   unit_price: number;
-  taxable_amount: number;
-  gst_rate: number;
-  gst_amount: number;
-  total_amount: number;
+  amount: number;
+  tax_rate?: number;
+  tax_amount?: number;
+  taxable_amount?: number;
+  gst_rate?: number;
+  gst_amount?: number;
+  total_amount?: number;
 }
 
 export interface ProformaInvoiceSummary {
@@ -75,9 +79,17 @@ export interface Invoice {
   invoice_date: string;
   due_date: string;
   status: "draft" | "unpaid" | "partially_paid" | "paid" | "overdue" | "cancelled";
+  currency?: string;
+  tax_calculation_type?: "exclusive" | "inclusive";
   subtotal: number;
+  tax_rate?: number;
   tax_amount: number;
-  total: number;
+  discount_type?: "percentage" | "fixed";
+  discount_rate?: number;
+  discount_amount?: number;
+  round_off?: number;
+  total_amount: number;
+  total?: number;
   paid_amount?: number;
   due_amount?: number;
   client?: ClientProfile;
@@ -93,8 +105,15 @@ export interface ProformaInvoice {
   invoice_date: string;
   due_date: string;
   status: "draft" | "sent" | "unpaid" | "partially_paid" | "paid" | "converted" | "partially_invoiced" | "fully_invoiced" | "cancelled";
+  currency?: string;
+  tax_calculation_type?: "exclusive" | "inclusive";
   subtotal: number;
+  tax_rate?: number;
   tax_amount: number;
+  discount_type?: "percentage" | "fixed";
+  discount_rate?: number;
+  discount_amount?: number;
+  round_off?: number;
   total_amount: number;
   paid_amount?: number;
   invoiced_amount?: number;
@@ -113,11 +132,20 @@ export interface Estimate {
   estimate_date: string;
   expiry_date?: string;
   status: "draft" | "sent" | "accepted" | "declined" | "expired" | "invoiced";
+  currency?: string;
+  tax_calculation_type?: "exclusive" | "inclusive";
   subtotal: number;
+  tax_rate?: number;
   tax_amount: number;
-  total: number;
+  discount_type?: "percentage" | "fixed";
+  discount_rate?: number;
+  discount_amount?: number;
+  round_off?: number;
+  total_amount: number;
+  total?: number;
   items?: InvoiceItem[];
   notes?: string;
+  terms_and_conditions?: string;
   project?: { id: number; name: string; code?: string };
   proforma_invoices?: ProformaInvoiceSummary[];
 }
@@ -216,11 +244,20 @@ export const portalApi = {
   getEstimate: (id: number | string) =>
     apiClient<{ estimate: Estimate }>(`/portal/estimates/${id}`),
 
+  getEstimatePdfUrl: (id: number | string) =>
+    apiClient<{ download_url: string; filename: string }>(`/portal/estimates/${id}/download-url`),
+
   respondEstimate: (id: number | string, action: "accepted" | "declined", reason?: string) =>
     apiClient<{ success: boolean; message: string }>(`/portal/estimates/${id}/respond`, {
       method: "POST",
       body: JSON.stringify({ action, reason }),
     }),
+
+  getProformaPdfUrl: (id: number | string) =>
+    apiClient<{ download_url: string; filename: string }>(`/portal/proforma-invoices/${id}/download-url`),
+
+  getInvoicePdfUrl: (id: number | string) =>
+    apiClient<{ download_url: string; filename: string }>(`/portal/invoices/${id}/download-url`),
 
   // Projects
   getProjects: () => apiClient<{ projects: Project[] }>("/portal/projects"),

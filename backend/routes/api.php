@@ -65,17 +65,36 @@ Route::prefix('v1')->group(function () {
             Route::get('projects/{project}', [ClientPortalController::class, 'showProject']);
             Route::get('invoices', [ClientPortalController::class, 'invoices']);
             Route::get('invoices/{invoice}', [ClientPortalController::class, 'showInvoice']);
+            Route::get('invoices/{invoice}/pdf', [ClientPortalController::class, 'downloadInvoicePdfDirect']);
+            Route::get('invoices/{invoice}/download-url', [ClientPortalController::class, 'getInvoicePdfUrl']);
             Route::post('invoices/{invoice}/payment-link', [ClientPortalController::class, 'invoicePaymentLink']);
             Route::get('proforma-invoices', [ClientPortalController::class, 'proformaInvoices']);
             Route::get('proforma-invoices/{proformaInvoice}', [ClientPortalController::class, 'showProformaInvoice']);
+            Route::get('proforma-invoices/{proformaInvoice}/pdf', [ClientPortalController::class, 'downloadProformaPdfDirect']);
+            Route::get('proforma-invoices/{proformaInvoice}/download-url', [ClientPortalController::class, 'getProformaPdfUrl']);
             Route::get('estimates', [ClientPortalController::class, 'estimates']);
             Route::get('estimates/{estimate}', [ClientPortalController::class, 'showEstimate']);
+            Route::get('estimates/{estimate}/pdf', [ClientPortalController::class, 'downloadEstimatePdfDirect']);
+            Route::get('estimates/{estimate}/download-url', [ClientPortalController::class, 'getEstimatePdfUrl']);
             Route::post('estimates/{estimate}/respond', [ClientPortalController::class, 'respondEstimate']);
             Route::get('tickets', [ClientPortalController::class, 'tickets']);
             Route::post('tickets', [ClientPortalController::class, 'createTicket']);
             Route::get('tickets/{ticket}', [ClientPortalController::class, 'showTicket']);
             Route::post('tickets/{ticket}/reply', [ClientPortalController::class, 'replyTicket']);
         });
+
+        // Signed streaming routes for client mobile app direct PDF downloads
+        Route::get('portal/estimates/{id}/download-pdf', [ClientPortalController::class, 'downloadEstimatePdfDirect'])
+            ->name('portal.estimate.download-pdf')
+            ->middleware('signed');
+
+        Route::get('portal/proforma-invoices/{id}/download-pdf', [ClientPortalController::class, 'downloadProformaPdfDirect'])
+            ->name('portal.proforma.download-pdf')
+            ->middleware('signed');
+
+        Route::get('portal/invoices/{id}/download-pdf', [ClientPortalController::class, 'downloadInvoicePdfDirect'])
+            ->name('portal.invoice.download-pdf')
+            ->middleware('signed');
 
         // ====================================================================
         // Internal ERP Modules (Guarded: Internal Staff Only, Clients Blocked)

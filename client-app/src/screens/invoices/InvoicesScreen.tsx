@@ -18,6 +18,7 @@ import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
 import { EmptyState } from "../../components/EmptyState";
 import { portalApi, Invoice, ProformaInvoice } from "../../api/portal";
+import { formatDate, formatCurrency } from "../../utils/date";
 
 export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   // Document Type Tab: "tax" or "proforma"
@@ -85,23 +86,28 @@ export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
     }
   };
 
-  // Tax Invoices Filtering
+  // Tax Invoices Filtering (Drafts are strictly isolated from client view)
   const invoiceList = Array.isArray(invoices) ? invoices : [];
-  const filteredTaxInvoices = invoiceList.filter((inv) => {
-    if (!searchQuery.trim()) return true;
-    return (inv.invoice_number || "").toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  const filteredTaxInvoices = invoiceList
+    .filter((inv) => inv.status !== "draft")
+    .filter((inv) => {
+      if (!searchQuery.trim()) return true;
+      return (inv.invoice_number || "").toLowerCase().includes(searchQuery.toLowerCase());
+    });
 
-  // Proforma Invoices Filtering
+  // Proforma Invoices Filtering (Drafts are strictly isolated from client view)
   const proformaList = Array.isArray(proformas) ? proformas : [];
-  const filteredProformas = proformaList.filter((pi) => {
-    if (!searchQuery.trim()) return true;
-    return (pi.proforma_number || "").toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  const filteredProformas = proformaList
+    .filter((pi) => pi.status !== "draft")
+    .filter((pi) => {
+      if (!searchQuery.trim()) return true;
+      return (pi.proforma_number || "").toLowerCase().includes(searchQuery.toLowerCase());
+    });
 
   const renderTaxInvoiceCard = ({ item }: { item: Invoice }) => {
     const isPaid = item.status === "paid";
     const isPaying = payingId === item.id;
+    const finalTotal = item.total_amount ?? item.total ?? 0;
 
     return (
       <Card style={styles.invoiceCard}>
@@ -117,7 +123,7 @@ export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                   <Text style={styles.taxTagText}>TAX INVOICE</Text>
                 </View>
               </View>
-              <Text style={styles.invoiceDate}>Issued on: {item.invoice_date}</Text>
+              <Text style={styles.invoiceDate}>Issued on: {formatDate(item.invoice_date)}</Text>
             </View>
             <Badge
               label={(item.status || "pending").replace("_", " ")}
@@ -139,15 +145,15 @@ export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           <View style={styles.detailsRow}>
             <View>
               <Text style={styles.metaLabel}>Subtotal</Text>
-              <Text style={styles.metaValue}>₹{Number(item.subtotal || 0).toLocaleString()}</Text>
+              <Text style={styles.metaValue}>{formatCurrency(item.subtotal || 0)}</Text>
             </View>
             <View>
-              <Text style={styles.metaLabel}>GST (18%)</Text>
-              <Text style={styles.metaValue}>+₹{Number(item.tax_amount || 0).toLocaleString()}</Text>
+              <Text style={styles.metaLabel}>GST</Text>
+              <Text style={styles.metaValue}>+{formatCurrency(item.tax_amount || 0)}</Text>
             </View>
             <View style={{ alignItems: "flex-end" }}>
               <Text style={styles.metaLabel}>Total Due</Text>
-              <Text style={styles.grossTotal}>₹{Number(item.total).toLocaleString()}</Text>
+              <Text style={styles.grossTotal}>{formatCurrency(finalTotal)}</Text>
             </View>
           </View>
 
@@ -197,7 +203,7 @@ export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                   <Text style={styles.proformaTagText}>PROFORMA</Text>
                 </View>
               </View>
-              <Text style={styles.invoiceDate}>Issued on: {item.invoice_date}</Text>
+              <Text style={styles.invoiceDate}>Issued on: {formatDate(item.invoice_date)}</Text>
             </View>
             <Badge
               label={
@@ -243,15 +249,15 @@ export const InvoicesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           <View style={styles.detailsRow}>
             <View>
               <Text style={styles.metaLabel}>Scope Amount</Text>
-              <Text style={styles.metaValue}>₹{Number(item.subtotal || 0).toLocaleString()}</Text>
+              <Text style={styles.metaValue}>{formatCurrency(item.subtotal || 0)}</Text>
             </View>
             <View>
               <Text style={styles.metaLabel}>GST</Text>
-              <Text style={styles.metaValue}>+₹{Number(item.tax_amount || 0).toLocaleString()}</Text>
+              <Text style={styles.metaValue}>+{formatCurrency(item.tax_amount || 0)}</Text>
             </View>
             <View style={{ alignItems: "flex-end" }}>
               <Text style={styles.metaLabel}>Advance Total</Text>
-              <Text style={styles.grossTotal}>₹{Number(item.total_amount || 0).toLocaleString()}</Text>
+              <Text style={styles.grossTotal}>{formatCurrency(item.total_amount || 0)}</Text>
             </View>
           </View>
 

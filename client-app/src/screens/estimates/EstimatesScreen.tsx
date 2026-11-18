@@ -15,6 +15,7 @@ import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { EmptyState } from "../../components/EmptyState";
 import { portalApi, Estimate } from "../../api/portal";
+import { formatDate, formatCurrency } from "../../utils/date";
 
 export const EstimatesScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [estimates, setEstimates] = useState<Estimate[]>([]);
@@ -45,6 +46,9 @@ export const EstimatesScreen: React.FC<{ navigation: any }> = ({ navigation }) =
     fetchEstimates();
   };
 
+  // Internal draft estimates must never be shown to client users
+  const visibleEstimates = estimates.filter((e) => e.status !== "draft");
+
   const renderEstimateCard = ({ item }: { item: Estimate }) => {
     const linkedProforma = item.proforma_invoices && item.proforma_invoices[0];
     const isConverted = item.status === "invoiced" || Boolean(linkedProforma);
@@ -60,10 +64,10 @@ export const EstimatesScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           <View style={styles.cardHeader}>
             <View>
               <Text style={styles.estNumber}>{item.estimate_number}</Text>
-              <Text style={styles.estDate}>Issued: {item.estimate_date}</Text>
+              <Text style={styles.estDate}>Issued: {formatDate(item.estimate_date)}</Text>
             </View>
             <Badge
-              label={isConverted ? "CONVERTED TO PROFORMA" : item.status}
+              label={isConverted ? "CONVERTED TO PROFORMA" : item.status.toUpperCase()}
               variant={isConverted ? "purple" : isAccepted ? "success" : isDeclined ? "danger" : "warning"}
             />
           </View>
@@ -82,11 +86,11 @@ export const EstimatesScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           <View style={styles.amountRow}>
             <View>
               <Text style={styles.metaLabel}>Subtotal</Text>
-              <Text style={styles.metaValue}>₹{Number(item.subtotal || 0).toLocaleString()}</Text>
+              <Text style={styles.metaValue}>{formatCurrency(item.subtotal)}</Text>
             </View>
             <View style={{ alignItems: "flex-end" }}>
               <Text style={styles.metaLabel}>Estimated Total</Text>
-              <Text style={styles.grossTotal}>₹{Number(item.total).toLocaleString()}</Text>
+              <Text style={styles.grossTotal}>{formatCurrency(item.total_amount || item.total)}</Text>
             </View>
           </View>
 
@@ -95,7 +99,7 @@ export const EstimatesScreen: React.FC<{ navigation: any }> = ({ navigation }) =
               {isConverted
                 ? "Active in Proforma Pipeline"
                 : item.expiry_date
-                ? `Valid until: ${item.expiry_date}`
+                ? `Valid until: ${formatDate(item.expiry_date)}`
                 : "Valid for 30 days"}
             </Text>
             <View style={styles.reviewLink}>
@@ -119,7 +123,7 @@ export const EstimatesScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         </View>
       ) : (
         <FlatList
-          data={estimates}
+          data={visibleEstimates}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderEstimateCard}
           contentContainerStyle={styles.listContent}

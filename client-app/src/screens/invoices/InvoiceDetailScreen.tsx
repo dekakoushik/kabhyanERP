@@ -15,6 +15,7 @@ import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
 import { DocumentPipelineStepper } from "../../components/DocumentPipelineStepper";
 import { portalApi, Invoice, ProformaInvoice, InvoiceItem } from "../../api/portal";
+import { formatDate, formatCurrency } from "../../utils/date";
 
 export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   route,
@@ -26,6 +27,7 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   const [proforma, setProforma] = useState<ProformaInvoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const isProforma = type === "proforma" || Boolean(proformaId);
 
@@ -69,6 +71,31 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
     }
   };
 
+  const handleDownloadPdf = async () => {
+    try {
+      setDownloadingPdf(true);
+      if (isProforma && proforma) {
+        const res = await portalApi.getProformaPdfUrl(proforma.id);
+        if (res.download_url) {
+          await WebBrowser.openBrowserAsync(res.download_url);
+        } else {
+          Alert.alert("Notice", "Official Proforma PDF is currently unavailable.");
+        }
+      } else if (invoice) {
+        const res = await portalApi.getInvoicePdfUrl(invoice.id);
+        if (res.download_url) {
+          await WebBrowser.openBrowserAsync(res.download_url);
+        } else {
+          Alert.alert("Notice", "Official Tax Invoice PDF is currently unavailable.");
+        }
+      }
+    } catch (err: any) {
+      Alert.alert("Download Error", err.message || "Failed to download official PDF.");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -76,6 +103,61 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
         <Text style={styles.loadingText}>
           {isProforma ? "Loading proforma invoice..." : "Loading tax invoice..."}
         </Text>
+      </View>
+    );
+  }
+
+  // Draft Isolation Protection
+  if (isProforma && proforma?.status === "draft") {
+    return (
+      <View style={[styles.centerContainer, { padding: 24 }]}>
+        <Ionicons name="document-text-outline" size={48} color={colors.textMuted} />
+        <Text style={{ fontSize: 18, fontWeight: "800", color: colors.text, marginTop: 14 }}>
+          Proforma In Preparation
+        </Text>
+        <Text
+          style={{
+            fontSize: 13,
+            color: colors.textSecondary,
+            textAlign: "center",
+            marginTop: 6,
+            marginBottom: 20,
+          }}
+        >
+          Your account manager is currently preparing this proforma invoice. It will be available here once officially issued.
+        </Text>
+        <Button
+          title="Return to Invoices"
+          variant="outline"
+          onPress={() => navigation.goBack()}
+        />
+      </View>
+    );
+  }
+
+  if (!isProforma && invoice?.status === "draft") {
+    return (
+      <View style={[styles.centerContainer, { padding: 24 }]}>
+        <Ionicons name="receipt-outline" size={48} color={colors.textMuted} />
+        <Text style={{ fontSize: 18, fontWeight: "800", color: colors.text, marginTop: 14 }}>
+          Invoice In Preparation
+        </Text>
+        <Text
+          style={{
+            fontSize: 13,
+            color: colors.textSecondary,
+            textAlign: "center",
+            marginTop: 6,
+            marginBottom: 20,
+          }}
+        >
+          This tax invoice is currently being drafted by the accounts division. It will appear once certified and issued.
+        </Text>
+        <Button
+          title="Return to Invoices"
+          variant="outline"
+          onPress={() => navigation.goBack()}
+        />
       </View>
     );
   }
@@ -102,10 +184,10 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           invoiceNumber={latestTaxInv?.invoice_number}
           invoiceId={latestTaxInv?.id}
           invoiceStatus={latestTaxInv?.status}
-          onNavigate={(type, id) => {
-            if (type === "estimate") {
+          onNavigate={(navType, id) => {
+            if (navType === "estimate") {
               navigation.navigate("EstimateDetail", { estimateId: id });
-            } else if (type === "invoice") {
+            } else if (navType === "invoice") {
               navigation.navigate("InvoiceDetail", { invoiceId: id, type: "tax" });
             }
           }}
@@ -121,7 +203,7 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={styles.taxInvCardTitle}>Official GST Tax Invoice Generated</Text>
                 <Text style={styles.taxInvCardSub}>
-                  Invoice #{latestTaxInv.invoice_number} • Issued on {latestTaxInv.invoice_date}
+                  Invoice #{latestTaxInv.invoice_number} • Issued on {formatDate(latestTaxInv.invoice_date)}
                 </Text>
               </View>
               <Badge
@@ -148,8 +230,8 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           <View style={styles.headerRow}>
             <View>
               <Text style={styles.invoiceNumber}>{proforma.proforma_number}</Text>
-              <Text style={styles.dateText}>Issued on: {proforma.invoice_date}</Text>
-              <Text style={styles.dateText}>Payment Due: {proforma.due_date || "Upon receipt"}</Text>
+              <Text style={styles.dateText}>Issued on: {formatDate(proforma.invoice_date)}</Text>
+              <Text style={styles.dateText}>Payment Due: {formatDate(proforma.due_date) || "Upon receipt"}</Text>
             </View>
             <Badge
               label={
@@ -164,16 +246,27 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           <View style={styles.advanceRow}>
             <View>
               <Text style={styles.dueLabel}>Advance Scope Total</Text>
-              <Text style={styles.dueAmount}>₹{Number(proforma.total_amount).toLocaleString()}</Text>
+              <Text style={styles.dueAmount}>{formatCurrency(proforma.total_amount || 0)}</Text>
             </View>
             {proforma.paid_amount ? (
               <View style={{ alignItems: "flex-end" }}>
                 <Text style={styles.dueLabel}>Amount Paid</Text>
                 <Text style={[styles.dueAmount, { color: colors.success }]}>
-                  ₹{Number(proforma.paid_amount).toLocaleString()}
+                  {formatCurrency(proforma.paid_amount)}
                 </Text>
               </View>
             ) : null}
+          </View>
+
+          {/* Download Official PDF Action */}
+          <View style={{ marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+            <Button
+              title="Download Official Proforma PDF"
+              variant="outline"
+              onPress={handleDownloadPdf}
+              loading={downloadingPdf}
+              icon={<Ionicons name="cloud-download-outline" size={16} color={colors.primary} />}
+            />
           </View>
         </Card>
 
@@ -187,28 +280,38 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
             <Text style={styles.noItemsText}>Standard milestone deliverables schedule</Text>
           </Card>
         ) : (
-          items.map((item, idx) => (
-            <Card key={item.id || idx} style={styles.itemCard}>
-              <Text style={styles.itemTitle}>{item.description}</Text>
-              <View style={styles.itemMetaRow}>
-                <Text style={styles.itemQty}>
-                  Qty: {item.quantity} {item.unit || "units"} @ ₹{Number(item.unit_price).toLocaleString()}
-                </Text>
-                <View style={styles.gstBadge}>
-                  <Text style={styles.gstBadgeText}>+{item.gst_rate || 18}% GST</Text>
+          items.map((item, idx) => {
+            const hasDistinctTitle = Boolean(item.item_name && item.description && item.description !== item.item_name);
+            const lineTitle = item.item_name || item.description || `Item #${idx + 1}`;
+            const taxableAmount = item.amount ?? item.taxable_amount ?? (item.quantity * item.unit_price);
+            const lineTotal = item.total_amount ?? (Number(taxableAmount) + Number(item.tax_amount || 0));
+
+            return (
+              <Card key={item.id || idx} style={styles.itemCard}>
+                <Text style={styles.itemTitle}>{lineTitle}</Text>
+                {hasDistinctTitle && (
+                  <Text style={styles.itemSubDesc}>{item.description}</Text>
+                )}
+                <View style={styles.itemMetaRow}>
+                  <Text style={styles.itemQty}>
+                    Qty: {item.quantity} {item.unit || "units"} @ {formatCurrency(item.unit_price)}
+                  </Text>
+                  <View style={styles.gstBadge}>
+                    <Text style={styles.gstBadgeText}>+{item.tax_rate ?? item.gst_rate ?? 18}% GST</Text>
+                  </View>
                 </View>
-              </View>
-              <View style={styles.itemDivider} />
-              <View style={styles.itemFooterRow}>
-                <Text style={styles.itemTaxable}>
-                  Taxable: ₹{Number(item.taxable_amount || (item.quantity * item.unit_price)).toLocaleString()}
-                </Text>
-                <Text style={styles.itemTotal}>
-                  Gross: ₹{Number(item.total_amount || 0).toLocaleString()}
-                </Text>
-              </View>
-            </Card>
-          ))
+                <View style={styles.itemDivider} />
+                <View style={styles.itemFooterRow}>
+                  <Text style={styles.itemTaxable}>
+                    Taxable: {formatCurrency(taxableAmount)}
+                  </Text>
+                  <Text style={styles.itemTotal}>
+                    Gross: {formatCurrency(lineTotal)}
+                  </Text>
+                </View>
+              </Card>
+            );
+          })
         )}
 
         {/* Accounting Summary */}
@@ -216,16 +319,32 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           <Text style={styles.breakdownTitle}>Advance Billing Summary</Text>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Subtotal (Taxable)</Text>
-            <Text style={styles.summaryValue}>₹{Number(proforma.subtotal).toLocaleString()}</Text>
+            <Text style={styles.summaryValue}>{formatCurrency(proforma.subtotal || 0)}</Text>
           </View>
+          {Number(proforma.discount_amount || 0) > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Discount</Text>
+              <Text style={[styles.summaryValue, { color: colors.danger }]}>
+                -{formatCurrency(proforma.discount_amount || 0)}
+              </Text>
+            </View>
+          )}
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>GST Component</Text>
-            <Text style={styles.summaryValue}>+₹{Number(proforma.tax_amount).toLocaleString()}</Text>
+            <Text style={styles.summaryValue}>+{formatCurrency(proforma.tax_amount || 0)}</Text>
           </View>
+          {Number(proforma.round_off || 0) !== 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Round Off</Text>
+              <Text style={styles.summaryValue}>
+                {Number(proforma.round_off) > 0 ? "+" : ""}{formatCurrency(proforma.round_off || 0)}
+              </Text>
+            </View>
+          )}
           <View style={styles.summaryDivider} />
           <View style={styles.summaryRow}>
             <Text style={styles.grossLabel}>Total Proforma Value</Text>
-            <Text style={styles.grossValue}>₹{Number(proforma.total_amount).toLocaleString()}</Text>
+            <Text style={styles.grossValue}>{formatCurrency(proforma.total_amount || 0)}</Text>
           </View>
         </Card>
       </ScrollView>
@@ -243,6 +362,7 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
 
   const isPaid = invoice.status === "paid";
   const items = invoice.items || [];
+  const invoiceTotal = invoice.total_amount ?? invoice.total ?? 0;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -256,10 +376,10 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
         invoiceNumber={invoice.invoice_number}
         invoiceId={invoice.id}
         invoiceStatus={invoice.status}
-        onNavigate={(type, id) => {
-          if (type === "estimate") {
+        onNavigate={(navType, id) => {
+          if (navType === "estimate") {
             navigation.navigate("EstimateDetail", { estimateId: id });
-          } else if (type === "proforma") {
+          } else if (navType === "proforma") {
             navigation.navigate("InvoiceDetail", { proformaId: id, type: "proforma" });
           }
         }}
@@ -296,8 +416,8 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
         <View style={styles.headerRow}>
           <View>
             <Text style={styles.invoiceNumber}>{invoice.invoice_number}</Text>
-            <Text style={styles.dateText}>Issued on: {invoice.invoice_date}</Text>
-            <Text style={styles.dateText}>Payment Due: {invoice.due_date || "Upon receipt"}</Text>
+            <Text style={styles.dateText}>Issued on: {formatDate(invoice.invoice_date)}</Text>
+            <Text style={styles.dateText}>Payment Due: {formatDate(invoice.due_date) || "Upon receipt"}</Text>
           </View>
           <Badge
             label={isPaid ? "PAID" : (invoice.status || "unpaid").toUpperCase()}
@@ -316,7 +436,7 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           <View style={styles.payBox}>
             <View>
               <Text style={styles.dueLabel}>Total Amount Due</Text>
-              <Text style={styles.dueAmount}>₹{Number(invoice.total).toLocaleString()}</Text>
+              <Text style={styles.dueAmount}>{formatCurrency(invoiceTotal)}</Text>
             </View>
             <Button
               title="Pay Now"
@@ -327,6 +447,17 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
             />
           </View>
         )}
+
+        {/* Download Official PDF Action */}
+        <View style={{ marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+          <Button
+            title="Download Tax Invoice PDF"
+            variant="outline"
+            onPress={handleDownloadPdf}
+            loading={downloadingPdf}
+            icon={<Ionicons name="cloud-download-outline" size={16} color={colors.primary} />}
+          />
+        </View>
       </Card>
 
       {/* Deliverables & Line Items Ledger */}
@@ -339,31 +470,41 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           <Text style={styles.noItemsText}>Standard milestone deliverables schedule</Text>
         </Card>
       ) : (
-        items.map((item, idx) => (
-          <Card key={item.id || idx} style={styles.itemCard}>
-            <Text style={styles.itemTitle}>{item.description}</Text>
-            
-            <View style={styles.itemMetaRow}>
-              <Text style={styles.itemQty}>
-                Qty: {item.quantity} {item.unit || "units"} @ ₹{Number(item.unit_price).toLocaleString()}
-              </Text>
-              <View style={styles.gstBadge}>
-                <Text style={styles.gstBadgeText}>+{item.gst_rate || 18}% GST</Text>
+        items.map((item, idx) => {
+          const hasDistinctTitle = Boolean(item.item_name && item.description && item.description !== item.item_name);
+          const lineTitle = item.item_name || item.description || `Item #${idx + 1}`;
+          const taxableAmount = item.amount ?? item.taxable_amount ?? (item.quantity * item.unit_price);
+          const lineTotal = item.total_amount ?? (Number(taxableAmount) + Number(item.tax_amount || 0));
+
+          return (
+            <Card key={item.id || idx} style={styles.itemCard}>
+              <Text style={styles.itemTitle}>{lineTitle}</Text>
+              {hasDistinctTitle && (
+                <Text style={styles.itemSubDesc}>{item.description}</Text>
+              )}
+              
+              <View style={styles.itemMetaRow}>
+                <Text style={styles.itemQty}>
+                  Qty: {item.quantity} {item.unit || "units"} @ {formatCurrency(item.unit_price)}
+                </Text>
+                <View style={styles.gstBadge}>
+                  <Text style={styles.gstBadgeText}>+{item.tax_rate ?? item.gst_rate ?? 18}% GST</Text>
+                </View>
               </View>
-            </View>
 
-            <View style={styles.itemDivider} />
+              <View style={styles.itemDivider} />
 
-            <View style={styles.itemFooterRow}>
-              <Text style={styles.itemTaxable}>
-                Taxable: ₹{Number(item.taxable_amount || (item.quantity * item.unit_price)).toLocaleString()}
-              </Text>
-              <Text style={styles.itemTotal}>
-                Gross: ₹{Number(item.total_amount || 0).toLocaleString()}
-              </Text>
-            </View>
-          </Card>
-        ))
+              <View style={styles.itemFooterRow}>
+                <Text style={styles.itemTaxable}>
+                  Taxable: {formatCurrency(taxableAmount)}
+                </Text>
+                <Text style={styles.itemTotal}>
+                  Gross: {formatCurrency(lineTotal)}
+                </Text>
+              </View>
+            </Card>
+          );
+        })
       )}
 
       {/* Financial Breakdown Card */}
@@ -372,19 +513,37 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
         
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Subtotal (Taxable)</Text>
-          <Text style={styles.summaryValue}>₹{Number(invoice.subtotal).toLocaleString()}</Text>
+          <Text style={styles.summaryValue}>{formatCurrency(invoice.subtotal || 0)}</Text>
         </View>
 
+        {Number(invoice.discount_amount || 0) > 0 && (
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Discount</Text>
+            <Text style={[styles.summaryValue, { color: colors.danger }]}>
+              -{formatCurrency(invoice.discount_amount || 0)}
+            </Text>
+          </View>
+        )}
+
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>GST (18%)</Text>
-          <Text style={styles.summaryValue}>+₹{Number(invoice.tax_amount).toLocaleString()}</Text>
+          <Text style={styles.summaryLabel}>GST Component</Text>
+          <Text style={styles.summaryValue}>+{formatCurrency(invoice.tax_amount || 0)}</Text>
         </View>
+
+        {Number(invoice.round_off || 0) !== 0 && (
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Round Off</Text>
+            <Text style={styles.summaryValue}>
+              {Number(invoice.round_off) > 0 ? "+" : ""}{formatCurrency(invoice.round_off || 0)}
+            </Text>
+          </View>
+        )}
 
         <View style={styles.summaryDivider} />
 
         <View style={styles.summaryRow}>
           <Text style={styles.grossLabel}>Total Payable (INR)</Text>
-          <Text style={styles.grossValue}>₹{Number(invoice.total).toLocaleString()}</Text>
+          <Text style={styles.grossValue}>{formatCurrency(invoiceTotal)}</Text>
         </View>
       </Card>
     </ScrollView>
@@ -495,7 +654,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: colors.text,
+    marginBottom: 4,
+  },
+  itemSubDesc: {
+    fontSize: 12,
+    color: colors.textSecondary,
     marginBottom: 6,
+    lineHeight: 16,
   },
   itemMetaRow: {
     flexDirection: "row",

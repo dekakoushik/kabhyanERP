@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Client;
+use App\Models\Estimate;
 use App\Models\Invoice;
 use App\Models\ProformaInvoice;
 use App\Models\Project;
@@ -12,6 +13,7 @@ use App\Models\TicketReply;
 use App\Services\MailNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 
 class ClientPortalController extends Controller
 {
@@ -70,12 +72,14 @@ class ClientPortalController extends Controller
             ->get();
 
         $invoices = Invoice::where('client_email', $client->email)
+            ->where('status', '!=', 'draft')
             ->with(['proformaInvoice:id,proforma_number,status', 'payments'])
             ->orderBy('invoice_date', 'desc')
             ->take(5)
             ->get();
 
-        $activeEstimates = \App\Models\Estimate::where('client_email', $client->email)
+        $activeEstimates = Estimate::where('client_email', $client->email)
+            ->where('status', '!=', 'draft')
             ->whereIn('status', ['sent', 'accepted', 'invoiced'])
             ->with(['proformaInvoices:id,estimate_id,proforma_number,status'])
             ->orderBy('estimate_date', 'desc')
@@ -83,6 +87,7 @@ class ClientPortalController extends Controller
             ->get();
 
         $activeProformas = ProformaInvoice::where('client_email', $client->email)
+            ->where('status', '!=', 'draft')
             ->whereIn('status', ['unpaid', 'partially_paid', 'partially_invoiced', 'fully_invoiced'])
             ->with(['taxInvoices:id,proforma_invoice_id,invoice_number,status,total_amount,due_amount,paid_amount'])
             ->orderBy('invoice_date', 'desc')
@@ -287,6 +292,7 @@ class ClientPortalController extends Controller
     {
         $client = $this->getClient($request);
         $invoices = Invoice::where('client_email', $client->email)
+            ->where('status', '!=', 'draft')
             ->with([
                 'items',
                 'payments',
@@ -310,6 +316,10 @@ class ClientPortalController extends Controller
             abort(403, 'Unauthorized access to this invoice.');
         }
 
+        if ($invoice->status === 'draft') {
+            abort(404, 'Invoice not found or is currently in draft preparation.');
+        }
+
         $invoice->load([
             'items',
             'payments',
@@ -328,6 +338,7 @@ class ClientPortalController extends Controller
     {
         $client = $this->getClient($request);
         $proformas = ProformaInvoice::where('client_email', $client->email)
+            ->where('status', '!=', 'draft')
             ->with([
                 'items',
                 'project:id,name,code',
@@ -351,6 +362,10 @@ class ClientPortalController extends Controller
         $client = $this->getClient($request);
         if ($proformaInvoice->client_email !== $client->email) {
             abort(403, 'Unauthorized access to this proforma invoice.');
+        }
+
+        if ($proformaInvoice->status === 'draft') {
+            abort(404, 'Proforma invoice not found or is currently in draft preparation.');
         }
 
         $proformaInvoice->load([
@@ -396,7 +411,8 @@ class ClientPortalController extends Controller
     public function estimates(Request $request)
     {
         $client = $this->getClient($request);
-        $estimates = \App\Models\Estimate::where('client_email', $client->email)
+        $estimates = Estimate::where('client_email', $client->email)
+            ->where('status', '!=', 'draft')
             ->with([
                 'items',
                 'project:id,name,code',
@@ -414,11 +430,15 @@ class ClientPortalController extends Controller
     /**
      * Show single estimate for client.
      */
-    public function showEstimate(Request $request, \App\Models\Estimate $estimate)
+    public function showEstimate(Request $request, Estimate $estimate)
     {
         $client = $this->getClient($request);
         if ($estimate->client_email !== $client->email) {
             abort(403, 'Unauthorized access to this quotation.');
+        }
+
+        if ($estimate->status === 'draft') {
+            abort(404, 'Quotation not found or is currently in draft preparation.');
         }
 
         $estimate->load([
@@ -436,11 +456,15 @@ class ClientPortalController extends Controller
     /**
      * Client responds to estimate (Accept or Decline).
      */
-    public function respondEstimate(Request $request, \App\Models\Estimate $estimate)
+    public function respondEstimate(Request $request, Estimate $estimate)
     {
         $client = $this->getClient($request);
         if ($estimate->client_email !== $client->email) {
             abort(403, 'Unauthorized access to this quotation.');
+        }
+
+        if ($estimate->status === 'draft') {
+            abort(404, 'Cannot respond to a quotation currently in draft.');
         }
 
         $validated = $request->validate([
@@ -457,6 +481,129 @@ class ClientPortalController extends Controller
             'message' => "Quotation has been {$validated['action']} successfully.",
             'estimate' => $estimate->fresh(),
         ]);
+    }
+
+    /**
+     * Generate secure temporary download URL for Estimate PDF.
+     */
+    public function getEstimatePdfUrl(Request $request, Estimate $estimate)
+    {
+        $client = $this->getClient($request);
+        if ($estimate->client_email !== $client->email) {
+            abort(403, 'Unauthorized access to this quotation.');
+        }
+        if ($estimate->status === 'draft') {
+            abort(404, 'Quotation is currently in draft preparation.');
+        }
+
+        $downloadUrl = URL::temporarySignedRoute(
+            'portal.estimate.download-pdf',
+            now()->addMinutes(60),
+            ['id' => $estimate->id, 'download' => 1]
+        );
+
+        return response()->json([
+            'download_url' => $downloadUrl,
+            'filename' => "Quotation-{$estimate->estimate_number}.pdf",
+        ]);
+    }
+
+    /**
+     * Download Estimate PDF via signed streaming route or authenticated call.
+     */
+    public function downloadEstimatePdfDirect(Request $request, $id, PdfController $pdfController)
+    {
+        $estimate = Estimate::where('id', $id)
+            ->orWhere('estimate_number', $id)
+            ->firstOrFail();
+
+        if ($estimate->status === 'draft') {
+            abort(404, 'Quotation is currently in draft preparation.');
+        }
+
+        return $pdfController->downloadEstimate($request, $estimate->id);
+    }
+
+    /**
+     * Generate secure temporary download URL for Proforma Invoice PDF.
+     */
+    public function getProformaPdfUrl(Request $request, ProformaInvoice $proformaInvoice)
+    {
+        $client = $this->getClient($request);
+        if ($proformaInvoice->client_email !== $client->email) {
+            abort(403, 'Unauthorized access to this proforma invoice.');
+        }
+        if ($proformaInvoice->status === 'draft') {
+            abort(404, 'Proforma invoice is currently in draft preparation.');
+        }
+
+        $downloadUrl = URL::temporarySignedRoute(
+            'portal.proforma.download-pdf',
+            now()->addMinutes(60),
+            ['id' => $proformaInvoice->id, 'download' => 1]
+        );
+
+        return response()->json([
+            'download_url' => $downloadUrl,
+            'filename' => "Proforma-{$proformaInvoice->proforma_number}.pdf",
+        ]);
+    }
+
+    /**
+     * Download Proforma Invoice PDF via signed streaming route.
+     */
+    public function downloadProformaPdfDirect(Request $request, $id, PdfController $pdfController)
+    {
+        $proforma = ProformaInvoice::where('id', $id)
+            ->orWhere('proforma_number', $id)
+            ->firstOrFail();
+
+        if ($proforma->status === 'draft') {
+            abort(404, 'Proforma invoice is currently in draft preparation.');
+        }
+
+        return $pdfController->downloadProforma($request, $proforma->id);
+    }
+
+    /**
+     * Generate secure temporary download URL for Tax Invoice PDF.
+     */
+    public function getInvoicePdfUrl(Request $request, Invoice $invoice)
+    {
+        $client = $this->getClient($request);
+        if ($invoice->client_email !== $client->email) {
+            abort(403, 'Unauthorized access to this invoice.');
+        }
+        if ($invoice->status === 'draft') {
+            abort(404, 'Invoice is currently in draft preparation.');
+        }
+
+        $downloadUrl = URL::temporarySignedRoute(
+            'portal.invoice.download-pdf',
+            now()->addMinutes(60),
+            ['id' => $invoice->id, 'download' => 1]
+        );
+
+        return response()->json([
+            'download_url' => $downloadUrl,
+            'filename' => "Tax-Invoice-{$invoice->invoice_number}.pdf",
+        ]);
+    }
+
+    /**
+     * Download Tax Invoice PDF via signed streaming route.
+     */
+    public function downloadInvoicePdfDirect(Request $request, $id, PdfController $pdfController)
+    {
+        $invoice = Invoice::where('id', $id)
+            ->orWhere('invoice_number', $id)
+            ->firstOrFail();
+
+        if ($invoice->status === 'draft') {
+            abort(404, 'Invoice is currently in draft preparation.');
+        }
+
+        return $pdfController->downloadInvoice($request, $invoice->id);
     }
 }
 

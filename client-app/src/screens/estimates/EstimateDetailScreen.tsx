@@ -8,12 +8,14 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as WebBrowser from "expo-web-browser";
 import { colors } from "../../theme/colors";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
 import { DocumentPipelineStepper } from "../../components/DocumentPipelineStepper";
 import { portalApi, Estimate } from "../../api/portal";
+import { formatDate, formatCurrency } from "../../utils/date";
 
 export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   route,
@@ -23,6 +25,7 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
   const [estimate, setEstimate] = useState<Estimate | null>(null);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const fetchDetail = async () => {
     try {
@@ -39,6 +42,23 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
   useEffect(() => {
     fetchDetail();
   }, [estimateId]);
+
+  const handleDownloadPdf = async () => {
+    if (!estimate) return;
+    try {
+      setDownloadingPdf(true);
+      const res = await portalApi.getEstimatePdfUrl(estimate.id);
+      if (res.download_url) {
+        await WebBrowser.openBrowserAsync(res.download_url);
+      } else {
+        Alert.alert("Notice", "Official quotation PDF is currently being generated. Please retry.");
+      }
+    } catch (err: any) {
+      Alert.alert("Download Error", err.message || "Failed to initiate PDF download.");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   const handleRespond = (action: "accepted" | "declined") => {
     const title = action === "accepted" ? "Accept Scope & Quotation?" : "Decline Quotation?";
@@ -77,10 +97,35 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
     );
   }
 
+  // Internal draft protection
+  if (estimate.status === "draft") {
+    return (
+      <View style={styles.centerContainer}>
+        <Ionicons name="document-lock-outline" size={48} color={colors.textMuted} />
+        <Text style={[styles.loadingText, { marginTop: 12, fontWeight: "600" }]}>
+          Quotation In Preparation
+        </Text>
+        <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: "center", paddingHorizontal: 32, marginTop: 4 }}>
+          This quotation is currently being drafted by our engineering team and will be visible once officially issued.
+        </Text>
+      </View>
+    );
+  }
+
   const linkedProforma = estimate.proforma_invoices && estimate.proforma_invoices[0];
   const isConverted = estimate.status === "invoiced" || Boolean(linkedProforma);
-  const isPending = !isConverted && (estimate.status === "sent" || estimate.status === "draft");
+  const isPending = !isConverted && estimate.status === "sent";
   const items = estimate.items || [];
+  const isInclusive = estimate.tax_calculation_type === "inclusive";
+
+  const totalAmountNum = Number(estimate.total_amount || estimate.total || 0);
+  const taxAmountNum = Number(estimate.tax_amount || 0);
+  const subtotalNum = Number(estimate.subtotal || 0);
+  const roundOffNum = Number(estimate.round_off || 0);
+  const discountNum = Number(estimate.discount_amount || 0);
+  const taxableTurnover = isInclusive
+    ? Math.max(0, totalAmountNum - roundOffNum - taxAmountNum)
+    : subtotalNum - discountNum;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -126,17 +171,18 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
         </Card>
       )}
 
+      {/* Header Info Card */}
       <Card style={styles.headerCard}>
         <View style={styles.headerRow}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.estNumber}>{estimate.estimate_number}</Text>
-            <Text style={styles.dateText}>Issued on: {estimate.estimate_date}</Text>
+            <Text style={styles.dateText}>Issued on: {formatDate(estimate.estimate_date)}</Text>
             {estimate.expiry_date && (
-              <Text style={styles.dateText}>Validity: {estimate.expiry_date}</Text>
+              <Text style={styles.dateText}>Valid until: {formatDate(estimate.expiry_date)}</Text>
             )}
           </View>
           <Badge
-            label={isConverted ? "CONVERTED TO PROFORMA" : estimate.status}
+            label={isConverted ? "CONVERTED TO PROFORMA" : estimate.status.toUpperCase()}
             variant={
               isConverted
                 ? "purple"
@@ -146,6 +192,18 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
                 ? "danger"
                 : "warning"
             }
+          />
+        </View>
+
+        {/* Download PDF Action Button */}
+        <View style={styles.downloadRow}>
+          <Button
+            title="Download Official PDF"
+            variant="outline"
+            onPress={handleDownloadPdf}
+            loading={downloadingPdf}
+            icon={<Ionicons name="cloud-download-outline" size={16} color={colors.primary} />}
+            style={{ width: "100%" }}
           />
         </View>
 
@@ -170,6 +228,7 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
         )}
       </Card>
 
+      {/* Itemized Deliverables Table */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Scope Deliverables & Schedule</Text>
       </View>
@@ -179,52 +238,91 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
           <Text style={styles.noItemsText}>Comprehensive scope deliverables included</Text>
         </Card>
       ) : (
-        items.map((item, idx) => (
-          <Card key={item.id || idx} style={styles.itemCard}>
-            <Text style={styles.itemTitle}>{item.description}</Text>
-            
-            <View style={styles.itemMetaRow}>
-              <Text style={styles.itemQty}>
-                Qty: {item.quantity} {item.unit || "units"} @ ₹{Number(item.unit_price).toLocaleString()}
-              </Text>
-              <View style={styles.gstBadge}>
-                <Text style={styles.gstBadgeText}>+{item.gst_rate || 18}% GST</Text>
+        items.map((item, idx) => {
+          const itemTaxRate = item.tax_rate ?? estimate.tax_rate ?? 18;
+          return (
+            <Card key={item.id || idx} style={styles.itemCard}>
+              <Text style={styles.itemTitle}>{item.item_name || item.description || "Scope Deliverable"}</Text>
+              {item.item_name && item.description ? (
+                <Text style={styles.itemDescription}>{item.description}</Text>
+              ) : null}
+              
+              <View style={styles.itemMetaRow}>
+                <Text style={styles.itemQty}>
+                  Qty: {item.quantity} {item.unit || "units"} @ {formatCurrency(item.unit_price)}
+                </Text>
+                <View style={styles.gstBadge}>
+                  <Text style={styles.gstBadgeText}>+{itemTaxRate}% GST</Text>
+                </View>
               </View>
-            </View>
 
-            <View style={styles.itemDivider} />
+              <View style={styles.itemDivider} />
 
-            <View style={styles.itemFooterRow}>
-              <Text style={styles.itemTaxable}>
-                Taxable: ₹{Number(item.taxable_amount || (item.quantity * item.unit_price)).toLocaleString()}
-              </Text>
-              <Text style={styles.itemTotal}>
-                Gross: ₹{Number(item.total_amount || 0).toLocaleString()}
-              </Text>
-            </View>
-          </Card>
-        ))
+              <View style={styles.itemFooterRow}>
+                <Text style={styles.itemTaxable}>
+                  Turnover: {formatCurrency(item.amount)}
+                </Text>
+                <Text style={styles.itemTotal}>
+                  Line Total: {formatCurrency(item.amount)}
+                </Text>
+              </View>
+            </Card>
+          );
+        })
       )}
 
-      {/* Summary */}
+      {/* Accounting Financial Summary (Matches Web ERP Exactly) */}
       <Card style={styles.breakdownCard}>
-        <Text style={styles.breakdownTitle}>Financial Summary</Text>
+        <Text style={styles.breakdownTitle}>Commercial Summary</Text>
         
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Taxable Subtotal</Text>
-          <Text style={styles.summaryValue}>₹{Number(estimate.subtotal).toLocaleString()}</Text>
+          <Text style={styles.summaryLabel}>
+            Deliverables Turnover ({isInclusive ? "Gross" : "Subtotal"})
+          </Text>
+          <Text style={styles.summaryValue}>{formatCurrency(subtotalNum)}</Text>
         </View>
 
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>GST Component</Text>
-          <Text style={styles.summaryValue}>+₹{Number(estimate.tax_amount).toLocaleString()}</Text>
-        </View>
+        {discountNum > 0 && (
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Discount</Text>
+            <Text style={[styles.summaryValue, { color: colors.success }]}>
+              -{formatCurrency(discountNum)}
+            </Text>
+          </View>
+        )}
+
+        {isInclusive ? (
+          <>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Taxable Turnover</Text>
+              <Text style={styles.summaryValue}>{formatCurrency(taxableTurnover)}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>GST ({estimate.tax_rate || 18}% Included)</Text>
+              <Text style={styles.summaryValue}>{formatCurrency(taxAmountNum)}</Text>
+            </View>
+          </>
+        ) : (
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>GST / Tax (+{estimate.tax_rate || 18}%)</Text>
+            <Text style={styles.summaryValue}>+{formatCurrency(taxAmountNum)}</Text>
+          </View>
+        )}
+
+        {roundOffNum !== 0 && (
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Round Off Adjustment</Text>
+            <Text style={styles.summaryValue}>
+              {roundOffNum > 0 ? "+" : ""}{formatCurrency(roundOffNum)}
+            </Text>
+          </View>
+        )}
 
         <View style={styles.summaryDivider} />
 
         <View style={styles.summaryRow}>
-          <Text style={styles.grossLabel}>Total Scope Value</Text>
-          <Text style={styles.grossValue}>₹{Number(estimate.total).toLocaleString()}</Text>
+          <Text style={styles.grossLabel}>Net Proposal Total</Text>
+          <Text style={styles.grossValue}>{formatCurrency(totalAmountNum)}</Text>
         </View>
       </Card>
     </ScrollView>
@@ -301,6 +399,12 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 2,
   },
+  downloadRow: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+  },
   actionButtonsRow: {
     flexDirection: "row",
     marginTop: 16,
@@ -324,7 +428,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: colors.text,
+    marginBottom: 4,
+  },
+  itemDescription: {
+    fontSize: 12,
+    color: colors.textSecondary,
     marginBottom: 6,
+    lineHeight: 16,
   },
   itemMetaRow: {
     flexDirection: "row",
