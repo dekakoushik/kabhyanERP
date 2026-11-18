@@ -247,10 +247,31 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           <View style={styles.actionBannerContent}>
             <View style={styles.actionBannerHeadingRow}>
               <Text style={styles.actionBannerTitle}>Active Milestone Proforma</Text>
-              <Badge label="IN PROGRESS" variant="purple" size="sm" />
+              <Badge
+                label={
+                  pendingProforma.status === "paid"
+                    ? "PAID"
+                    : pendingProforma.paid_amount && pendingProforma.paid_amount > 0
+                    ? "PARTIALLY PAID"
+                    : "IN PROGRESS"
+                }
+                variant={
+                  pendingProforma.status === "paid"
+                    ? "success"
+                    : pendingProforma.paid_amount && pendingProforma.paid_amount > 0
+                    ? "warning"
+                    : "purple"
+                }
+                size="sm"
+              />
             </View>
             <Text style={styles.actionBannerSub}>
-              {pendingProforma.proforma_number} • {formatCurrency(pendingProforma.total_amount ?? 0)}
+              {pendingProforma.proforma_number} •{" "}
+              {pendingProforma.paid_amount && pendingProforma.paid_amount > 0
+                ? `${formatCurrency(
+                    Math.max(0, (pendingProforma.total_amount ?? 0) - pendingProforma.paid_amount)
+                  )} Due (${formatCurrency(pendingProforma.paid_amount)} Paid)`
+                : formatCurrency(pendingProforma.total_amount ?? 0)}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />

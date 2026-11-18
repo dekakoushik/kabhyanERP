@@ -93,7 +93,10 @@ class ClientPortalController extends Controller
         $activeProformas = ProformaInvoice::where('client_email', $client->email)
             ->where('status', '!=', 'draft')
             ->whereIn('status', ['unpaid', 'partially_paid', 'partially_invoiced', 'fully_invoiced'])
-            ->with(['taxInvoices:id,proforma_invoice_id,invoice_number,status,total_amount,due_amount,paid_amount'])
+            ->with([
+                'taxInvoices:id,proforma_invoice_id,invoice_number,status,total_amount,due_amount,paid_amount',
+                'receiptVouchers:id,proforma_invoice_id,voucher_number,status,amount_received,remaining_advance,voucher_date',
+            ])
             ->orderBy('invoice_date', 'desc')
             ->take(3)
             ->get();
@@ -110,9 +113,14 @@ class ClientPortalController extends Controller
         $allActiveProformas = ProformaInvoice::where('client_email', $client->email)
             ->where('status', '!=', 'draft')
             ->whereNotIn('status', ['cancelled'])
-            ->with(['taxInvoices' => function ($q) {
-                $q->where('status', '!=', 'cancelled');
-            }])
+            ->with([
+                'taxInvoices' => function ($q) {
+                    $q->where('status', '!=', 'cancelled');
+                },
+                'receiptVouchers' => function ($q) {
+                    $q->where('status', '!=', 'cancelled');
+                },
+            ])
             ->get();
 
         $proformaOutstanding = 0.0;
@@ -123,7 +131,8 @@ class ClientPortalController extends Controller
             $proformaTotal = (float) $proforma->total_amount;
             $invoicedScope = (float) $proforma->taxInvoices->sum('total_amount');
             $remainingScope = max(0, $proformaTotal - $invoicedScope);
-            $advancePaid = (float) ($proforma->paid_amount ?? 0);
+            $voucherAdvance = (float) $proforma->receiptVouchers->sum('amount_received');
+            $advancePaid = max((float) ($proforma->paid_amount ?? 0), $voucherAdvance);
 
             $unpaidScope = max(0, $remainingScope - max(0, $advancePaid - $invoicedScope));
             $proformaOutstanding += $unpaidScope;
@@ -136,6 +145,21 @@ class ClientPortalController extends Controller
                 $proformaAdvancePaid += ($advancePaid - $invoicedScope);
             }
         }
+
+        // Transform active proformas with dynamic outstanding and payment status
+        $activeProformas->transform(function ($pi) {
+            $advancePaid = max((float) ($pi->paid_amount ?? 0), (float) $pi->receiptVouchers->sum('amount_received'));
+            $dueAmount = max(0, (float) $pi->total_amount - $advancePaid);
+            $pi->paid_amount = $advancePaid;
+            $pi->due_amount = $dueAmount;
+            $pi->remaining_amount = $dueAmount;
+            if ($dueAmount <= 0.01) {
+                $pi->status = 'paid';
+            } elseif ($advancePaid > 0.01) {
+                $pi->status = 'partially_paid';
+            }
+            return $pi;
+        });
 
         // 3. Consolidated Outstanding Balance & Paid Figures
         $totalDue = round($taxInvoicesDue + $proformaOutstanding, 2);
@@ -355,6 +379,7 @@ class ClientPortalController extends Controller
             ->with([
                 'project:id,name,code',
                 'proformaInvoice:id,proforma_number,status,invoice_date,total_amount,estimate_id',
+                'proformaInvoice.receiptVouchers:id,proforma_invoice_id,voucher_number,status,amount_received,remaining_advance,voucher_date',
                 'estimate:id,estimate_number,status,estimate_date,total_amount',
                 'advanceAdjustments.receiptVoucher:id,voucher_number,voucher_date,amount_received,remaining_advance',
                 'payments',
@@ -389,9 +414,13 @@ class ClientPortalController extends Controller
             ->orderBy('estimate_date', 'desc')
             ->get();
 
-        // 4. Fetch Proformas
+        // 4. Fetch Proformas (exclude ones already fully converted to Tax Invoices)
         $proformas = ProformaInvoice::where('client_email', $client->email)
             ->where('status', '!=', 'draft')
+            ->whereNotIn('status', ['cancelled'])
+            ->whereDoesntHave('taxInvoices', function ($q) {
+                $q->where('status', '!=', 'cancelled');
+            })
             ->with([
                 'project:id,name,code',
                 'estimate:id,estimate_number,status,estimate_date,total_amount',
@@ -405,6 +434,7 @@ class ClientPortalController extends Controller
         // Step A: Tax Invoices
         foreach ($invoices as $inv) {
             $history = [];
+            $existingVoucherIds = [];
 
             if ($inv->estimate) {
                 $history[] = [
@@ -419,6 +449,7 @@ class ClientPortalController extends Controller
 
             foreach ($inv->advanceAdjustments as $adj) {
                 if ($adj->receiptVoucher) {
+                    $existingVoucherIds[] = $adj->receiptVoucher->id;
                     $history[] = [
                         'stage' => 'receipt_voucher',
                         'id' => $adj->receiptVoucher->id,
@@ -431,6 +462,23 @@ class ClientPortalController extends Controller
             }
 
             if ($inv->proformaInvoice) {
+                // If the proforma invoice had receipt vouchers, nest them into this tax invoice thread as well
+                if ($inv->proformaInvoice->receiptVouchers) {
+                    foreach ($inv->proformaInvoice->receiptVouchers as $srv) {
+                        if (!in_array($srv->id, $existingVoucherIds)) {
+                            $existingVoucherIds[] = $srv->id;
+                            $history[] = [
+                                'stage' => 'receipt_voucher',
+                                'id' => $srv->id,
+                                'number' => $srv->voucher_number,
+                                'date' => $srv->voucher_date,
+                                'total_amount' => (float) ($srv->amount_received ?? $srv->total_amount ?? 0),
+                                'status' => $srv->status,
+                            ];
+                        }
+                    }
+                }
+
                 $history[] = [
                     'stage' => 'proforma',
                     'id' => $inv->proformaInvoice->id,
@@ -459,30 +507,17 @@ class ClientPortalController extends Controller
             ];
         }
 
-        // Step B: Receipt Vouchers (Statutory GST Advance Receipts)
-        foreach ($receiptVouchers as $rv) {
-            $history = [];
-            if ($rv->estimate) {
-                $history[] = [
-                    'stage' => 'estimate',
-                    'id' => $rv->estimate->id,
-                    'number' => $rv->estimate->estimate_number,
-                    'date' => $rv->estimate->estimate_date,
-                    'total_amount' => (float) $rv->estimate->total_amount,
-                    'status' => $rv->estimate->status,
-                ];
-            }
-            if ($rv->proformaInvoice) {
-                $history[] = [
-                    'stage' => 'proforma',
-                    'id' => $rv->proformaInvoice->id,
-                    'number' => $rv->proformaInvoice->proforma_number,
-                    'date' => $rv->proformaInvoice->invoice_date,
-                    'total_amount' => (float) $rv->proformaInvoice->total_amount,
-                    'status' => $rv->proformaInvoice->status,
-                ];
-            }
+        // Step B: Only Truly Standalone Receipt Vouchers (not linked to any Proforma, Estimate, or Tax Invoice)
+        // Vouchers tied to Proformas or Tax Invoices are nested strictly within their parent thread
+        $standaloneVouchers = $receiptVouchers->filter(function ($rv) {
+            return empty($rv->proforma_invoice_id)
+                && empty($rv->estimate_id)
+                && empty($rv->invoice_id)
+                && (!isset($rv->invoiceAdvanceAdjustments) || $rv->invoiceAdvanceAdjustments->isEmpty());
+        });
 
+        foreach ($standaloneVouchers as $rv) {
+            $history = [];
             $threads[] = [
                 'thread_id' => 'rv-' . $rv->id,
                 'stage' => 'receipt_voucher',
@@ -547,17 +582,29 @@ class ClientPortalController extends Controller
                 ];
             }
 
+            $voucherAdvance = 0.0;
             if ($pi->receiptVouchers) {
                 foreach ($pi->receiptVouchers as $srv) {
+                    $vAmt = (float) ($srv->amount_received ?? $srv->total_amount ?? 0);
+                    $voucherAdvance += $vAmt;
                     $history[] = [
                         'stage' => 'receipt_voucher',
                         'id' => $srv->id,
                         'number' => $srv->voucher_number,
                         'date' => $srv->voucher_date,
-                        'total_amount' => (float) ($srv->amount_received ?? $srv->total_amount ?? 0),
+                        'total_amount' => $vAmt,
                         'status' => $srv->status,
                     ];
                 }
+            }
+
+            $advancePaid = max((float) ($pi->paid_amount ?? 0), $voucherAdvance);
+            $dueAmount = max(0, (float) $pi->total_amount - $advancePaid);
+            $headlineStatus = $pi->status;
+            if ($dueAmount <= 0.01) {
+                $headlineStatus = 'paid';
+            } elseif ($advancePaid > 0.01) {
+                $headlineStatus = 'partially_paid';
             }
 
             $threads[] = [
@@ -565,12 +612,12 @@ class ClientPortalController extends Controller
                 'stage' => 'proforma',
                 'headline_id' => $pi->id,
                 'headline_number' => $pi->proforma_number,
-                'headline_status' => $pi->status,
+                'headline_status' => $headlineStatus,
                 'headline_date' => $pi->invoice_date,
                 'due_date' => $pi->due_date,
                 'total_amount' => (float) $pi->total_amount,
-                'due_amount' => (float) ($pi->total_amount - ($pi->paid_amount ?? 0)),
-                'paid_amount' => (float) ($pi->paid_amount ?? 0),
+                'due_amount' => $dueAmount,
+                'paid_amount' => $advancePaid,
                 'project_name' => $pi->project?->name,
                 'history' => $history,
                 'raw_document' => $pi,

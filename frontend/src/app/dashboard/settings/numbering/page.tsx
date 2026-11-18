@@ -52,6 +52,14 @@ export default function DocumentNumberingSettingsPage() {
     nextNumber: 1,
   });
 
+  const [receiptVoucher, setReceiptVoucher] = useState<NumberingConfig>({
+    prefix: "RV-",
+    suffix: "",
+    padding: 3,
+    includeYear: true,
+    nextNumber: 1,
+  });
+
   // Calculate live preview client-side
   const computePreview = (cfg: NumberingConfig) => {
     const yearPart = cfg.includeYear ? `${new Date().getFullYear()}-` : "";
@@ -98,6 +106,16 @@ export default function DocumentNumberingSettingsPage() {
           nextNumber: Number(map.invoice_next_number ?? 1),
         });
       }
+
+      if (map.receipt_voucher_prefix !== undefined) {
+        setReceiptVoucher({
+          prefix: map.receipt_voucher_prefix ?? "RV-",
+          suffix: map.receipt_voucher_suffix ?? "",
+          padding: Number(map.receipt_voucher_padding ?? 3),
+          includeYear: map.receipt_voucher_include_year === "true" || map.receipt_voucher_include_year === true as any || map.receipt_voucher_include_year === "1",
+          nextNumber: Number(map.receipt_voucher_next_number ?? 1),
+        });
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to load settings";
       toast.error(msg);
@@ -134,6 +152,12 @@ export default function DocumentNumberingSettingsPage() {
           { key: "invoice_padding", value: invoice.padding.toString(), group: "document_numbering" },
           { key: "invoice_include_year", value: invoice.includeYear ? "true" : "false", group: "document_numbering" },
           { key: "invoice_next_number", value: invoice.nextNumber.toString(), group: "document_numbering" },
+          // Receipt Voucher (Rule 50 Advance Receipts)
+          { key: "receipt_voucher_prefix", value: receiptVoucher.prefix, group: "document_numbering" },
+          { key: "receipt_voucher_suffix", value: receiptVoucher.suffix, group: "document_numbering" },
+          { key: "receipt_voucher_padding", value: receiptVoucher.padding.toString(), group: "document_numbering" },
+          { key: "receipt_voucher_include_year", value: receiptVoucher.includeYear ? "true" : "false", group: "document_numbering" },
+          { key: "receipt_voucher_next_number", value: receiptVoucher.nextNumber.toString(), group: "document_numbering" },
         ],
       };
 
@@ -171,7 +195,7 @@ export default function DocumentNumberingSettingsPage() {
             Document Numbering & Sequence Formats
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Configure prefix, suffix, zero-padding, and starting sequences for Quotations, Proforma Invoices, and Official Tax Invoices.
+            Configure prefix, suffix, zero-padding, and starting sequences for Quotations, Proforma Invoices, Tax Invoices, and GST Receipt Vouchers.
           </p>
         </div>
 
@@ -456,6 +480,98 @@ export default function DocumentNumberingSettingsPage() {
               onChange={(e) => setInvoice({ ...invoice, suffix: e.target.value })}
               placeholder="e.g. /26-27"
               className="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono font-medium focus:ring-2 focus:ring-blue-500/20"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* CARD 4: STATUTORY RECEIPT VOUCHERS */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center border border-purple-100">
+              <Receipt className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-slate-900">Receipt Vouchers Sequence (Rule 50)</h3>
+              <p className="text-2xs text-slate-400">Statutory advance receipt voucher series under Section 31(3)(d) of CGST Act</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-2xs text-slate-400 font-medium">Next Output:</span>
+            <span className="font-mono text-xs font-bold px-3 py-1 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 shadow-2xs">
+              {computePreview(receiptVoucher)}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 text-xs">
+          <div>
+            <label className="block text-2xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+              Prefix
+            </label>
+            <input
+              type="text"
+              value={receiptVoucher.prefix}
+              onChange={(e) => setReceiptVoucher({ ...receiptVoucher, prefix: e.target.value })}
+              placeholder="e.g. RV-"
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono font-medium focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-2xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+              Include Year
+            </label>
+            <select
+              value={receiptVoucher.includeYear ? "yes" : "no"}
+              onChange={(e) => setReceiptVoucher({ ...receiptVoucher, includeYear: e.target.value === "yes" })}
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 font-medium bg-white"
+            >
+              <option value="yes">Yes ({new Date().getFullYear()}-)</option>
+              <option value="no">No Year</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-2xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+              Zero Padding
+            </label>
+            <select
+              value={receiptVoucher.padding}
+              onChange={(e) => setReceiptVoucher({ ...receiptVoucher, padding: parseInt(e.target.value, 10) })}
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 font-medium bg-white"
+            >
+              <option value={2}>2 Digits (01)</option>
+              <option value={3}>3 Digits (001)</option>
+              <option value={4}>4 Digits (0001)</option>
+              <option value={5}>5 Digits (00001)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-2xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+              Next Counter
+            </label>
+            <input
+              type="number"
+              min={1}
+              value={receiptVoucher.nextNumber}
+              onChange={(e) => setReceiptVoucher({ ...receiptVoucher, nextNumber: Math.max(1, parseInt(e.target.value, 10) || 1) })}
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono font-medium focus:ring-2 focus:ring-purple-500/20"
+            />
+          </div>
+
+          <div>
+            <label className="block text-2xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+              Suffix (Optional)
+            </label>
+            <input
+              type="text"
+              value={receiptVoucher.suffix}
+              onChange={(e) => setReceiptVoucher({ ...receiptVoucher, suffix: e.target.value })}
+              placeholder="e.g. /26-27"
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono font-medium focus:ring-2 focus:ring-purple-500/20"
             />
           </div>
         </div>

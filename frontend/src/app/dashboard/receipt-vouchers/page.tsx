@@ -32,8 +32,23 @@ function ReceiptVouchersContent() {
 
   const [vouchers, setVouchers] = useState<ReceiptVoucher[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+
+  const handleDownloadPdf = async (v: ReceiptVoucher) => {
+    try {
+      setDownloadingId(v.id);
+      await api.downloadPdf(
+        `/receipt-vouchers/${v.id}/pdf?download=1`,
+        `Receipt-Voucher-${v.voucher_number}.pdf`
+      );
+    } catch (err: any) {
+      console.error("Failed to download Receipt Voucher PDF:", err);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   const fetchVouchers = async () => {
     try {
@@ -338,15 +353,19 @@ function ReceiptVouchersContent() {
                           >
                             <Eye className="w-4 h-4" />
                           </Link>
-                          <a
-                            href={`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/receipt-vouchers/${v.id}/pdf`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition"
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadPdf(v)}
+                            disabled={downloadingId === v.id}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition disabled:opacity-50"
                             title="Print / PDF"
                           >
-                            <Printer className="w-4 h-4" />
-                          </a>
+                            {downloadingId === v.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                            ) : (
+                              <Printer className="w-4 h-4" />
+                            )}
+                          </button>
                         </div>
                       </td>
                     </tr>

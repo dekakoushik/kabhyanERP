@@ -292,7 +292,14 @@ class PdfController extends Controller
      */
     public function downloadReceiptVoucher(Request $request, $id): Response
     {
-        $voucher = ReceiptVoucher::with(['estimate', 'project', 'client'])
+        if (!$request->user() && $request->filled('token')) {
+            $token = \Laravel\Sanctum\PersonalAccessToken::findToken($request->query('token'));
+            if ($token) {
+                auth()->setUser($token->tokenable);
+            }
+        }
+
+        $voucher = ReceiptVoucher::with(['estimate', 'project', 'client', 'proformaInvoice'])
             ->where('id', $id)
             ->orWhere('voucher_number', $id)
             ->firstOrFail();

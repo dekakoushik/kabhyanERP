@@ -114,6 +114,18 @@
             text-transform: uppercase;
             display: inline-block;
         }
+        .badge-voucher {
+            background-color: #faf5ff;
+            color: #7e22ce;
+            font-size: 7.5pt;
+            font-weight: bold;
+            letter-spacing: 0.8px;
+            padding: 3px 9px;
+            border-radius: 4px;
+            border: 1px solid #e9d5ff;
+            text-transform: uppercase;
+            display: inline-block;
+        }
 
         .doc-number {
             font-size: 16pt;

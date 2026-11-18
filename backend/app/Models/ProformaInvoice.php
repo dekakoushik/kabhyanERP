@@ -97,25 +97,35 @@ class ProformaInvoice extends Model
     }
 
     /**
-     * Synchronize and recalculate progressive billing progress against linked Tax Invoices.
+     * Synchronize and recalculate progressive billing progress against linked Tax Invoices and Receipt Vouchers.
      */
     public function syncInvoicedTotals(): void
     {
         $invoicedTotal = (float) $this->taxInvoices()->where('status', '!=', 'cancelled')->sum('total_amount');
+        $advanceTotal = (float) $this->receiptVouchers()->where('status', '!=', 'cancelled')->sum('amount_received');
         $total = (float) $this->total_amount;
-        $remaining = max(0, $total - $invoicedTotal);
+        $remaining = max(0, $total - max($invoicedTotal, $advanceTotal));
 
         $status = $this->status;
-        if ($invoicedTotal <= 0) {
-            $status = in_array($this->status, ['draft', 'cancelled']) ? $this->status : 'unpaid';
-        } elseif ($remaining <= 0.01) {
+        if (in_array($this->status, ['draft', 'cancelled'])) {
+            $status = $this->status;
+        } elseif ($invoicedTotal >= ($total - 0.01)) {
             $status = 'fully_invoiced';
-        } else {
+        } elseif ($advanceTotal >= ($total - 0.01)) {
+            $status = 'paid';
+        } elseif ($invoicedTotal > 0.01) {
             $status = 'partially_invoiced';
+        } elseif ($advanceTotal > 0.01) {
+            $status = 'partially_paid';
+        } else {
+            $status = 'unpaid';
         }
 
         try {
-            $updateData = ['status' => $status];
+            $updateData = [
+                'status' => $status,
+                'paid_amount' => $advanceTotal,
+            ];
             if (\Illuminate\Support\Facades\Schema::hasColumn('proforma_invoices', 'invoiced_amount')) {
                 $updateData['invoiced_amount'] = $invoicedTotal;
             }
@@ -126,8 +136,13 @@ class ProformaInvoice extends Model
         } catch (\Throwable $e) {
             // Graceful fallback to legacy status values if PostgreSQL enum check constraint is still enforced
             try {
-                $fallbackStatus = $remaining <= 0.01 ? 'paid' : ($invoicedTotal > 0 ? 'partially_paid' : 'unpaid');
-                $fallbackData = ['status' => $fallbackStatus];
+                $fallbackStatus = ($remaining <= 0.01 || $advanceTotal >= ($total - 0.01))
+                    ? 'paid'
+                    : (($invoicedTotal > 0 || $advanceTotal > 0) ? 'partially_paid' : 'unpaid');
+                $fallbackData = [
+                    'status' => $fallbackStatus,
+                    'paid_amount' => $advanceTotal,
+                ];
                 if (\Illuminate\Support\Facades\Schema::hasColumn('proforma_invoices', 'invoiced_amount')) {
                     $fallbackData['invoiced_amount'] = $invoicedTotal;
                 }

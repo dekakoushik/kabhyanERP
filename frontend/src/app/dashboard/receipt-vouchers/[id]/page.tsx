@@ -36,11 +36,28 @@ export default function ReceiptVoucherDetailPage({
 
   const [voucher, setVoucher] = useState<ReceiptVoucher | null>(null);
   const [loading, setLoading] = useState(true);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [refunding, setRefunding] = useState(false);
   const [refundModalOpen, setRefundModalOpen] = useState(false);
   const [refundReason, setRefundReason] = useState("");
   const [refundMode, setRefundMode] = useState("bank_transfer");
   const [refundRef, setRefundRef] = useState("");
+
+  const handleDownloadPdf = async () => {
+    if (!voucher) return;
+    try {
+      setDownloadingPdf(true);
+      await api.downloadPdf(
+        `/receipt-vouchers/${voucher.id}/pdf?download=1`,
+        `Receipt-Voucher-${voucher.voucher_number}.pdf`
+      );
+      toast.success("Receipt Voucher PDF downloaded!");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to download Receipt Voucher PDF.");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   const fetchVoucher = async () => {
     try {
@@ -150,15 +167,19 @@ export default function ReceiptVoucherDetailPage({
               <span>Back</span>
             </Link>
 
-            <a
-              href={`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/receipt-vouchers/${voucher.id}/pdf`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold shadow-xs transition cursor-pointer"
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={downloadingPdf}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold shadow-xs transition cursor-pointer disabled:opacity-50"
             >
-              <Download className="w-4 h-4" />
-              <span>Download PDF</span>
-            </a>
+              {downloadingPdf ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              <span>{downloadingPdf ? "Generating..." : "Download PDF"}</span>
+            </button>
           </div>
         </div>
 

@@ -168,6 +168,10 @@ class ReceiptVoucherController extends Controller
             ]);
         });
 
+        if ($voucher->proforma_invoice_id) {
+            $voucher->proformaInvoice?->syncInvoicedTotals();
+        }
+
         return response()->json([
             'message' => 'GST Receipt Voucher successfully issued.',
             'receipt_voucher' => $voucher->load(['estimate', 'client', 'proformaInvoice']),
