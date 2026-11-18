@@ -641,10 +641,10 @@ class ReportController extends Controller
                 $bucket90plus += $dueAmt;
             }
 
-            $clientId = $inv->client_id ?: 'C-' . md5($inv->client_name);
+            $clientId = 'C-' . md5(strtolower(trim($inv->client_email ?: ($inv->client_company ?: $inv->client_name))));
             if (!isset($clientMap[$clientId])) {
                 $clientMap[$clientId] = [
-                    'client_id' => $inv->client_id,
+                    'client_id' => null,
                     'client_name' => $inv->client_name,
                     'client_company' => $inv->client_company,
                     'client_email' => $inv->client_email,
@@ -707,6 +707,23 @@ class ReportController extends Controller
     }
 
     /**
+     * Helper to match an invoice or estimate record to a corporate client.
+     */
+    protected function matchesClientRecord($record, $client): bool
+    {
+        if (!empty($client->email) && !empty($record->client_email) && strcasecmp(trim((string)$record->client_email), trim((string)$client->email)) === 0) {
+            return true;
+        }
+        if (!empty($client->company_name) && !empty($record->client_company) && strcasecmp(trim((string)$record->client_company), trim((string)$client->company_name)) === 0) {
+            return true;
+        }
+        if (!empty($client->name) && !empty($record->client_name) && strcasecmp(trim((string)$record->client_name), trim((string)$client->name)) === 0) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * 5. Client Portfolio & Sales Conversion
      */
     public function clients(Request $request)
@@ -717,27 +734,27 @@ class ReportController extends Controller
         $clientMetrics = [];
         $totalSystemRevenue = 0;
 
-        // Bulk fetch all relevant transactions in the period to avoid N+1 queries
+        // Bulk fetch all relevant transactions in the period (using email/company/name coordinates)
         $invoices = Invoice::whereBetween('invoice_date', [$startDate, $endDate])
             ->where('status', '!=', 'cancelled')
-            ->get(['client_id', 'total_amount', 'due_amount', 'status']);
+            ->get(['id', 'client_email', 'client_company', 'client_name', 'total_amount', 'due_amount', 'status']);
 
         $payments = InvoicePayment::whereHas('invoice', function ($q) {
             $q->where('status', '!=', 'cancelled');
         })->whereBetween('payment_date', [$startDate, $endDate])
-            ->with('invoice:id,client_id')
+            ->with('invoice:id,client_email,client_company,client_name')
             ->get(['id', 'invoice_id', 'amount']);
 
         $estimates = Estimate::whereBetween('estimate_date', [$startDate, $endDate])
-            ->get(['client_id', 'status']);
+            ->get(['id', 'client_email', 'client_company', 'client_name', 'status']);
 
         foreach ($clients as $client) {
-            $clientInvoices = $invoices->where('client_id', $client->id);
+            $clientInvoices = $invoices->filter(fn($inv) => $this->matchesClientRecord($inv, $client));
             $invoiced = (float) $clientInvoices->sum('total_amount');
             $outstanding = (float) $clientInvoices->where('status', '!=', 'paid')->sum('due_amount');
-            $collected = (float) $payments->filter(fn($p) => $p->invoice && $p->invoice->client_id === $client->id)->sum('amount');
+            $collected = (float) $payments->filter(fn($p) => $p->invoice && $this->matchesClientRecord($p->invoice, $client))->sum('amount');
 
-            $clientEstimates = $estimates->where('client_id', $client->id);
+            $clientEstimates = $estimates->filter(fn($est) => $this->matchesClientRecord($est, $client));
             $estimatesWon = $clientEstimates->whereIn('status', ['accepted', 'invoiced'])->count();
             $estimatesTotal = $clientEstimates->count();
 
