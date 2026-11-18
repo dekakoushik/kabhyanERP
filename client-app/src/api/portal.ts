@@ -83,6 +83,9 @@ export interface ProformaInvoiceSummary {
   status: string;
   total_amount?: number;
   invoice_date?: string;
+  due_date?: string;
+  tax_calculation_type?: "exclusive" | "inclusive";
+  estimate?: EstimateSummary;
   tax_invoices?: TaxInvoiceSummary[];
 }
 
@@ -101,6 +104,10 @@ export interface EstimateSummary {
   id: number;
   estimate_number: string;
   status: string;
+  total_amount?: number;
+  total?: number;
+  estimate_date?: string;
+  tax_calculation_type?: "exclusive" | "inclusive";
 }
 
 export interface Invoice {

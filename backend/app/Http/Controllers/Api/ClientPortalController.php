@@ -97,12 +97,50 @@ class ClientPortalController extends Controller
             ->take(3)
             ->get();
 
+        // 1. Tax Invoices Financials
         $invoicesQuery = Invoice::where('client_email', $client->email)
             ->where('status', '!=', 'draft');
-        $totalInvoiced = (float) (clone $invoicesQuery)->sum('total_amount');
-        $totalDue = (float) (clone $invoicesQuery)->sum('due_amount');
-        $totalPaid = (float) (clone $invoicesQuery)->sum('paid_amount');
-        $unpaidCount = (clone $invoicesQuery)->whereIn('status', ['unpaid', 'partially_paid', 'overdue'])->count();
+        $taxInvoicesDue = (float) (clone $invoicesQuery)->sum('due_amount');
+        $taxInvoicesPaid = (float) (clone $invoicesQuery)->sum('paid_amount');
+        $taxInvoicesTotal = (float) (clone $invoicesQuery)->sum('total_amount');
+        $unpaidTaxInvoicesCount = (clone $invoicesQuery)->whereIn('status', ['unpaid', 'partially_paid', 'overdue'])->count();
+
+        // 2. Active Proforma Invoices (Account for unbilled / pending proforma advance)
+        $allActiveProformas = ProformaInvoice::where('client_email', $client->email)
+            ->where('status', '!=', 'draft')
+            ->whereNotIn('status', ['cancelled'])
+            ->with(['taxInvoices' => function ($q) {
+                $q->where('status', '!=', 'cancelled');
+            }])
+            ->get();
+
+        $proformaOutstanding = 0.0;
+        $proformaAdvancePaid = 0.0;
+        $unpaidProformasCount = 0;
+
+        foreach ($allActiveProformas as $proforma) {
+            $proformaTotal = (float) $proforma->total_amount;
+            $invoicedScope = (float) $proforma->taxInvoices->sum('total_amount');
+            $remainingScope = max(0, $proformaTotal - $invoicedScope);
+            $advancePaid = (float) ($proforma->paid_amount ?? 0);
+
+            $unpaidScope = max(0, $remainingScope - max(0, $advancePaid - $invoicedScope));
+            $proformaOutstanding += $unpaidScope;
+
+            if ($unpaidScope > 0.01) {
+                $unpaidProformasCount++;
+            }
+
+            if ($advancePaid > $invoicedScope) {
+                $proformaAdvancePaid += ($advancePaid - $invoicedScope);
+            }
+        }
+
+        // 3. Consolidated Outstanding Balance & Paid Figures
+        $totalDue = round($taxInvoicesDue + $proformaOutstanding, 2);
+        $totalPaid = round($taxInvoicesPaid + $proformaAdvancePaid, 2);
+        $totalInvoiced = round($taxInvoicesTotal + $proformaOutstanding, 2);
+        $unpaidCount = $unpaidTaxInvoicesCount + $unpaidProformasCount;
 
         $stats = [
             'total_projects' => $projects->count(),
@@ -522,8 +560,8 @@ class ClientPortalController extends Controller
                 'items',
                 'payments',
                 'project:id,name,code',
-                'proformaInvoice:id,proforma_number,status,invoice_date,total_amount',
-                'estimate:id,estimate_number,status',
+                'proformaInvoice:id,proforma_number,status,invoice_date,total_amount,tax_calculation_type',
+                'estimate:id,estimate_number,status,estimate_date,total_amount,tax_calculation_type',
             ])
             ->orderBy('invoice_date', 'desc')
             ->paginate($request->input('per_page', 20));
@@ -549,8 +587,8 @@ class ClientPortalController extends Controller
             'items',
             'payments',
             'project:id,name,code',
-            'proformaInvoice:id,proforma_number,status,invoice_date,total_amount',
-            'estimate:id,estimate_number,status',
+            'proformaInvoice:id,proforma_number,status,invoice_date,total_amount,tax_calculation_type',
+            'estimate:id,estimate_number,status,estimate_date,total_amount,tax_calculation_type',
         ]);
 
         return response()->json(['invoice' => $invoice]);
@@ -567,9 +605,9 @@ class ClientPortalController extends Controller
             ->with([
                 'items',
                 'project:id,name,code',
-                'estimate:id,estimate_number,status',
+                'estimate:id,estimate_number,status,estimate_date,total_amount,tax_calculation_type',
                 'taxInvoices' => function ($q) {
-                    $q->select('id', 'proforma_invoice_id', 'invoice_number', 'status', 'total_amount', 'due_amount', 'paid_amount', 'invoice_date', 'due_date')
+                    $q->select('id', 'proforma_invoice_id', 'invoice_number', 'status', 'total_amount', 'due_amount', 'paid_amount', 'invoice_date', 'due_date', 'tax_calculation_type')
                         ->orderBy('invoice_date', 'desc');
                 },
             ])
@@ -596,7 +634,7 @@ class ClientPortalController extends Controller
         $proformaInvoice->load([
             'items',
             'project:id,name,code',
-            'estimate:id,estimate_number,status',
+            'estimate:id,estimate_number,status,estimate_date,total_amount,tax_calculation_type',
             'taxInvoices.payments',
         ]);
 

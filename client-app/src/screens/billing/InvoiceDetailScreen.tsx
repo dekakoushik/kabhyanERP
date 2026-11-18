@@ -6,6 +6,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
@@ -14,7 +15,6 @@ import { fonts } from "../../theme/typography";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
-import { DocumentPipelineStepper } from "../../components/DocumentPipelineStepper";
 import { portalApi, Invoice, ProformaInvoice, InvoiceItem } from "../../api/portal";
 import { formatDate, formatCurrency } from "../../utils/date";
 
@@ -166,67 +166,92 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   // Proforma View
   if (isProforma && proforma) {
     const linkedTaxInvoices = proforma.tax_invoices || [];
-    const latestTaxInv = linkedTaxInvoices[0];
     const isConverted =
       proforma.status === "converted" ||
       proforma.status === "fully_invoiced" ||
       linkedTaxInvoices.length > 0;
     const items = proforma.items || [];
 
+    const totalAmountNum = Number(proforma.total_amount || 0);
+    const taxAmountNum = Number(proforma.tax_amount || 0);
+    const subtotalNum = Number(proforma.subtotal || 0);
+    const roundOffNum = Number(proforma.round_off || 0);
+    const discountNum = Number(proforma.discount_amount || 0);
+    const docTaxRate = Number(proforma.tax_rate ?? 18);
+
+    const isInclusive =
+      proforma.tax_calculation_type === "inclusive" ||
+      proforma.estimate?.tax_calculation_type === "inclusive" ||
+      (totalAmountNum > 0 && taxAmountNum > 0 && Math.abs(totalAmountNum - subtotalNum) < 1) ||
+      (totalAmountNum > 0 && taxAmountNum > 0 && totalAmountNum < (subtotalNum + taxAmountNum - 1));
+
+    const taxableTurnover = isInclusive
+      ? Math.max(0, totalAmountNum - roundOffNum - taxAmountNum)
+      : subtotalNum - discountNum;
+
+    // Progression history for bottom timeline
+    const proformaTimelineItems = [
+      ...(proforma.estimate
+        ? [
+            {
+              key: "estimate",
+              title: "Quotation",
+              number: proforma.estimate.estimate_number,
+              date: formatDate(proforma.estimate.estimate_date || proforma.invoice_date),
+              amount: Number(proforma.estimate.total_amount ?? totalAmountNum),
+              status: "ACCEPTED",
+              badgeVariant: "success" as const,
+              isCurrent: false,
+              onPress: () =>
+                navigation.navigate("EstimateDetail", {
+                  estimateId: proforma.estimate!.id,
+                }),
+            },
+          ]
+        : []),
+      {
+        key: "proforma",
+        title: "Proforma Invoice",
+        number: proforma.proforma_number,
+        date: formatDate(proforma.invoice_date),
+        amount: totalAmountNum,
+        status: (isConverted
+          ? "INVOICED"
+          : proforma.status === "paid"
+          ? "PAID"
+          : (proforma.status || "unpaid").toUpperCase()) as string,
+        badgeVariant: (isConverted
+          ? "purple"
+          : proforma.status === "paid"
+          ? "success"
+          : "info") as any,
+        isCurrent: true,
+        onPress: undefined,
+      },
+      ...linkedTaxInvoices.map((inv) => ({
+        key: `invoice-${inv.id}`,
+        title: "Tax Invoice",
+        number: inv.invoice_number,
+        date: formatDate(inv.invoice_date),
+        amount: Number(inv.total_amount || 0),
+        status: (inv.status || "unpaid").toUpperCase(),
+        badgeVariant: (inv.status === "paid"
+          ? "success"
+          : inv.status === "overdue"
+          ? "danger"
+          : "warning") as any,
+        isCurrent: false,
+        onPress: () =>
+          navigation.navigate("InvoiceDetail", {
+            invoiceId: inv.id,
+            type: "tax",
+          }),
+      })),
+    ];
+
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        {/* Visual Stepper */}
-        <DocumentPipelineStepper
-          currentStep="proforma"
-          estimateNumber={proforma.estimate?.estimate_number}
-          estimateId={proforma.estimate?.id}
-          proformaNumber={proforma.proforma_number}
-          proformaId={proforma.id}
-          invoiceNumber={latestTaxInv?.invoice_number}
-          invoiceId={latestTaxInv?.id}
-          invoiceStatus={latestTaxInv?.status}
-          onNavigate={(navType, id) => {
-            if (navType === "estimate") {
-              navigation.navigate("EstimateDetail", { estimateId: id });
-            } else if (navType === "invoice") {
-              navigation.navigate("InvoiceDetail", { invoiceId: id, type: "tax" });
-            }
-          }}
-        />
-
-        {/* Converted to Official Tax Invoice Banner */}
-        {isConverted && latestTaxInv && (
-          <Card style={styles.taxInvCard}>
-            <View style={styles.taxInvCardHeader}>
-              <View style={styles.taxInvIconBg}>
-                <Ionicons name="receipt" size={20} color={colors.primary} />
-              </View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.taxInvCardTitle}>Tax Invoice Generated</Text>
-                <Text style={styles.taxInvCardSub}>
-                  Invoice #{latestTaxInv.invoice_number} • {formatDate(latestTaxInv.invoice_date)}
-                </Text>
-              </View>
-              <Badge
-                label={latestTaxInv.status === "paid" ? "PAID" : "UNPAID"}
-                variant={latestTaxInv.status === "paid" ? "success" : "warning"}
-              />
-            </View>
-            <Button
-              title={`View Tax Invoice (${latestTaxInv.invoice_number}) →`}
-              variant="primary"
-              onPress={() =>
-                navigation.navigate("InvoiceDetail", {
-                  invoiceId: latestTaxInv.id,
-                  type: "tax",
-                })
-              }
-              style={{ marginTop: 12 }}
-            />
-          </Card>
-        )}
-
-        {/* Status Card */}
+        {/* Status Card (Directly at Top) */}
         <Card style={styles.statusCard}>
           <View style={styles.headerRow}>
             <View>
@@ -238,16 +263,16 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
               label={
                 isConverted
                   ? "INVOICED"
-                  : (proforma.status || "pending").replace("_", " ")
+                  : (proforma.status || "pending").replace("_", " ").toUpperCase()
               }
-              variant={isConverted ? "purple" : "info"}
+              variant={isConverted ? "purple" : proforma.status === "paid" ? "success" : "info"}
             />
           </View>
 
           <View style={styles.advanceRow}>
             <View>
               <Text style={styles.dueLabel}>Total Amount</Text>
-              <Text style={styles.dueAmount}>{formatCurrency(proforma.total_amount || 0)}</Text>
+              <Text style={styles.dueAmount}>{formatCurrency(totalAmountNum)}</Text>
             </View>
             {proforma.paid_amount ? (
               <View style={{ alignItems: "flex-end" }}>
@@ -274,6 +299,11 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
         {/* Deliverables & Line Items */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Scope Deliverables Schedule</Text>
+          <Badge
+            label={isInclusive ? "GST INCLUSIVE" : "TAX EXCLUSIVE"}
+            variant={isInclusive ? "purple" : "neutral"}
+            size="sm"
+          />
         </View>
 
         {items.length === 0 ? (
@@ -282,10 +312,52 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           </Card>
         ) : (
           items.map((item, idx) => {
-            const hasDistinctTitle = Boolean(item.item_name && item.description && item.description !== item.item_name);
+            const qtyNum = Number(item.quantity) || 1;
+            const unitPriceNum = Number(item.unit_price) || 0;
+            const rawAmount = Number(item.amount || qtyNum * unitPriceNum);
+            const itemTaxRate =
+              item.tax_rate !== null && item.tax_rate !== undefined
+                ? Number(item.tax_rate)
+                : docTaxRate;
+
+            let lineGross: number;
+            let lineTaxable: number;
+            let lineTax: number;
+
+            if (isInclusive) {
+              lineGross = rawAmount; // ₹25,000.00
+              lineTaxable =
+                itemTaxRate > 0
+                  ? Math.round((lineGross / (1 + itemTaxRate / 100)) * 100) / 100
+                  : lineGross;
+              lineTax = Math.round((lineGross - lineTaxable) * 100) / 100;
+            } else {
+              lineTaxable = rawAmount;
+              lineTax = Number(
+                item.tax_amount || Math.round(((lineTaxable * itemTaxRate) / 100) * 100) / 100
+              );
+              lineGross = lineTaxable + lineTax;
+            }
+
+            const unitLabel = item.unit
+              ? qtyNum === 1 && item.unit.toLowerCase() === "units"
+                ? "unit"
+                : item.unit
+              : qtyNum === 1
+              ? "unit"
+              : "units";
+
+            const taxLabel =
+              itemTaxRate === 0
+                ? "0% Exempt"
+                : isInclusive
+                ? `Incl. ${itemTaxRate}% GST`
+                : `+${itemTaxRate}% GST`;
+
+            const hasDistinctTitle = Boolean(
+              item.item_name && item.description && item.description !== item.item_name
+            );
             const lineTitle = item.item_name || item.description || `Item #${idx + 1}`;
-            const taxableAmount = item.amount ?? item.taxable_amount ?? (item.quantity * item.unit_price);
-            const lineTotal = item.total_amount ?? (Number(taxableAmount) + Number(item.tax_amount || 0));
 
             return (
               <Card key={item.id || idx} style={styles.itemCard}>
@@ -295,19 +367,21 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
                 )}
                 <View style={styles.itemMetaRow}>
                   <Text style={styles.itemQty}>
-                    Qty: {item.quantity} {item.unit || "units"} @ {formatCurrency(item.unit_price)}
+                    {qtyNum} {unitLabel} × {formatCurrency(unitPriceNum)}
                   </Text>
-                  <View style={styles.gstBadge}>
-                    <Text style={styles.gstBadgeText}>+{item.tax_rate ?? item.gst_rate ?? 18}% GST</Text>
+                  <View style={[styles.gstBadge, isInclusive && styles.gstBadgeInclusive]}>
+                    <Text style={[styles.gstBadgeText, isInclusive && styles.gstBadgeTextInclusive]}>
+                      {taxLabel}
+                    </Text>
                   </View>
                 </View>
                 <View style={styles.itemDivider} />
                 <View style={styles.itemFooterRow}>
                   <Text style={styles.itemTaxable}>
-                    Taxable: {formatCurrency(taxableAmount)}
+                    Taxable: {formatCurrency(lineTaxable)}
                   </Text>
                   <Text style={styles.itemTotal}>
-                    Gross: {formatCurrency(lineTotal)}
+                    Gross: {formatCurrency(lineGross)}
                   </Text>
                 </View>
               </Card>
@@ -318,36 +392,118 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
         {/* Accounting Summary */}
         <Card style={styles.breakdownCard}>
           <Text style={styles.breakdownTitle}>Advance Billing Summary</Text>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Subtotal (Taxable)</Text>
-            <Text style={styles.summaryValue}>{formatCurrency(proforma.subtotal || 0)}</Text>
-          </View>
-          {Number(proforma.discount_amount || 0) > 0 && (
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Discount</Text>
-              <Text style={[styles.summaryValue, { color: colors.danger }]}>
-                -{formatCurrency(proforma.discount_amount || 0)}
-              </Text>
-            </View>
+
+          {isInclusive ? (
+            <>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Taxable Turnover</Text>
+                <Text style={styles.summaryValue}>{formatCurrency(taxableTurnover)}</Text>
+              </View>
+              {discountNum > 0 && (
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Discount</Text>
+                  <Text style={[styles.summaryValue, { color: colors.danger }]}>
+                    -{formatCurrency(discountNum)}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>GST Included ({docTaxRate}%)</Text>
+                <Text style={[styles.summaryValue, { color: colors.purple }]}>
+                  {formatCurrency(taxAmountNum)}
+                </Text>
+              </View>
+            </>
+          ) : (
+            <>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Subtotal (Taxable)</Text>
+                <Text style={styles.summaryValue}>{formatCurrency(subtotalNum)}</Text>
+              </View>
+              {discountNum > 0 && (
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Discount</Text>
+                  <Text style={[styles.summaryValue, { color: colors.danger }]}>
+                    -{formatCurrency(discountNum)}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>GST Component (+{docTaxRate}%)</Text>
+                <Text style={styles.summaryValue}>+{formatCurrency(taxAmountNum)}</Text>
+              </View>
+            </>
           )}
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>GST Component</Text>
-            <Text style={styles.summaryValue}>+{formatCurrency(proforma.tax_amount || 0)}</Text>
-          </View>
-          {Number(proforma.round_off || 0) !== 0 && (
+
+          {roundOffNum !== 0 && (
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Round Off</Text>
               <Text style={styles.summaryValue}>
-                {Number(proforma.round_off) > 0 ? "+" : ""}{formatCurrency(proforma.round_off || 0)}
+                {roundOffNum > 0 ? "+" : ""}{formatCurrency(roundOffNum)}
               </Text>
             </View>
           )}
+
           <View style={styles.summaryDivider} />
+
           <View style={styles.summaryRow}>
             <Text style={styles.grossLabel}>Total Proforma Value</Text>
-            <Text style={styles.grossValue}>{formatCurrency(proforma.total_amount || 0)}</Text>
+            <Text style={styles.grossValue}>{formatCurrency(totalAmountNum)}</Text>
           </View>
         </Card>
+
+        {/* Commercial Progression Timeline (History Only) */}
+        {proformaTimelineItems.length > 1 && (
+          <Card style={styles.timelineCard}>
+            <View style={styles.timelineHeaderRow}>
+              <Text style={styles.timelineTitle}>Commercial Progression</Text>
+              <Badge label={`${proformaTimelineItems.length} records`} variant="neutral" size="sm" />
+            </View>
+
+            <View style={styles.timelineList}>
+              {proformaTimelineItems.map((item, index) => {
+                const isLast = index === proformaTimelineItems.length - 1;
+                return (
+                  <View key={item.key} style={styles.timelineRow}>
+                    <View style={styles.nodeColumn}>
+                      <View style={[styles.timelineDot, item.isCurrent ? styles.dotCurrent : styles.dotCompleted]}>
+                        <View style={[styles.timelineDotInner, item.isCurrent ? styles.dotInnerCurrent : styles.dotInnerCompleted]} />
+                      </View>
+                      {!isLast && <View style={styles.verticalLine} />}
+                    </View>
+
+                    <TouchableOpacity
+                      style={[styles.timelineContentBox, isLast && { marginBottom: 0 }]}
+                      onPress={item.onPress}
+                      disabled={!item.onPress}
+                      activeOpacity={item.onPress ? 0.7 : 1}
+                    >
+                      <View style={styles.timelineMainInfo}>
+                        <View style={styles.timelineTitleRow}>
+                          <Text style={styles.timelineItemTitle}>{item.title}</Text>
+                          <Badge label={item.status} variant={item.badgeVariant} size="sm" />
+                        </View>
+                        <Text style={styles.timelineItemNumber}>{item.number} • {item.date}</Text>
+                      </View>
+
+                      <View style={styles.timelineActionCol}>
+                        <Text style={styles.timelineAmount}>{formatCurrency(item.amount)}</Text>
+                        {item.isCurrent ? (
+                          <Text style={styles.currentViewingText}>Viewing</Text>
+                        ) : item.onPress ? (
+                          <View style={styles.viewRow}>
+                            <Text style={styles.viewText}>View</Text>
+                            <Ionicons name="chevron-forward" size={12} color={colors.primary} />
+                          </View>
+                        ) : null}
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+            </View>
+          </Card>
+        )}
       </ScrollView>
     );
   }
@@ -363,53 +519,80 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
 
   const isPaid = invoice.status === "paid";
   const items = invoice.items || [];
-  const invoiceTotal = invoice.total_amount ?? invoice.total ?? 0;
+
+  const invoiceTotalNum = Number(invoice.total_amount ?? invoice.total ?? 0);
+  const taxAmountNum = Number(invoice.tax_amount || 0);
+  const subtotalNum = Number(invoice.subtotal || 0);
+  const roundOffNum = Number(invoice.round_off || 0);
+  const discountNum = Number(invoice.discount_amount || 0);
+  const docTaxRate = Number(invoice.tax_rate ?? 18);
+
+  const isInclusive =
+    invoice.tax_calculation_type === "inclusive" ||
+    invoice.proforma_invoice?.tax_calculation_type === "inclusive" ||
+    invoice.estimate?.tax_calculation_type === "inclusive" ||
+    (invoiceTotalNum > 0 && taxAmountNum > 0 && Math.abs(invoiceTotalNum - subtotalNum) < 1) ||
+    (invoiceTotalNum > 0 && taxAmountNum > 0 && invoiceTotalNum < (subtotalNum + taxAmountNum - 1));
+
+  const taxableTurnover = isInclusive
+    ? Math.max(0, invoiceTotalNum - roundOffNum - taxAmountNum)
+    : subtotalNum - discountNum;
+
+  const originEstimate = invoice.estimate || invoice.proforma_invoice?.estimate;
+  const taxInvoiceTimelineItems = [
+    ...(originEstimate
+      ? [
+          {
+            key: "estimate",
+            title: "Quotation",
+            number: originEstimate.estimate_number,
+            date: formatDate(originEstimate.estimate_date || invoice.invoice_date),
+            amount: Number(originEstimate.total_amount ?? invoiceTotalNum),
+            status: "ACCEPTED",
+            badgeVariant: "success" as const,
+            isCurrent: false,
+            onPress: () =>
+              navigation.navigate("EstimateDetail", {
+                estimateId: originEstimate.id,
+              }),
+          },
+        ]
+      : []),
+    ...(invoice.proforma_invoice
+      ? [
+          {
+            key: "proforma",
+            title: "Proforma Invoice",
+            number: invoice.proforma_invoice.proforma_number,
+            date: formatDate(invoice.proforma_invoice.invoice_date || invoice.invoice_date),
+            amount: Number(invoice.proforma_invoice.total_amount ?? invoiceTotalNum),
+            status: (invoice.proforma_invoice.status || "unpaid").toUpperCase(),
+            badgeVariant: (invoice.proforma_invoice.status === "paid" ? "success" : "purple") as any,
+            isCurrent: false,
+            onPress: () =>
+              navigation.navigate("InvoiceDetail", {
+                proformaId: invoice.proforma_invoice!.id,
+                type: "proforma",
+              }),
+          },
+        ]
+      : []),
+    {
+      key: "invoice",
+      title: "Tax Invoice",
+      number: invoice.invoice_number,
+      date: formatDate(invoice.invoice_date),
+      amount: invoiceTotalNum,
+      status: (isPaid ? "PAID" : invoice.status || "UNPAID").toUpperCase(),
+      badgeVariant: (isPaid ? "success" : invoice.status === "overdue" ? "danger" : "warning") as any,
+      isCurrent: true,
+      onPress: undefined,
+    },
+  ];
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Visual Stepper */}
-      <DocumentPipelineStepper
-        currentStep="invoice"
-        estimateNumber={invoice.estimate?.estimate_number}
-        estimateId={invoice.estimate?.id}
-        proformaNumber={invoice.proforma_invoice?.proforma_number}
-        proformaId={invoice.proforma_invoice?.id}
-        invoiceNumber={invoice.invoice_number}
-        invoiceId={invoice.id}
-        invoiceStatus={invoice.status}
-        onNavigate={(navType, id) => {
-          if (navType === "estimate") {
-            navigation.navigate("EstimateDetail", { estimateId: id });
-          } else if (navType === "proforma") {
-            navigation.navigate("InvoiceDetail", { proformaId: id, type: "proforma" });
-          }
-        }}
-      />
-
-      {/* Commercial Origin Card */}
-      {invoice.proforma_invoice && (
-        <Card style={styles.originCard}>
-          <View style={styles.originRow}>
-            <Ionicons name="link-outline" size={18} color={colors.primary} />
-            <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={styles.originTitle}>From Proforma #{invoice.proforma_invoice.proforma_number}</Text>
-            </View>
-            <Button
-              title="View PI"
-              variant="outline"
-              onPress={() =>
-                navigation.navigate("InvoiceDetail", {
-                  proformaId: invoice.proforma_invoice!.id,
-                  type: "proforma",
-                })
-              }
-              style={styles.originBtn}
-            />
-          </View>
-        </Card>
-      )}
-
-      {/* Top Status Card */}
+      {/* Top Status Card (Directly at Top) */}
       <Card style={styles.statusCard}>
         <View style={styles.headerRow}>
           <View>
@@ -434,7 +617,7 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           <View style={styles.payBox}>
             <View>
               <Text style={styles.dueLabel}>Total Amount Due</Text>
-              <Text style={styles.dueAmount}>{formatCurrency(invoiceTotal)}</Text>
+              <Text style={styles.dueAmount}>{formatCurrency(invoiceTotalNum)}</Text>
             </View>
             <Button
               title="Pay Now"
@@ -461,6 +644,11 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
       {/* Deliverables & Line Items Ledger */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Scope Deliverables & Line Items</Text>
+        <Badge
+          label={isInclusive ? "GST INCLUSIVE" : "TAX EXCLUSIVE"}
+          variant={isInclusive ? "purple" : "neutral"}
+          size="sm"
+        />
       </View>
 
       {items.length === 0 ? (
@@ -469,10 +657,52 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
         </Card>
       ) : (
         items.map((item, idx) => {
-          const hasDistinctTitle = Boolean(item.item_name && item.description && item.description !== item.item_name);
+          const qtyNum = Number(item.quantity) || 1;
+          const unitPriceNum = Number(item.unit_price) || 0;
+          const rawAmount = Number(item.amount || qtyNum * unitPriceNum);
+          const itemTaxRate =
+            item.tax_rate !== null && item.tax_rate !== undefined
+              ? Number(item.tax_rate)
+              : docTaxRate;
+
+          let lineGross: number;
+          let lineTaxable: number;
+          let lineTax: number;
+
+          if (isInclusive) {
+            lineGross = rawAmount;
+            lineTaxable =
+              itemTaxRate > 0
+                ? Math.round((lineGross / (1 + itemTaxRate / 100)) * 100) / 100
+                : lineGross;
+            lineTax = Math.round((lineGross - lineTaxable) * 100) / 100;
+          } else {
+            lineTaxable = rawAmount;
+            lineTax = Number(
+              item.tax_amount || Math.round(((lineTaxable * itemTaxRate) / 100) * 100) / 100
+            );
+            lineGross = lineTaxable + lineTax;
+          }
+
+          const unitLabel = item.unit
+            ? qtyNum === 1 && item.unit.toLowerCase() === "units"
+              ? "unit"
+              : item.unit
+            : qtyNum === 1
+            ? "unit"
+            : "units";
+
+          const taxLabel =
+            itemTaxRate === 0
+              ? "0% Exempt"
+              : isInclusive
+              ? `Incl. ${itemTaxRate}% GST`
+              : `+${itemTaxRate}% GST`;
+
+          const hasDistinctTitle = Boolean(
+            item.item_name && item.description && item.description !== item.item_name
+          );
           const lineTitle = item.item_name || item.description || `Item #${idx + 1}`;
-          const taxableAmount = item.amount ?? item.taxable_amount ?? (item.quantity * item.unit_price);
-          const lineTotal = item.total_amount ?? (Number(taxableAmount) + Number(item.tax_amount || 0));
 
           return (
             <Card key={item.id || idx} style={styles.itemCard}>
@@ -483,10 +713,12 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
               
               <View style={styles.itemMetaRow}>
                 <Text style={styles.itemQty}>
-                  Qty: {item.quantity} {item.unit || "units"} @ {formatCurrency(item.unit_price)}
+                  {qtyNum} {unitLabel} × {formatCurrency(unitPriceNum)}
                 </Text>
-                <View style={styles.gstBadge}>
-                  <Text style={styles.gstBadgeText}>+{item.tax_rate ?? item.gst_rate ?? 18}% GST</Text>
+                <View style={[styles.gstBadge, isInclusive && styles.gstBadgeInclusive]}>
+                  <Text style={[styles.gstBadgeText, isInclusive && styles.gstBadgeTextInclusive]}>
+                    {taxLabel}
+                  </Text>
                 </View>
               </View>
 
@@ -494,10 +726,10 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
 
               <View style={styles.itemFooterRow}>
                 <Text style={styles.itemTaxable}>
-                  Taxable: {formatCurrency(taxableAmount)}
+                  Taxable: {formatCurrency(lineTaxable)}
                 </Text>
                 <Text style={styles.itemTotal}>
-                  Gross: {formatCurrency(lineTotal)}
+                  Gross: {formatCurrency(lineGross)}
                 </Text>
               </View>
             </Card>
@@ -509,30 +741,53 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
       <Card style={styles.breakdownCard}>
         <Text style={styles.breakdownTitle}>Accounting Summary</Text>
         
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Subtotal (Taxable)</Text>
-          <Text style={styles.summaryValue}>{formatCurrency(invoice.subtotal || 0)}</Text>
-        </View>
-
-        {Number(invoice.discount_amount || 0) > 0 && (
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Discount</Text>
-            <Text style={[styles.summaryValue, { color: colors.danger }]}>
-              -{formatCurrency(invoice.discount_amount || 0)}
-            </Text>
-          </View>
+        {isInclusive ? (
+          <>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Taxable Turnover</Text>
+              <Text style={styles.summaryValue}>{formatCurrency(taxableTurnover)}</Text>
+            </View>
+            {discountNum > 0 && (
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Discount</Text>
+                <Text style={[styles.summaryValue, { color: colors.danger }]}>
+                  -{formatCurrency(discountNum)}
+                </Text>
+              </View>
+            )}
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>GST Included ({docTaxRate}%)</Text>
+              <Text style={[styles.summaryValue, { color: colors.purple }]}>
+                {formatCurrency(taxAmountNum)}
+              </Text>
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Subtotal (Taxable)</Text>
+              <Text style={styles.summaryValue}>{formatCurrency(subtotalNum)}</Text>
+            </View>
+            {discountNum > 0 && (
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Discount</Text>
+                <Text style={[styles.summaryValue, { color: colors.danger }]}>
+                  -{formatCurrency(discountNum)}
+                </Text>
+              </View>
+            )}
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>GST Component (+{docTaxRate}%)</Text>
+              <Text style={styles.summaryValue}>+{formatCurrency(taxAmountNum)}</Text>
+            </View>
+          </>
         )}
 
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>GST Component</Text>
-          <Text style={styles.summaryValue}>+{formatCurrency(invoice.tax_amount || 0)}</Text>
-        </View>
-
-        {Number(invoice.round_off || 0) !== 0 && (
+        {roundOffNum !== 0 && (
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Round Off</Text>
             <Text style={styles.summaryValue}>
-              {Number(invoice.round_off) > 0 ? "+" : ""}{formatCurrency(invoice.round_off || 0)}
+              {roundOffNum > 0 ? "+" : ""}{formatCurrency(roundOffNum)}
             </Text>
           </View>
         )}
@@ -541,9 +796,62 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
 
         <View style={styles.summaryRow}>
           <Text style={styles.grossLabel}>Total Payable (INR)</Text>
-          <Text style={styles.grossValue}>{formatCurrency(invoiceTotal)}</Text>
+          <Text style={styles.grossValue}>{formatCurrency(invoiceTotalNum)}</Text>
         </View>
       </Card>
+
+      {/* Commercial Progression Timeline (History Only) */}
+      {taxInvoiceTimelineItems.length > 1 && (
+        <Card style={styles.timelineCard}>
+          <View style={styles.timelineHeaderRow}>
+            <Text style={styles.timelineTitle}>Commercial Progression</Text>
+            <Badge label={`${taxInvoiceTimelineItems.length} records`} variant="neutral" size="sm" />
+          </View>
+
+          <View style={styles.timelineList}>
+            {taxInvoiceTimelineItems.map((item, index) => {
+              const isLast = index === taxInvoiceTimelineItems.length - 1;
+              return (
+                <View key={item.key} style={styles.timelineRow}>
+                  <View style={styles.nodeColumn}>
+                    <View style={[styles.timelineDot, item.isCurrent ? styles.dotCurrent : styles.dotCompleted]}>
+                      <View style={[styles.timelineDotInner, item.isCurrent ? styles.dotInnerCurrent : styles.dotInnerCompleted]} />
+                    </View>
+                    {!isLast && <View style={styles.verticalLine} />}
+                  </View>
+
+                  <TouchableOpacity
+                    style={[styles.timelineContentBox, isLast && { marginBottom: 0 }]}
+                    onPress={item.onPress}
+                    disabled={!item.onPress}
+                    activeOpacity={item.onPress ? 0.7 : 1}
+                  >
+                    <View style={styles.timelineMainInfo}>
+                      <View style={styles.timelineTitleRow}>
+                        <Text style={styles.timelineItemTitle}>{item.title}</Text>
+                        <Badge label={item.status} variant={item.badgeVariant} size="sm" />
+                      </View>
+                      <Text style={styles.timelineItemNumber}>{item.number} • {item.date}</Text>
+                    </View>
+
+                    <View style={styles.timelineActionCol}>
+                      <Text style={styles.timelineAmount}>{formatCurrency(item.amount)}</Text>
+                      {item.isCurrent ? (
+                        <Text style={styles.currentViewingText}>Viewing</Text>
+                      ) : item.onPress ? (
+                        <View style={styles.viewRow}>
+                          <Text style={styles.viewText}>View</Text>
+                          <Ionicons name="chevron-forward" size={12} color={colors.primary} />
+                        </View>
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+          </View>
+        </Card>
+      )}
     </ScrollView>
   );
 };
@@ -684,6 +992,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.primary,
   },
+  gstBadgeInclusive: {
+    backgroundColor: "#F3E8FF",
+  },
+  gstBadgeTextInclusive: {
+    color: "#7E22CE",
+  },
   itemDivider: {
     height: 1,
     backgroundColor: colors.borderLight,
@@ -822,5 +1136,123 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 12,
     color: "#166534",
+  },
+  timelineCard: {
+    marginTop: 14,
+    backgroundColor: colors.card,
+    padding: 14,
+  },
+  timelineHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  timelineTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.text,
+  },
+  timelineList: {
+    marginTop: 2,
+  },
+  timelineRow: {
+    flexDirection: "row",
+    alignItems: "stretch",
+  },
+  nodeColumn: {
+    width: 24,
+    alignItems: "center",
+    marginRight: 8,
+  },
+  timelineDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.card,
+  },
+  dotCurrent: {
+    borderColor: colors.primary,
+  },
+  dotCompleted: {
+    borderColor: colors.success,
+  },
+  timelineDotInner: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  dotInnerCurrent: {
+    backgroundColor: colors.primary,
+  },
+  dotInnerCompleted: {
+    backgroundColor: colors.success,
+  },
+  verticalLine: {
+    flex: 1,
+    width: 2,
+    backgroundColor: colors.borderLight,
+    marginVertical: 3,
+  },
+  timelineContentBox: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+  },
+  timelineMainInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  timelineTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 3,
+  },
+  timelineItemTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: colors.text,
+  },
+  timelineItemNumber: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    color: colors.textSecondary,
+  },
+  timelineActionCol: {
+    alignItems: "flex-end",
+    justifyContent: "center",
+  },
+  timelineAmount: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: colors.text,
+    marginBottom: 2,
+  },
+  currentViewingText: {
+    fontFamily: fonts.medium,
+    fontSize: 10.5,
+    color: colors.primary,
+  },
+  viewRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  viewText: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: colors.primary,
   },
 });

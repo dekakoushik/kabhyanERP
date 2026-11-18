@@ -101,6 +101,7 @@ class ProformaInvoiceController extends Controller
                 'due_date' => now()->addDays(15)->toDateString(),
                 'status' => 'unpaid',
                 'currency' => $estimate->currency ?? 'INR',
+                'tax_calculation_type' => $estimate->tax_calculation_type ?? 'exclusive',
                 'subtotal' => $estimate->subtotal,
                 'tax_rate' => $estimate->tax_rate,
                 'tax_amount' => $estimate->tax_amount,

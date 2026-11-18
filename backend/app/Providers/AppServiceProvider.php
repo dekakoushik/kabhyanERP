@@ -97,6 +97,46 @@ class AppServiceProvider extends ServiceProvider
                     }
                 }
 
+                // Self-heal tax calculation mode on commercial pipelines (DB-agnostic)
+                if (Schema::hasTable('proforma_invoices') && Schema::hasTable('estimates')) {
+                    try {
+                        $inclusiveEstIds = \Illuminate\Support\Facades\DB::table('estimates')
+                            ->where('tax_calculation_type', 'inclusive')
+                            ->pluck('id');
+
+                        if ($inclusiveEstIds->isNotEmpty()) {
+                            \Illuminate\Support\Facades\DB::table('proforma_invoices')
+                                ->whereIn('estimate_id', $inclusiveEstIds)
+                                ->update(['tax_calculation_type' => 'inclusive']);
+                        }
+
+                        // Also detect inclusive if total equals subtotal while tax_amount is present
+                        \Illuminate\Support\Facades\DB::table('proforma_invoices')
+                            ->where('tax_amount', '>', 0)
+                            ->whereRaw('ABS(total_amount - subtotal) < 1')
+                            ->update(['tax_calculation_type' => 'inclusive']);
+                    } catch (\Throwable $e) {}
+                }
+
+                if (Schema::hasTable('invoices') && Schema::hasTable('proforma_invoices')) {
+                    try {
+                        $inclusivePiIds = \Illuminate\Support\Facades\DB::table('proforma_invoices')
+                            ->where('tax_calculation_type', 'inclusive')
+                            ->pluck('id');
+
+                        if ($inclusivePiIds->isNotEmpty()) {
+                            \Illuminate\Support\Facades\DB::table('invoices')
+                                ->whereIn('proforma_invoice_id', $inclusivePiIds)
+                                ->update(['tax_calculation_type' => 'inclusive']);
+                        }
+
+                        \Illuminate\Support\Facades\DB::table('invoices')
+                            ->where('tax_amount', '>', 0)
+                            ->whereRaw('ABS(total_amount - subtotal) < 1')
+                            ->update(['tax_calculation_type' => 'inclusive']);
+                    } catch (\Throwable $e) {}
+                }
+
                 // 2. Auto-run pending database migrations (debounced every 5 minutes to keep requests fast)
                 $cacheKey = 'kabhyan_auto_migration_last_run_v11';
                 if (!\Illuminate\Support\Facades\Cache::has($cacheKey)) {
