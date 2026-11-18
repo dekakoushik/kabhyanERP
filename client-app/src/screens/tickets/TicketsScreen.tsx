@@ -90,9 +90,10 @@ export const TicketsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     <View style={styles.container}>
       {/* Top Action Bar */}
       <View style={styles.topBar}>
-        <View>
-          <Text style={styles.topTitle}>Support Desk</Text>
-          <Text style={styles.topSubtitle}>Dedicated technical assistance for your workspace</Text>
+        <View style={{ flex: 1, marginRight: 12 }}>
+          <Text style={styles.topSubtitle}>
+            {loading ? "Technical assistance for your workspace" : `${tickets.length} ${tickets.length === 1 ? "ticket" : "tickets"} registered`}
+          </Text>
         </View>
         <Button
           title="+ New Ticket"
@@ -142,15 +143,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  topTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: colors.text,
-  },
   topSubtitle: {
-    fontSize: 11,
+    fontSize: 12,
+    fontWeight: "600",
     color: colors.textSecondary,
-    marginTop: 2,
   },
   newTicketBtn: {
     paddingVertical: 8,
