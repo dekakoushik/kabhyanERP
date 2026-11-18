@@ -171,10 +171,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     });
   };
 
-  const toggleDropdown = (name: string) => {
+  const toggleDropdown = (name: string, currentlyOpen = false) => {
     setOpenDropdowns((prev) => ({
       ...prev,
-      [name]: !prev[name],
+      [name]: prev[name] !== undefined ? !prev[name] : !currentlyOpen,
     }));
   };
 
@@ -237,7 +237,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         {
           name: "Business Reports",
           icon: BarChart3,
-          roles: ["superadmin", "admin"],
+          roles: ["superadmin", "admin", "manager"],
           children: [
             { name: "Executive Overview", href: "/dashboard/reports", icon: BarChart3 },
             { name: "Revenue & P&L", href: "/dashboard/reports/revenue", icon: TrendingUp },
@@ -597,7 +597,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   const hasActiveChild = item.children.some(
                     (c) => pathname === c.href || (c.href !== "/dashboard" && pathname.startsWith(c.href))
                   );
-                  const isOpen = Boolean(openDropdowns[item.name]);
+                  const isOpen = openDropdowns[item.name] !== undefined ? openDropdowns[item.name] : hasActiveChild;
 
                   // Collapsed mode: Floating flyout menu
                   if (isCollapsed) {
@@ -657,7 +657,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     <div key={item.name} className="space-y-1">
                       <button
                         type="button"
-                        onClick={() => toggleDropdown(item.name)}
+                        onClick={() => toggleDropdown(item.name, isOpen)}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                           hasActiveChild
                             ? "bg-slate-100 text-blue-700 font-semibold"
