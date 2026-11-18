@@ -211,7 +211,7 @@ export default function BusinessAssociateDossierPage({
       <AdminLayout>
         <div className="py-24 flex flex-col items-center justify-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          <p className="text-xs font-semibold text-slate-500">Loading associate dossier...</p>
+          <p className="text-xs font-semibold text-slate-500">Loading associate profile...</p>
         </div>
       </AdminLayout>
     );

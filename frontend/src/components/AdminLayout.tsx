@@ -62,6 +62,9 @@ import {
   Calendar,
   CalendarDays,
   Handshake,
+  Plus,
+  Globe,
+  Mail,
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -183,20 +186,82 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     {
       title: "Finance",
       items: [
-        { name: "Estimates", href: "/dashboard/estimates", icon: FileText, roles: ["superadmin", "admin", "manager", "hr"] },
-        { name: "Proforma Invoices", href: "/dashboard/proforma", icon: Receipt, roles: ["superadmin", "admin", "manager"] },
-        { name: "Tax Invoices", href: "/dashboard/invoices", icon: FileCheck, roles: ["superadmin", "admin", "manager"] },
-        { name: "Income & Expenses", href: "/dashboard/accounts", icon: TrendingUp, roles: ["superadmin", "admin"] },
-        { name: "Expenses", href: "/dashboard/expenses", icon: CreditCard, roles: ["superadmin", "admin", "manager", "hr"] },
+        {
+          name: "Tax Invoices",
+          icon: FileCheck,
+          roles: ["superadmin", "admin", "manager"],
+          children: [
+            { name: "All Invoices", href: "/dashboard/invoices", icon: FileCheck },
+            { name: "+ New Invoice", href: "/dashboard/invoices/create", icon: Plus, roles: ["superadmin", "admin", "manager"] },
+          ],
+        },
+        {
+          name: "Proforma Invoices",
+          icon: Receipt,
+          roles: ["superadmin", "admin", "manager"],
+          children: [
+            { name: "All Proformas", href: "/dashboard/proforma", icon: Receipt },
+            { name: "+ New Proforma", href: "/dashboard/proforma/create", icon: Plus, roles: ["superadmin", "admin", "manager"] },
+          ],
+        },
+        {
+          name: "Estimates",
+          icon: FileText,
+          roles: ["superadmin", "admin", "manager", "hr"],
+          children: [
+            { name: "All Estimates", href: "/dashboard/estimates", icon: FileText },
+            { name: "+ New Estimate", href: "/dashboard/estimates/create", icon: Plus, roles: ["superadmin", "admin", "manager"] },
+          ],
+        },
+        {
+          name: "Accounts & Expenses",
+          icon: TrendingUp,
+          roles: ["superadmin", "admin", "manager", "hr"],
+          children: [
+            { name: "Income & Accounts", href: "/dashboard/accounts", icon: TrendingUp, roles: ["superadmin", "admin"] },
+            { name: "Company Expenses", href: "/dashboard/expenses", icon: CreditCard },
+            { name: "+ Log Expense", href: "/dashboard/expenses/create", icon: Plus, roles: ["superadmin", "admin", "manager", "hr"] },
+          ],
+        },
       ],
     },
     {
       title: "Operations",
       items: [
-        { name: "Clients", href: "/dashboard/clients", icon: Building, roles: ["superadmin", "admin", "manager"] },
-        { name: "Business Associates", href: "/dashboard/business-associates", icon: Handshake, roles: ["superadmin", "admin", "manager"] },
-        { name: "Projects", href: "/dashboard/projects", icon: Briefcase },
-        { name: "Support Tickets", href: "/dashboard/tickets", icon: LifeBuoy },
+        {
+          name: "Clients",
+          icon: Building,
+          roles: ["superadmin", "admin", "manager"],
+          children: [
+            { name: "Client Directory", href: "/dashboard/clients", icon: Building },
+            { name: "+ Add Client", href: "/dashboard/clients/create", icon: UserPlus, roles: ["superadmin", "admin", "manager"] },
+          ],
+        },
+        {
+          name: "Business Associates",
+          icon: Handshake,
+          roles: ["superadmin", "admin", "manager"],
+          children: [
+            { name: "Partner Directory", href: "/dashboard/business-associates", icon: Handshake },
+            { name: "+ Add Associate", href: "/dashboard/business-associates/create", icon: Plus, roles: ["superadmin", "admin", "manager"] },
+          ],
+        },
+        {
+          name: "Projects",
+          icon: Briefcase,
+          children: [
+            { name: "Project Portfolio", href: "/dashboard/projects", icon: Briefcase },
+            { name: "+ New Project", href: "/dashboard/projects/create", icon: Plus, roles: ["superadmin", "admin", "manager"] },
+          ],
+        },
+        {
+          name: "Support Tickets",
+          icon: LifeBuoy,
+          children: [
+            { name: "Ticket Desk", href: "/dashboard/tickets", icon: LifeBuoy },
+            { name: "+ Raise Ticket", href: "/dashboard/tickets/create", icon: Plus },
+          ],
+        },
       ],
     },
     {
@@ -208,8 +273,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           roles: ["superadmin", "admin", "hr", "manager", "staff"],
           children: [
             { name: "Overview", href: "/dashboard/hrms", icon: LayoutDashboard },
-            { name: "Leaves", href: "/dashboard/hrms/leaves", icon: CalendarDays },
             { name: "Attendance", href: "/dashboard/hrms/attendance", icon: CheckSquare },
+            { name: "Leaves", href: "/dashboard/hrms/leaves", icon: CalendarDays },
+            { name: "+ Apply Leave", href: "/dashboard/hrms/leaves/apply", icon: Plus },
             { name: "Payroll", href: "/dashboard/hrms/payroll", icon: CreditCard, roles: ["superadmin", "admin", "hr"] },
             { name: "Salary Setup", href: "/dashboard/hrms/salary-structures", icon: Receipt, roles: ["superadmin", "admin", "hr"] },
             { name: "Holidays", href: "/dashboard/hrms/holidays", icon: Calendar },
@@ -226,7 +292,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           roles: ["superadmin", "admin", "hr"],
           children: [
             { name: "Team Directory", href: "/dashboard/users", icon: Users },
-            { name: "Add Member", href: "/dashboard/users/create", icon: UserPlus, roles: ["superadmin", "admin"] },
+            { name: "+ Add Member", href: "/dashboard/users/create", icon: UserPlus, roles: ["superadmin", "admin"] },
             { name: "Roles & Permissions", href: "/dashboard/users/roles", icon: ShieldCheck, roles: ["superadmin", "admin"] },
             { name: "Departments", href: "/dashboard/users/departments", icon: Building },
           ],
@@ -241,6 +307,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             { name: "Document Numbering", href: "/dashboard/settings/numbering", icon: Hash },
             { name: "GST & Taxation", href: "/dashboard/settings/gst", icon: Receipt },
             { name: "Banking & Wire", href: "/dashboard/settings/banking", icon: CreditCard },
+            { name: "Localization", href: "/dashboard/settings/localization", icon: Globe },
+            { name: "Security & Access", href: "/dashboard/settings/security", icon: KeyRound },
+            { name: "SMTP Email", href: "/dashboard/settings/email", icon: Mail },
             { name: "System Health", href: "/dashboard/settings/system", icon: Activity },
           ],
         },
@@ -309,6 +378,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       if (section === "accounts") sectionLabel = "Ledger & Income";
       if (section === "expenses") sectionLabel = "Expenses";
       if (section === "clients") sectionLabel = "Clients";
+      if (section === "business-associates") sectionLabel = "Business Associates";
       if (section === "projects") sectionLabel = "Projects";
       if (section === "tasks") sectionLabel = "Tasks";
       if (section === "tickets") sectionLabel = "Support Tickets";
@@ -325,6 +395,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
         if (section === "users" && sub === "create") {
           crumbs.push({ label: "Add Member", href: pathname, isCurrent: true });
+        } else if (section === "business-associates" && sub === "create") {
+          crumbs.push({ label: "Onboard Associate", href: pathname, isCurrent: true });
         } else if (sub === "create") {
           crumbs.push({ label: "New Record", href: pathname, isCurrent: true });
         } else if (sub === "roles") {
@@ -365,6 +437,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               case "proforma": return { record: "Proforma Details", edit: "Edit Proforma" };
               case "invoices": return { record: "Tax Invoice Details", edit: "Edit Invoice" };
               case "clients": return { record: "Client Profile", edit: "Edit Client" };
+              case "business-associates": return { record: "Associate Profile", edit: "Edit Terms" };
               case "projects": return { record: "Project Details", edit: "Edit Project" };
               case "tasks": return { record: "Task Details", edit: "Edit Task" };
               case "tickets": return { record: "Ticket Details", edit: "Edit Ticket" };
@@ -376,12 +449,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           const entityLabels = getEntityLabels(section);
           const isDirectRecord = segments.length === 3;
           const isEditPage = segments.length >= 4 && segments[3] === "edit";
+          const isAddClientPage = segments.length >= 4 && segments[3] === "add-client";
 
           if (isDirectRecord) {
             crumbs.push({ label: entityLabels.record, href: pathname, isCurrent: true });
           } else if (isEditPage) {
             crumbs.push({ label: entityLabels.record, href: `/dashboard/${section}/${sub}`, isCurrent: false });
             crumbs.push({ label: entityLabels.edit, href: pathname, isCurrent: true });
+          } else if (isAddClientPage) {
+            crumbs.push({ label: entityLabels.record, href: `/dashboard/${section}/${sub}`, isCurrent: false });
+            crumbs.push({ label: "Onboard Client", href: pathname, isCurrent: true });
           } else {
             let fallbackLabel = sub.charAt(0).toUpperCase() + sub.slice(1);
             crumbs.push({ label: fallbackLabel, href: pathname, isCurrent: true });
@@ -509,9 +586,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                           <DropdownMenuSeparator className="my-1" />
                           <DropdownMenuGroup>
                             {item.children.map((child) => {
-                              const isChildActive =
-                                pathname === child.href ||
-                                (child.href !== "/dashboard" && pathname.startsWith(child.href));
+                              const hasExactSibling = item.children?.some((c) => c.href === pathname);
+                              const isChildActive = hasExactSibling
+                                ? pathname === child.href
+                                : pathname === child.href || (child.href !== "/dashboard" && pathname.startsWith(`${child.href}/`));
                               const ChildIcon = child.icon;
                               return (
                                 <DropdownMenuItem key={child.name} asChild>
@@ -570,9 +648,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                       {isOpen && (
                         <div className="ml-4 pl-2 border-l border-slate-200 space-y-1 mt-1 transition-all">
                           {item.children.map((child) => {
-                            const isChildActive =
-                              pathname === child.href ||
-                              (child.href !== "/dashboard" && pathname.startsWith(child.href));
+                            const hasExactSibling = item.children?.some((c) => c.href === pathname);
+                            const isChildActive = hasExactSibling
+                              ? pathname === child.href
+                              : pathname === child.href || (child.href !== "/dashboard" && pathname.startsWith(`${child.href}/`));
                             const ChildIcon = child.icon;
 
                             return (

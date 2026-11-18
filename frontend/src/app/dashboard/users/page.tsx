@@ -410,7 +410,7 @@ export default function UsersManagementPage() {
 
                             <Link
                               href={`/dashboard/users/${item.id}`}
-                              title="View dossier"
+                              title="View Profile"
                               className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
                             >
                               <ExternalLink className="w-4 h-4" />
