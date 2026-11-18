@@ -602,6 +602,8 @@ export interface Client {
   currency?: string | null;
   payment_terms?: string | null;
   portal_access_status: "active" | "inactive";
+  business_associate_id?: number | null;
+  business_associate?: BusinessAssociate | null;
   notes?: string | null;
   projects_count?: number;
   tickets_count?: number;
@@ -615,6 +617,108 @@ export interface ClientStats {
   total_clients: number;
   active_portal_users: number;
   total_active_projects: number;
+}
+
+export interface BusinessAssociate {
+  id: number;
+  associate_code: string;
+  name: string;
+  email: string;
+  phone: string;
+  emergency_contact?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state: string;
+  pincode?: string | null;
+  pan_number?: string | null;
+  gstin?: string | null;
+  engagement_model: "salary" | "commission" | "hybrid";
+  base_salary: number | string;
+  commission_rate: number | string;
+  commission_basis: "taxable_turnover" | "gross_amount";
+  commission_scope: "one_time" | "recurring";
+  partner_tier: "bronze" | "silver" | "gold";
+  status: "active" | "probation" | "inactive" | "terminated";
+  joining_date: string;
+  contract_end_date?: string | null;
+  bank_name?: string | null;
+  bank_account_name?: string | null;
+  bank_account_number?: string | null;
+  bank_ifsc?: string | null;
+  bank_upi_id?: string | null;
+  notes?: string | null;
+  clients_count?: number;
+  payouts_count?: number;
+  total_paid?: number | string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface BusinessAssociatePayout {
+  id: number;
+  payout_number: string;
+  business_associate_id: number;
+  client_id?: number | null;
+  invoice_id?: number | null;
+  invoice_payment_id?: number | null;
+  type: "salary" | "commission" | "bonus" | "reimbursement";
+  period_month?: string | null;
+  gross_amount: number | string;
+  tds_rate: number | string;
+  tds_amount: number | string;
+  net_amount: number | string;
+  status: "pending" | "approved" | "paid" | "cancelled";
+  payment_method: "bank_transfer" | "upi" | "cheque" | "cash";
+  reference_number?: string | null;
+  paid_at?: string | null;
+  notes?: string | null;
+  client?: Client | null;
+  invoice?: {
+    id: number;
+    invoice_number: string;
+    total: number | string;
+    taxable_amount?: number | string;
+  } | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface BusinessAssociateDocument {
+  id: number;
+  business_associate_id: number;
+  title: string;
+  document_type: "contract" | "nda" | "pan" | "kyc" | "other";
+  file_path: string;
+  file_size?: string | null;
+  expiry_date?: string | null;
+  created_at?: string;
+}
+
+export interface BusinessAssociateStats {
+  total_associates: number;
+  active_associates: number;
+  salary_model_count: number;
+  commission_model_count: number;
+  total_payouts_disbursed: number;
+  pending_payouts_count: number;
+  pending_payouts_amount: number;
+}
+
+export interface BusinessAssociateMetrics {
+  total_clients_referred: number;
+  total_sales_driven: number;
+  total_paid_payouts: number;
+  pending_payouts: number;
+  lifetime_gross_earnings: number;
+  total_tds_withheld: number;
+}
+
+export interface BusinessAssociateDossierResponse {
+  associate: BusinessAssociate;
+  referred_clients: (Client & { total_invoices_count?: number; total_revenue_paid?: number })[];
+  payouts: BusinessAssociatePayout[];
+  documents: BusinessAssociateDocument[];
+  metrics: BusinessAssociateMetrics;
 }
 
 export interface TicketReply {
@@ -781,11 +885,15 @@ export const api = {
 
   request: async (endpoint: string, options: RequestInit = {}) => {
     const token = api.getToken();
+    const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
     const headers: Record<string, string> = {
-      "Content-Type": "application/json",
       Accept: "application/json",
       ...(options.headers as Record<string, string>),
     };
+
+    if (!isFormData && !headers["Content-Type"]) {
+      headers["Content-Type"] = "application/json";
+    }
 
     if (token) {
       headers.Authorization = `Bearer ${token}`;

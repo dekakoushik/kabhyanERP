@@ -59,6 +59,7 @@ import {
   Sparkles,
   Calendar,
   CalendarDays,
+  Handshake,
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -172,6 +173,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       title: "Operations",
       items: [
         { name: "Clients", href: "/dashboard/clients", icon: Building, roles: ["superadmin", "admin", "manager"] },
+        { name: "Business Associates", href: "/dashboard/business-associates", icon: Handshake, roles: ["superadmin", "admin", "manager"] },
         { name: "Projects", href: "/dashboard/projects", icon: Briefcase },
         { name: "Support Tickets", href: "/dashboard/tickets", icon: LifeBuoy },
       ],

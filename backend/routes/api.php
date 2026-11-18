@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BusinessAssociateController;
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\ClientPortalController;
 use App\Http\Controllers\Api\EstimateController;
@@ -132,6 +133,13 @@ Route::prefix('v1')->group(function () {
 
             // Client Management Module (ERP Admin / Staff)
             Route::apiResource('clients', ClientController::class);
+
+            // Business Associates & Partners Module
+            Route::apiResource('business-associates', BusinessAssociateController::class);
+            Route::post('business-associates/{businessAssociate}/payouts', [BusinessAssociateController::class, 'storePayout']);
+            Route::put('business-associates/payouts/{payoutId}/status', [BusinessAssociateController::class, 'updatePayoutStatus']);
+            Route::post('business-associates/{businessAssociate}/documents', [BusinessAssociateController::class, 'uploadDocument']);
+            Route::delete('business-associates/documents/{documentId}', [BusinessAssociateController::class, 'deleteDocument']);
 
             // Support & Change Request Tickets (ERP Admin / Staff)
             Route::apiResource('tickets', TicketController::class);

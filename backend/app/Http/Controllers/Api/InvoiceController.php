@@ -437,7 +437,7 @@ class InvoiceController extends Controller
         $validated = $request->validated();
 
         DB::transaction(function () use ($validated, $request, $invoice) {
-            $invoice->payments()->create([
+            $payment = $invoice->payments()->create([
                 'recorded_by' => $request->user()->id,
                 'amount' => $validated['amount'],
                 'payment_date' => $validated['payment_date'],
@@ -447,6 +447,55 @@ class InvoiceController extends Controller
             ]);
 
             $invoice->recalculateTotals();
+
+            // Auto-accrue commission if the client is linked to a business associate
+            try {
+                $client = $invoice->client ?? ($invoice->client_id ? \App\Models\Client::find($invoice->client_id) : null);
+                if ($client && $client->business_associate_id) {
+                    $associate = \App\Models\BusinessAssociate::find($client->business_associate_id);
+                    if ($associate && in_array($associate->engagement_model, ['commission', 'hybrid']) && $associate->commission_rate > 0) {
+                        $existingPayoutCount = \App\Models\BusinessAssociatePayout::where('business_associate_id', $associate->id)
+                            ->where('client_id', $client->id)
+                            ->where('type', 'commission')
+                            ->count();
+
+                        if ($associate->commission_scope !== 'one_time' || $existingPayoutCount === 0) {
+                            $paidAmount = (float) $validated['amount'];
+                            $calcBase = $paidAmount;
+                            if ($associate->commission_basis === 'taxable_turnover' && (float) $invoice->total > 0) {
+                                $taxableRatio = (float) ($invoice->taxable_amount ?? ($invoice->subtotal ?? $invoice->total)) / (float) $invoice->total;
+                                $calcBase = round($paidAmount * $taxableRatio, 2);
+                            }
+
+                            $grossCommission = round($calcBase * ((float) $associate->commission_rate / 100), 2);
+                            if ($grossCommission > 0) {
+                                $tdsRate = $associate->pan_number ? 5.00 : 20.00;
+                                $tdsAmount = round($grossCommission * ($tdsRate / 100), 2);
+                                $netCommission = round($grossCommission - $tdsAmount, 2);
+
+                                \App\Models\BusinessAssociatePayout::create([
+                                    'payout_number' => \App\Models\BusinessAssociatePayout::generateNextPayoutNumber(),
+                                    'business_associate_id' => $associate->id,
+                                    'client_id' => $client->id,
+                                    'invoice_id' => $invoice->id,
+                                    'invoice_payment_id' => $payment->id,
+                                    'type' => 'commission',
+                                    'period_month' => date('Y-m'),
+                                    'gross_amount' => $grossCommission,
+                                    'tds_rate' => $tdsRate,
+                                    'tds_amount' => $tdsAmount,
+                                    'net_amount' => $netCommission,
+                                    'status' => 'pending',
+                                    'payment_method' => 'bank_transfer',
+                                    'notes' => "Auto-accrued commission ({$associate->commission_rate}%) on payment for Invoice #{$invoice->invoice_number}",
+                                ]);
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("Failed to auto-accrue associate commission: " . $e->getMessage());
+            }
         });
 
         return response()->json([

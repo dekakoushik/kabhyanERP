@@ -32,6 +32,7 @@ class StoreClientRequest extends FormRequest
             'postal_code' => ['nullable', 'string', 'max:20'],
             'currency' => ['nullable', 'string', 'max:10'],
             'payment_terms' => ['nullable', 'string', 'max:50'],
+            'business_associate_id' => ['nullable', 'exists:business_associates,id'],
             'notes' => ['nullable', 'string'],
             'create_portal_account' => ['nullable', 'boolean'],
             'grant_mobile_access' => ['nullable', 'boolean'],

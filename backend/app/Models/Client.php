@@ -27,8 +27,14 @@ class Client extends Model
         'currency',
         'payment_terms',
         'portal_access_status',
+        'business_associate_id',
         'notes',
     ];
+
+    public function businessAssociate()
+    {
+        return $this->belongsTo(BusinessAssociate::class, 'business_associate_id');
+    }
 
     public function user()
     {

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AdminLayout from "@/components/AdminLayout";
-import { api } from "@/lib/api";
+import { api, BusinessAssociate } from "@/lib/api";
 import { GST_STATE_CODES, validateGSTIN } from "@/lib/gst";
 import { toast } from "sonner";
 import {
@@ -27,6 +27,7 @@ import {
   Send,
   Hash,
   Check,
+  Handshake,
 } from "lucide-react";
 
 const STANDARD_CURRENCIES = [
@@ -53,6 +54,7 @@ export default function CreateClientPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [associates, setAssociates] = useState<BusinessAssociate[]>([]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -68,11 +70,20 @@ export default function CreateClientPage() {
     postal_code: "",
     currency: "INR",
     payment_terms: "Net 30",
+    business_associate_id: "",
     notes: "",
     grant_mobile_access: true,
     send_invitation_email: true,
     portal_access_status: "active" as "active" | "inactive",
   });
+
+  useEffect(() => {
+    (api.request("/business-associates?status=active&per_page=100") as Promise<{ data: BusinessAssociate[] }>)
+      .then((res) => {
+        setAssociates(res.data || []);
+      })
+      .catch(() => {});
+  }, []);
 
   // Real-time GSTIN validation and metadata extraction
   const gstAnalysis = useMemo(() => {
@@ -112,9 +123,13 @@ export default function CreateClientPage() {
 
     try {
       setSaving(true);
+      const payload = {
+        ...formData,
+        business_associate_id: formData.business_associate_id ? Number(formData.business_associate_id) : null,
+      };
       await api.request("/clients", {
         method: "POST",
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
       toast.success(
         formData.email.trim() && formData.grant_mobile_access && formData.send_invitation_email
@@ -501,6 +516,30 @@ export default function CreateClientPage() {
                       </select>
                     </div>
                     <p className="text-[11px] text-slate-400 mt-1">Calculates invoice due date from generation date.</p>
+                  </div>
+
+                  <div className="sm:col-span-2 pt-2 border-t border-slate-100">
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                      Referring Business Associate (Optional)
+                    </label>
+                    <div className="relative">
+                      <Handshake className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                      <select
+                        value={formData.business_associate_id}
+                        onChange={(e) => setFormData({ ...formData, business_associate_id: e.target.value })}
+                        className="w-full pl-9 pr-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
+                      >
+                        <option value="">Direct Client (No referring business associate)</option>
+                        {associates.map((ba) => (
+                          <option key={ba.id} value={ba.id}>
+                            {ba.name} ({ba.associate_code}) • {ba.engagement_model.toUpperCase()} • {ba.partner_tier.toUpperCase()} ({ba.commission_rate}% Comm)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      When recorded invoices for this client are marked paid, commission ledger entries will automatically accrue for this partner.
+                    </p>
                   </div>
                 </div>
               </div>

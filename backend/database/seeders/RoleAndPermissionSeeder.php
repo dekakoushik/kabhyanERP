@@ -89,6 +89,13 @@ class RoleAndPermissionSeeder extends Seeder
             ['module' => 'roles', 'action' => 'view', 'slug' => 'roles.view', 'name' => 'View Roles & Permissions', 'description' => 'Inspect custom roles and system access policies.'],
             ['module' => 'roles', 'action' => 'manage', 'slug' => 'roles.manage', 'name' => 'Manage Roles & Permissions', 'description' => 'Create custom roles and alter modular permission matrices.'],
 
+            // Business Associates & Partners
+            ['module' => 'business_associates', 'action' => 'view', 'slug' => 'business_associates.view', 'name' => 'View Business Associates', 'description' => 'Access partner directory, client referrals, and commission ledger.'],
+            ['module' => 'business_associates', 'action' => 'create', 'slug' => 'business_associates.create', 'name' => 'Onboard Associates', 'description' => 'Register new salary, commission, or hybrid business associates.'],
+            ['module' => 'business_associates', 'action' => 'edit', 'slug' => 'business_associates.edit', 'name' => 'Edit Associates', 'description' => 'Update compensation rates, banking coordinates, and terms.'],
+            ['module' => 'business_associates', 'action' => 'delete', 'slug' => 'business_associates.delete', 'name' => 'Delete Associates', 'description' => 'Remove or deactivate associate partnerships.'],
+            ['module' => 'business_associates', 'action' => 'record_payout', 'slug' => 'business_associates.record_payout', 'name' => 'Record Associate Payouts', 'description' => 'Disburse monthly salary retainers and commission payments.'],
+
             // System Settings
             ['module' => 'settings', 'action' => 'view', 'slug' => 'settings.view', 'name' => 'View Settings', 'description' => 'Review corporate configuration and server vitals.'],
             ['module' => 'settings', 'action' => 'manage_company', 'slug' => 'settings.manage_company', 'name' => 'Manage Company Profile', 'description' => 'Update legal entity details, CIN, and brand logos.'],

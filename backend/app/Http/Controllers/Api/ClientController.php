@@ -128,6 +128,7 @@ class ClientController extends Controller
                 'currency' => $validated['currency'] ?? 'INR',
                 'payment_terms' => $validated['payment_terms'] ?? 'Net 30',
                 'portal_access_status' => $grantAccess ? 'active' : 'inactive',
+                'business_associate_id' => $validated['business_associate_id'] ?? null,
                 'notes' => $validated['notes'] ?? null,
             ]);
         });
@@ -164,7 +165,7 @@ class ClientController extends Controller
      */
     public function show(Client $client)
     {
-        $client->load(['user', 'projects.tasks', 'tickets.replies']);
+        $client->load(['user', 'projects.tasks', 'tickets.replies', 'businessAssociate:id,associate_code,name,email']);
         return response()->json(['client' => $client]);
     }
 
@@ -196,6 +197,7 @@ class ClientController extends Controller
                 'currency' => $validated['currency'] ?? ($client->currency ?? 'INR'),
                 'payment_terms' => $validated['payment_terms'] ?? ($client->payment_terms ?? 'Net 30'),
                 'portal_access_status' => $validated['portal_access_status'] ?? $client->portal_access_status,
+                'business_associate_id' => array_key_exists('business_associate_id', $validated) ? $validated['business_associate_id'] : $client->business_associate_id,
                 'notes' => $validated['notes'] ?? null,
             ]);
 

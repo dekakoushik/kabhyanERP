@@ -36,6 +36,7 @@ class UpdateClientRequest extends FormRequest
             'currency' => ['nullable', 'string', 'max:10'],
             'payment_terms' => ['nullable', 'string', 'max:50'],
             'portal_access_status' => ['nullable', Rule::in(['active', 'inactive'])],
+            'business_associate_id' => ['nullable', 'exists:business_associates,id'],
             'notes' => ['nullable', 'string'],
             'reset_portal_password' => ['nullable', 'string', 'min:6'],
         ];

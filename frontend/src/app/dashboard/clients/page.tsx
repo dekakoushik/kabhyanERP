@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition, Suspense, useMemo } from "react";
 import AdminLayout from "@/components/AdminLayout";
-import { api, Client, ClientStats } from "@/lib/api";
+import { api, Client, ClientStats, BusinessAssociate } from "@/lib/api";
 import Link from "next/link";
 import { validateGSTIN } from "@/lib/gst";
 import { toast } from "sonner";
@@ -40,6 +40,7 @@ import {
   CreditCard,
   Globe,
   AlertCircle,
+  Handshake,
 } from "lucide-react";
 
 const STANDARD_CURRENCIES = [
@@ -75,6 +76,7 @@ function ClientsContent() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Client | null>(null);
+  const [associates, setAssociates] = useState<BusinessAssociate[]>([]);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -91,6 +93,7 @@ function ClientsContent() {
     postal_code: "",
     currency: "INR",
     payment_terms: "Net 30",
+    business_associate_id: "",
     notes: "",
     grant_mobile_access: true,
     portal_access_status: "active" as "active" | "inactive",
@@ -169,6 +172,11 @@ function ClientsContent() {
 
   useEffect(() => {
     fetchClients();
+    (api.request("/business-associates?status=active&per_page=100") as Promise<{ data: BusinessAssociate[] }>)
+      .then((res) => {
+        setAssociates(res.data || []);
+      })
+      .catch(() => {});
   }, [search, statusFilter]);
 
   const openEditModal = (client: Client) => {
@@ -187,6 +195,7 @@ function ClientsContent() {
       postal_code: client.postal_code || "",
       currency: client.currency || "INR",
       payment_terms: client.payment_terms || "Net 30",
+      business_associate_id: client.business_associate_id ? String(client.business_associate_id) : "",
       notes: client.notes || "",
       grant_mobile_access: client.portal_access_status === "active",
       portal_access_status: client.portal_access_status || "active",
@@ -201,9 +210,13 @@ function ClientsContent() {
     setSaving(true);
 
     try {
+      const payload = {
+        ...formData,
+        business_associate_id: formData.business_associate_id ? Number(formData.business_associate_id) : null,
+      };
       await api.request(`/clients/${editingId}`, {
         method: "PUT",
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       toast.success("Client profile updated successfully");
@@ -408,6 +421,14 @@ function ClientsContent() {
                               <User className="w-3 h-3 text-slate-400 shrink-0" />
                               <span className="truncate">{cli.name}</span>
                             </p>
+                            {cli.business_associate && (
+                              <div className="pt-0.5">
+                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-1.5 py-0.5 rounded">
+                                  <Handshake className="w-2.5 h-2.5" />
+                                  Ref: {cli.business_associate.name}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </td>
 
@@ -770,6 +791,27 @@ function ClientsContent() {
                         </option>
                       ))}
                     </select>
+                  </div>
+
+                  <div className="col-span-2">
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 mb-1">
+                      Referring Business Associate
+                    </label>
+                    <div className="relative">
+                      <Handshake className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                      <select
+                        value={formData.business_associate_id}
+                        onChange={(e) => setFormData({ ...formData, business_associate_id: e.target.value })}
+                        className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none cursor-pointer"
+                      >
+                        <option value="">Direct Client (No referring business associate)</option>
+                        {associates.map((ba) => (
+                          <option key={ba.id} value={ba.id}>
+                            {ba.name} ({ba.associate_code}) • {ba.engagement_model.toUpperCase()} • {ba.commission_rate}% Comm
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
 
