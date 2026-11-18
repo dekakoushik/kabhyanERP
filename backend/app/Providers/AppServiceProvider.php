@@ -58,6 +58,18 @@ class AppServiceProvider extends ServiceProvider
                     }
                 }
 
+                // 2. Self-heal document numbering settings (ensure suffixes are never null)
+                if (Schema::hasTable('system_settings')) {
+                    try {
+                        \Illuminate\Support\Facades\DB::table('system_settings')
+                            ->whereIn('key', ['estimate_suffix', 'proforma_suffix', 'invoice_suffix'])
+                            ->whereNull('value')
+                            ->update(['value' => '']);
+                    } catch (\Throwable $e) {
+                        // Safe ignore
+                    }
+                }
+
                 // 2. Auto-run pending database migrations (debounced every 5 minutes to keep requests fast)
                 $cacheKey = 'kabhyan_auto_migration_last_run_v10';
                 if (!\Illuminate\Support\Facades\Cache::has($cacheKey)) {

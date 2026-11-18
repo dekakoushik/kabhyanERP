@@ -25,7 +25,10 @@ class SystemSetting extends Model
     {
         return Cache::remember("setting_{$key}", 3600, function () use ($key, $default) {
             $setting = self::where('key', $key)->first();
-            return $setting ? $setting->value : $default;
+            if (!$setting || $setting->value === null) {
+                return $default;
+            }
+            return $setting->value;
         });
     }
 
@@ -37,7 +40,7 @@ class SystemSetting extends Model
         self::updateOrCreate(
             ['key' => $key],
             [
-                'value' => is_array($value) ? json_encode($value) : $value,
+                'value' => is_array($value) ? json_encode($value) : ($value === null ? '' : (string) $value),
                 'group' => $group,
                 'type' => $type,
             ]
