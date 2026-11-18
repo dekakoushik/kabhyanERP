@@ -8,6 +8,7 @@ use App\Models\ClientDeviceToken;
 use App\Models\Estimate;
 use App\Models\Invoice;
 use App\Models\ProformaInvoice;
+use App\Models\ReceiptVoucher;
 use App\Models\Project;
 use App\Models\Ticket;
 use App\Models\TicketReply;
@@ -346,7 +347,7 @@ class ClientPortalController extends Controller
     {
         $client = $this->getClient($request);
         $search = $request->input('search');
-        $statusFilter = $request->input('status'); // 'all', 'unpaid', 'action_required', 'settled'
+        $statusFilter = $request->input('status'); // 'all', 'invoices', 'receipt_vouchers', 'estimates', 'unpaid', 'action_required', 'settled'
 
         // 1. Fetch all non-draft Tax Invoices
         $invoices = Invoice::where('client_email', $client->email)
@@ -355,72 +356,51 @@ class ClientPortalController extends Controller
                 'project:id,name,code',
                 'proformaInvoice:id,proforma_number,status,invoice_date,total_amount,estimate_id',
                 'estimate:id,estimate_number,status,estimate_date,total_amount',
+                'advanceAdjustments.receiptVoucher:id,voucher_number,voucher_date,total_amount',
                 'payments',
             ])
             ->orderBy('invoice_date', 'desc')
             ->get();
 
-        // 2. Fetch all non-draft Proformas
+        // 2. Fetch all non-draft Receipt Vouchers (Statutory GST Advance Receipts)
+        $receiptVouchers = ReceiptVoucher::where('client_email', $client->email)
+            ->with([
+                'project:id,name,code',
+                'estimate:id,estimate_number,status,estimate_date,total_amount',
+                'invoiceAdvanceAdjustments.invoice:id,invoice_number,invoice_date,total_amount',
+            ])
+            ->orderBy('voucher_date', 'desc')
+            ->get();
+
+        // 3. Fetch all non-draft Estimates / Quotations
+        $estimates = Estimate::where('client_email', $client->email)
+            ->where('status', '!=', 'draft')
+            ->with([
+                'project:id,name,code',
+                'receiptVouchers:id,estimate_id,voucher_number,status,total_amount,voucher_date',
+                'invoices:id,estimate_id,invoice_number,status,total_amount,invoice_date',
+                'proformaInvoices:id,estimate_id,proforma_number,status,total_amount,invoice_date',
+            ])
+            ->orderBy('estimate_date', 'desc')
+            ->get();
+
+        // 4. Fetch legacy Proformas (if any exist for backward compatibility)
         $proformas = ProformaInvoice::where('client_email', $client->email)
             ->where('status', '!=', 'draft')
             ->with([
                 'project:id,name,code',
                 'estimate:id,estimate_number,status,estimate_date,total_amount',
-                'taxInvoices' => function ($q) {
-                    $q->select('id', 'proforma_invoice_id', 'invoice_number', 'status', 'total_amount', 'due_amount', 'paid_amount', 'invoice_date', 'due_date')
-                        ->where('status', '!=', 'draft');
-                },
             ])
             ->orderBy('invoice_date', 'desc')
             ->get();
 
-        // 3. Fetch all non-draft Estimates
-        $estimates = Estimate::where('client_email', $client->email)
-            ->where('status', '!=', 'draft')
-            ->with([
-                'project:id,name,code',
-                'proformaInvoices' => function ($q) {
-                    $q->select('id', 'estimate_id', 'proforma_number', 'status', 'total_amount', 'invoice_date')
-                        ->where('status', '!=', 'draft');
-                },
-            ])
-            ->orderBy('estimate_date', 'desc')
-            ->get();
-
-        $subsumedProformaIds = [];
-        $subsumedEstimateIds = [];
         $threads = [];
 
-        // Step A: Tax Invoices are the headline document
+        // Step A: Tax Invoices
         foreach ($invoices as $inv) {
             $history = [];
 
-            if ($inv->proformaInvoice) {
-                $subsumedProformaIds[] = $inv->proformaInvoice->id;
-                $history[] = [
-                    'stage' => 'proforma',
-                    'id' => $inv->proformaInvoice->id,
-                    'number' => $inv->proformaInvoice->proforma_number,
-                    'date' => $inv->proformaInvoice->invoice_date,
-                    'total_amount' => (float) $inv->proformaInvoice->total_amount,
-                    'status' => $inv->proformaInvoice->status,
-                ];
-
-                if ($inv->proformaInvoice->estimate) {
-                    $subsumedEstimateIds[] = $inv->proformaInvoice->estimate->id;
-                    $history[] = [
-                        'stage' => 'estimate',
-                        'id' => $inv->proformaInvoice->estimate->id,
-                        'number' => $inv->proformaInvoice->estimate->estimate_number,
-                        'date' => $inv->proformaInvoice->estimate->estimate_date,
-                        'total_amount' => (float) $inv->proformaInvoice->estimate->total_amount,
-                        'status' => $inv->proformaInvoice->estimate->status,
-                    ];
-                }
-            }
-
-            if ($inv->estimate && !in_array($inv->estimate->id, $subsumedEstimateIds)) {
-                $subsumedEstimateIds[] = $inv->estimate->id;
+            if ($inv->estimate) {
                 $history[] = [
                     'stage' => 'estimate',
                     'id' => $inv->estimate->id,
@@ -428,6 +408,30 @@ class ClientPortalController extends Controller
                     'date' => $inv->estimate->estimate_date,
                     'total_amount' => (float) $inv->estimate->total_amount,
                     'status' => $inv->estimate->status,
+                ];
+            }
+
+            foreach ($inv->advanceAdjustments as $adj) {
+                if ($adj->receiptVoucher) {
+                    $history[] = [
+                        'stage' => 'receipt_voucher',
+                        'id' => $adj->receiptVoucher->id,
+                        'number' => $adj->receiptVoucher->voucher_number,
+                        'date' => $adj->receiptVoucher->voucher_date,
+                        'total_amount' => (float) $adj->receiptVoucher->total_amount,
+                        'status' => 'adjusted',
+                    ];
+                }
+            }
+
+            if ($inv->proformaInvoice) {
+                $history[] = [
+                    'stage' => 'proforma',
+                    'id' => $inv->proformaInvoice->id,
+                    'number' => $inv->proformaInvoice->proforma_number,
+                    'date' => $inv->proformaInvoice->invoice_date,
+                    'total_amount' => (float) $inv->proformaInvoice->total_amount,
+                    'status' => $inv->proformaInvoice->status,
                 ];
             }
 
@@ -442,25 +446,81 @@ class ClientPortalController extends Controller
                 'total_amount' => (float) $inv->total_amount,
                 'due_amount' => (float) $inv->due_amount,
                 'paid_amount' => (float) $inv->paid_amount,
+                'advance_adjusted' => (float) ($inv->advance_adjusted ?? 0),
                 'project_name' => $inv->project?->name,
                 'history' => $history,
                 'raw_document' => $inv,
             ];
         }
 
-        // Step B: Proforma Invoices that were NOT converted to Tax Invoices
+        // Step B: Receipt Vouchers (Statutory GST Advance Receipts)
+        foreach ($receiptVouchers as $rv) {
+            $history = [];
+            if ($rv->estimate) {
+                $history[] = [
+                    'stage' => 'estimate',
+                    'id' => $rv->estimate->id,
+                    'number' => $rv->estimate->estimate_number,
+                    'date' => $rv->estimate->estimate_date,
+                    'total_amount' => (float) $rv->estimate->total_amount,
+                    'status' => $rv->estimate->status,
+                ];
+            }
+
+            $threads[] = [
+                'thread_id' => 'rv-' . $rv->id,
+                'stage' => 'receipt_voucher',
+                'headline_id' => $rv->id,
+                'headline_number' => $rv->voucher_number,
+                'headline_status' => $rv->status,
+                'headline_date' => $rv->voucher_date,
+                'due_date' => null,
+                'total_amount' => (float) $rv->total_amount,
+                'due_amount' => 0.0,
+                'paid_amount' => (float) $rv->total_amount,
+                'adjusted_amount' => (float) $rv->adjusted_amount,
+                'remaining_amount' => (float) $rv->remaining_amount,
+                'project_name' => $rv->project?->name,
+                'history' => $history,
+                'raw_document' => $rv,
+            ];
+        }
+
+        // Step C: Estimates / Quotations
+        foreach ($estimates as $est) {
+            $history = [];
+            foreach ($est->receiptVouchers as $srv) {
+                $history[] = [
+                    'stage' => 'receipt_voucher',
+                    'id' => $srv->id,
+                    'number' => $srv->voucher_number,
+                    'date' => $srv->voucher_date,
+                    'total_amount' => (float) $srv->total_amount,
+                    'status' => $srv->status,
+                ];
+            }
+
+            $threads[] = [
+                'thread_id' => 'est-' . $est->id,
+                'stage' => 'estimate',
+                'headline_id' => $est->id,
+                'headline_number' => $est->estimate_number,
+                'headline_status' => $est->status,
+                'headline_date' => $est->estimate_date,
+                'due_date' => $est->expiry_date,
+                'total_amount' => (float) $est->total_amount,
+                'due_amount' => $est->status === 'accepted' ? (float) $est->total_amount : 0.0,
+                'paid_amount' => 0.0,
+                'project_name' => $est->project?->name,
+                'history' => $history,
+                'raw_document' => $est,
+            ];
+        }
+
+        // Step D: Legacy Proformas (if any exist)
         foreach ($proformas as $pi) {
-            if (in_array($pi->id, $subsumedProformaIds)) {
-                continue;
-            }
-
-            if ($pi->taxInvoices && $pi->taxInvoices->count() > 0) {
-                continue;
-            }
-
             $history = [];
             if ($pi->estimate) {
-                $subsumedEstimateIds[] = $pi->estimate->id;
                 $history[] = [
                     'stage' => 'estimate',
                     'id' => $pi->estimate->id,
@@ -488,33 +548,6 @@ class ClientPortalController extends Controller
             ];
         }
 
-        // Step C: Estimates that were NOT converted to Proformas or Invoices
-        foreach ($estimates as $est) {
-            if (in_array($est->id, $subsumedEstimateIds)) {
-                continue;
-            }
-
-            if ($est->proformaInvoices && $est->proformaInvoices->count() > 0) {
-                continue;
-            }
-
-            $threads[] = [
-                'thread_id' => 'est-' . $est->id,
-                'stage' => 'estimate',
-                'headline_id' => $est->id,
-                'headline_number' => $est->estimate_number,
-                'headline_status' => $est->status,
-                'headline_date' => $est->estimate_date,
-                'due_date' => $est->expiry_date,
-                'total_amount' => (float) $est->total_amount,
-                'due_amount' => (float) $est->total_amount,
-                'paid_amount' => 0.0,
-                'project_name' => $est->project?->name,
-                'history' => [],
-                'raw_document' => $est,
-            ];
-        }
-
         // Sort threads by headline_date descending
         usort($threads, function ($a, $b) {
             return strcmp($b['headline_date'], $a['headline_date']);
@@ -529,14 +562,23 @@ class ClientPortalController extends Controller
             }));
         }
 
-        // Status filter
+        // Status & Category filter
         if ($statusFilter && $statusFilter !== 'all') {
             $threads = array_values(array_filter($threads, function ($t) use ($statusFilter) {
+                if ($statusFilter === 'invoices') {
+                    return $t['stage'] === 'tax_invoice';
+                }
+                if ($statusFilter === 'receipt_vouchers' || $statusFilter === 'vouchers') {
+                    return $t['stage'] === 'receipt_voucher';
+                }
+                if ($statusFilter === 'estimates' || $statusFilter === 'quotations') {
+                    return $t['stage'] === 'estimate';
+                }
                 if ($statusFilter === 'unpaid') {
-                    return in_array($t['headline_status'], ['unpaid', 'partially_paid', 'overdue']);
+                    return in_array($t['headline_status'], ['unpaid', 'partially_paid', 'overdue', 'sent']);
                 }
                 if ($statusFilter === 'settled') {
-                    return $t['headline_status'] === 'paid';
+                    return $t['headline_status'] === 'paid' || $t['stage'] === 'receipt_voucher' || $t['headline_status'] === 'accepted';
                 }
                 if ($statusFilter === 'action_required') {
                     return $t['headline_status'] === 'sent' || $t['headline_status'] === 'unpaid' || $t['headline_status'] === 'overdue';
@@ -589,9 +631,48 @@ class ClientPortalController extends Controller
             'project:id,name,code',
             'proformaInvoice:id,proforma_number,status,invoice_date,total_amount,tax_calculation_type',
             'estimate:id,estimate_number,status,estimate_date,total_amount,tax_calculation_type',
+            'advanceAdjustments.receiptVoucher:id,voucher_number,voucher_date,total_amount,adjusted_amount',
         ]);
 
         return response()->json(['invoice' => $invoice]);
+    }
+
+    /**
+     * Client's receipt vouchers list (Statutory GST Advance Receipts).
+     */
+    public function receiptVouchers(Request $request)
+    {
+        $client = $this->getClient($request);
+        $vouchers = ReceiptVoucher::where('client_email', $client->email)
+            ->with([
+                'project:id,name,code',
+                'estimate:id,estimate_number,status,estimate_date,total_amount,tax_calculation_type',
+                'invoiceAdvanceAdjustments.invoice:id,invoice_number,invoice_date,total_amount',
+            ])
+            ->orderBy('voucher_date', 'desc')
+            ->paginate($request->input('per_page', 20));
+
+        return response()->json(['receipt_vouchers' => $vouchers]);
+    }
+
+    /**
+     * Show single receipt voucher for client.
+     */
+    public function showReceiptVoucher(Request $request, ReceiptVoucher $receiptVoucher)
+    {
+        $client = $this->getClient($request);
+        if (strcasecmp(trim($receiptVoucher->client_email), trim($client->email)) !== 0) {
+            abort(403, 'Unauthorized access to this receipt voucher.');
+        }
+
+        $receiptVoucher->load([
+            'project:id,name,code',
+            'estimate:id,estimate_number,status,estimate_date,total_amount,tax_calculation_type',
+            'invoiceAdvanceAdjustments.invoice:id,invoice_number,invoice_date,total_amount',
+            'refundVouchers',
+        ]);
+
+        return response()->json(['receipt_voucher' => $receiptVoucher]);
     }
 
     /**
@@ -978,6 +1059,44 @@ class ClientPortalController extends Controller
         }
 
         return app(PdfController::class)->downloadInvoice($request, $invoice->id);
+    }
+
+    /**
+     * Generate secure temporary download URL for Receipt Voucher PDF.
+     */
+    public function getReceiptVoucherPdfUrl(Request $request, ReceiptVoucher $receiptVoucher)
+    {
+        $client = $this->getClient($request);
+        if (strcasecmp(trim($receiptVoucher->client_email), trim($client->email)) !== 0) {
+            abort(403, 'Unauthorized access to this receipt voucher.');
+        }
+
+        $downloadUrl = URL::temporarySignedRoute(
+            'portal.receipt-voucher.download-pdf',
+            now()->addMinutes(60),
+            ['id' => $receiptVoucher->id, 'download' => 1]
+        );
+
+        return response()->json([
+            'download_url' => $downloadUrl,
+            'filename' => "Receipt-Voucher-{$receiptVoucher->voucher_number}.pdf",
+        ]);
+    }
+
+    /**
+     * Download Receipt Voucher PDF via signed streaming route.
+     */
+    public function downloadReceiptVoucherPdfDirect(Request $request, $id)
+    {
+        if (! $request->hasValidSignature() && ! $request->hasValidRelativeSignature()) {
+            abort(403, 'The download link has expired or has an invalid signature. Please request a new link from the app.');
+        }
+
+        $voucher = ReceiptVoucher::where('id', $id)
+            ->orWhere('voucher_number', $id)
+            ->firstOrFail();
+
+        return app(PdfController::class)->downloadReceiptVoucher($request, $voucher->id);
     }
 
     /**

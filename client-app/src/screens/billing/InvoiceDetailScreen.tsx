@@ -15,27 +15,33 @@ import { fonts } from "../../theme/typography";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
-import { portalApi, Invoice, ProformaInvoice, InvoiceItem } from "../../api/portal";
+import { portalApi, Invoice, ProformaInvoice, ReceiptVoucher, InvoiceItem } from "../../api/portal";
 import { formatDate, formatCurrency } from "../../utils/date";
 
 export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   route,
   navigation,
 }) => {
-  const { invoiceId, proformaId, type = "tax" } = route.params;
+  const { invoiceId, proformaId, voucherId, type = "tax" } = route.params;
 
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [proforma, setProforma] = useState<ProformaInvoice | null>(null);
+  const [voucher, setVoucher] = useState<ReceiptVoucher | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
-  const isProforma = type === "proforma" || Boolean(proformaId);
+  const isVoucher = type === "voucher" || Boolean(voucherId);
+  const isProforma = !isVoucher && (type === "proforma" || Boolean(proformaId));
 
   const fetchDetail = async () => {
     try {
       setLoading(true);
-      if (isProforma) {
+      if (isVoucher) {
+        const id = voucherId || invoiceId;
+        const res = await portalApi.getReceiptVoucher(id);
+        setVoucher(res.receipt_voucher);
+      } else if (isProforma) {
         const id = proformaId || invoiceId;
         const res = await portalApi.getProformaInvoice(id);
         setProforma(res.proforma_invoice);
@@ -52,7 +58,7 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
 
   useEffect(() => {
     fetchDetail();
-  }, [invoiceId, proformaId, isProforma]);
+  }, [invoiceId, proformaId, voucherId, isVoucher, isProforma]);
 
   const handlePay = async () => {
     if (!invoice) return;
@@ -75,7 +81,14 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   const handleDownloadPdf = async () => {
     try {
       setDownloadingPdf(true);
-      if (isProforma && proforma) {
+      if (isVoucher && voucher) {
+        const res = await portalApi.getReceiptVoucherPdfUrl(voucher.id);
+        if (res.download_url) {
+          await WebBrowser.openBrowserAsync(res.download_url);
+        } else {
+          Alert.alert("Notice", "Official Receipt Voucher PDF is currently unavailable.");
+        }
+      } else if (isProforma && proforma) {
         const res = await portalApi.getProformaPdfUrl(proforma.id);
         if (res.download_url) {
           await WebBrowser.openBrowserAsync(res.download_url);
@@ -102,7 +115,11 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>
-          {isProforma ? "Loading proforma invoice..." : "Loading tax invoice..."}
+          {isVoucher
+            ? "Loading receipt voucher..."
+            : isProforma
+            ? "Loading proforma invoice..."
+            : "Loading tax invoice..."}
         </Text>
       </View>
     );
@@ -163,6 +180,241 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
     );
   }
 
+  // Receipt Voucher View (Section 31(3)(d) & Rule 50)
+  if (isVoucher && voucher) {
+    const totalAdvance = Number(voucher.amount_received || voucher.total_amount || 0);
+    const taxableAmount = Number(voucher.taxable_amount || 0);
+    const taxAmount = Number(voucher.tax_amount || 0);
+    const cgstAmount = Number(voucher.cgst_amount || 0);
+    const sgstAmount = Number(voucher.sgst_amount || 0);
+    const igstAmount = Number(voucher.igst_amount || 0);
+    const adjustedAmount = Number(voucher.adjusted_amount || 0);
+    const remainingAdvance = Number(
+      voucher.remaining_advance ?? voucher.remaining_amount ?? (totalAdvance - adjustedAmount)
+    );
+
+    const isFullyAdjusted = voucher.status === "fully_adjusted" || remainingAdvance <= 0;
+    const isPartiallyAdjusted =
+      voucher.status === "partially_adjusted" || (adjustedAmount > 0 && remainingAdvance > 0);
+
+    const voucherTimelineItems = [
+      ...(voucher.estimate
+        ? [
+            {
+              key: "estimate",
+              title: "Quotation",
+              number: voucher.estimate.estimate_number,
+              date: formatDate(voucher.estimate.estimate_date || voucher.voucher_date),
+              amount: Number(voucher.estimate.total_amount ?? totalAdvance),
+              status: "ACCEPTED",
+              badgeVariant: "success" as const,
+              isCurrent: false,
+              onPress: () =>
+                navigation.navigate("EstimateDetail", {
+                  estimateId: voucher.estimate!.id,
+                }),
+            },
+          ]
+        : []),
+      {
+        key: "voucher",
+        title: "Receipt Voucher",
+        number: voucher.voucher_number,
+        date: formatDate(voucher.voucher_date),
+        amount: totalAdvance,
+        status: isFullyAdjusted
+          ? "ADJUSTED"
+          : isPartiallyAdjusted
+          ? "PARTIAL"
+          : voucher.status.toUpperCase(),
+        badgeVariant: isFullyAdjusted ? ("neutral" as const) : ("purple" as const),
+        isCurrent: true,
+        onPress: undefined,
+      },
+      ...((voucher.invoice_advance_adjustments || []).map((adj) => ({
+        key: `invoice-${adj.invoice_id}`,
+        title: "Tax Invoice",
+        number: adj.invoice?.invoice_number || `INV #${adj.invoice_id}`,
+        date: formatDate(adj.invoice?.invoice_date || voucher.voucher_date),
+        amount: Number(adj.invoice?.total_amount || adj.adjusted_amount),
+        status: "ADJUSTED",
+        badgeVariant: "success" as const,
+        isCurrent: false,
+        onPress: adj.invoice
+          ? () =>
+              navigation.navigate("InvoiceDetail", {
+                invoiceId: adj.invoice_id,
+                type: "tax",
+              })
+          : undefined,
+      }))),
+    ];
+
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        {/* Top Status Card */}
+        <Card style={styles.statusCard}>
+          <View style={styles.headerRow}>
+            <View>
+              <Text style={styles.invoiceNumber}>{voucher.voucher_number}</Text>
+              <Text style={styles.dateText}>Issued on: {formatDate(voucher.voucher_date)}</Text>
+              <Text style={styles.dateText}>Rule 50 Advance Receipt</Text>
+            </View>
+            <Badge
+              label={
+                isFullyAdjusted
+                  ? "ADJUSTED"
+                  : isPartiallyAdjusted
+                  ? "PARTIALLY ADJUSTED"
+                  : voucher.status.toUpperCase()
+              }
+              variant={isFullyAdjusted ? "neutral" : "purple"}
+            />
+          </View>
+
+          <View style={styles.advanceRow}>
+            <View>
+              <Text style={styles.dueLabel}>Advance Received</Text>
+              <Text style={styles.dueAmount}>{formatCurrency(totalAdvance)}</Text>
+            </View>
+            <View style={{ alignItems: "flex-end" }}>
+              <Text style={styles.dueLabel}>Unadjusted Balance</Text>
+              <Text style={[styles.dueAmount, { color: colors.purple }]}>
+                {formatCurrency(remainingAdvance)}
+              </Text>
+            </View>
+          </View>
+
+          <View style={{ marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+            <Button
+              title="Download Receipt Voucher"
+              variant="outline"
+              onPress={handleDownloadPdf}
+              loading={downloadingPdf}
+              icon={<Ionicons name="cloud-download-outline" size={16} color={colors.primary} />}
+            />
+          </View>
+        </Card>
+
+        {/* Advance Tax & GST Schedule */}
+        <Card style={styles.breakdownCard}>
+          <Text style={styles.breakdownTitle}>GST Advance Schedule (Table 11A)</Text>
+
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Total Advance Received</Text>
+            <Text style={styles.summaryValue}>{formatCurrency(totalAdvance)}</Text>
+          </View>
+
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Taxable Turnover Base</Text>
+            <Text style={styles.summaryValue}>{formatCurrency(taxableAmount)}</Text>
+          </View>
+
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Applicable GST Rate</Text>
+            <Text style={styles.summaryValue}>{voucher.tax_rate}%</Text>
+          </View>
+
+          {voucher.is_inter_state ? (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>IGST (Integrated Tax)</Text>
+              <Text style={[styles.summaryValue, { color: colors.purple }]}>
+                {formatCurrency(igstAmount)}
+              </Text>
+            </View>
+          ) : (
+            <>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>CGST (Central Tax - {voucher.tax_rate / 2}%)</Text>
+                <Text style={[styles.summaryValue, { color: colors.purple }]}>
+                  {formatCurrency(cgstAmount)}
+                </Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>SGST (State Tax - {voucher.tax_rate / 2}%)</Text>
+                <Text style={[styles.summaryValue, { color: colors.purple }]}>
+                  {formatCurrency(sgstAmount)}
+                </Text>
+              </View>
+            </>
+          )}
+
+          <View style={styles.summaryDivider} />
+
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Place of Supply</Text>
+            <Text style={[styles.summaryValue, { fontSize: 12 }]}>{voucher.place_of_supply || "Assam (18)"}</Text>
+          </View>
+
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Payment Mode</Text>
+            <Text style={styles.summaryValue}>{(voucher.payment_mode || "Bank Transfer").replace("_", " ").toUpperCase()}</Text>
+          </View>
+
+          {voucher.payment_reference ? (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Transaction Ref</Text>
+              <Text style={styles.summaryValue}>{voucher.payment_reference}</Text>
+            </View>
+          ) : null}
+        </Card>
+
+        {/* Commercial Progression Timeline */}
+        {voucherTimelineItems.length > 1 && (
+          <Card style={styles.timelineCard}>
+            <View style={styles.timelineHeaderRow}>
+              <Text style={styles.timelineTitle}>Commercial Progression</Text>
+              <Badge label={`${voucherTimelineItems.length} records`} variant="neutral" size="sm" />
+            </View>
+
+            <View style={styles.timelineList}>
+              {voucherTimelineItems.map((item, index) => {
+                const isLast = index === voucherTimelineItems.length - 1;
+                return (
+                  <View key={item.key} style={styles.timelineRow}>
+                    <View style={styles.nodeColumn}>
+                      <View style={[styles.timelineDot, item.isCurrent ? styles.dotCurrent : styles.dotCompleted]}>
+                        <View style={[styles.timelineDotInner, item.isCurrent ? styles.dotInnerCurrent : styles.dotInnerCompleted]} />
+                      </View>
+                      {!isLast && <View style={styles.verticalLine} />}
+                    </View>
+
+                    <TouchableOpacity
+                      style={[styles.timelineContentBox, isLast && { marginBottom: 0 }]}
+                      onPress={item.onPress}
+                      disabled={!item.onPress}
+                      activeOpacity={item.onPress ? 0.7 : 1}
+                    >
+                      <View style={styles.timelineMainInfo}>
+                        <View style={styles.timelineTitleRow}>
+                          <Text style={styles.timelineItemTitle}>{item.title}</Text>
+                          <Badge label={item.status} variant={item.badgeVariant as any} size="sm" />
+                        </View>
+                        <Text style={styles.timelineItemNumber}>{item.number} • {item.date}</Text>
+                      </View>
+
+                      <View style={styles.timelineActionCol}>
+                        <Text style={styles.timelineAmount}>{formatCurrency(item.amount)}</Text>
+                        {item.isCurrent ? (
+                          <Text style={styles.currentViewingText}>Viewing</Text>
+                        ) : item.onPress ? (
+                          <View style={styles.viewRow}>
+                            <Text style={styles.viewText}>View</Text>
+                            <Ionicons name="chevron-forward" size={12} color={colors.primary} />
+                          </View>
+                        ) : null}
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+            </View>
+          </Card>
+        )}
+      </ScrollView>
+    );
+  }
+
   // Proforma View
   if (isProforma && proforma) {
     const linkedTaxInvoices = proforma.tax_invoices || [];
@@ -178,10 +430,15 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
     const roundOffNum = Number(proforma.round_off || 0);
     const discountNum = Number(proforma.discount_amount || 0);
     const docTaxRate = Number(proforma.tax_rate ?? 18);
+    const expectedInclusiveDocTax =
+      docTaxRate > 0
+        ? Math.round((totalAmountNum - totalAmountNum / (1 + docTaxRate / 100)) * 100) / 100
+        : 0;
 
     const isInclusive =
       proforma.tax_calculation_type === "inclusive" ||
       proforma.estimate?.tax_calculation_type === "inclusive" ||
+      (taxAmountNum > 0 && Math.abs(taxAmountNum - expectedInclusiveDocTax) < 1) ||
       (totalAmountNum > 0 && taxAmountNum > 0 && Math.abs(totalAmountNum - subtotalNum) < 1) ||
       (totalAmountNum > 0 && taxAmountNum > 0 && totalAmountNum < (subtotalNum + taxAmountNum - 1));
 
@@ -320,11 +577,22 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
                 ? Number(item.tax_rate)
                 : docTaxRate;
 
+            const expectedInclusiveTax =
+              itemTaxRate > 0
+                ? Math.round((rawAmount - rawAmount / (1 + itemTaxRate / 100)) * 100) / 100
+                : 0;
+            const itemMatchesInclusive =
+              item.tax_amount !== null &&
+              item.tax_amount !== undefined &&
+              Math.abs(Number(item.tax_amount) - expectedInclusiveTax) < 1;
+
+            const lineIsInclusive = isInclusive || itemMatchesInclusive;
+
             let lineGross: number;
             let lineTaxable: number;
             let lineTax: number;
 
-            if (isInclusive) {
+            if (lineIsInclusive) {
               lineGross = rawAmount; // ₹25,000.00
               lineTaxable =
                 itemTaxRate > 0
@@ -350,7 +618,7 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
             const taxLabel =
               itemTaxRate === 0
                 ? "0% Exempt"
-                : isInclusive
+                : lineIsInclusive
                 ? `Incl. ${itemTaxRate}% GST`
                 : `+${itemTaxRate}% GST`;
 
@@ -526,11 +794,18 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   const roundOffNum = Number(invoice.round_off || 0);
   const discountNum = Number(invoice.discount_amount || 0);
   const docTaxRate = Number(invoice.tax_rate ?? 18);
+  const advanceAdjustedNum = Number(invoice.advance_adjusted || 0);
+
+  const expectedInclusiveDocTax =
+    docTaxRate > 0
+      ? Math.round((invoiceTotalNum - invoiceTotalNum / (1 + docTaxRate / 100)) * 100) / 100
+      : 0;
 
   const isInclusive =
     invoice.tax_calculation_type === "inclusive" ||
     invoice.proforma_invoice?.tax_calculation_type === "inclusive" ||
     invoice.estimate?.tax_calculation_type === "inclusive" ||
+    (taxAmountNum > 0 && Math.abs(taxAmountNum - expectedInclusiveDocTax) < 1) ||
     (invoiceTotalNum > 0 && taxAmountNum > 0 && Math.abs(invoiceTotalNum - subtotalNum) < 1) ||
     (invoiceTotalNum > 0 && taxAmountNum > 0 && invoiceTotalNum < (subtotalNum + taxAmountNum - 1));
 
@@ -558,6 +833,23 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           },
         ]
       : []),
+    ...(invoice.advance_adjustments || []).map((adj) => ({
+      key: `rv-${adj.receipt_voucher?.id || adj.id}`,
+      title: "Receipt Voucher",
+      number: adj.receipt_voucher?.voucher_number || "Advance RV",
+      date: formatDate(adj.receipt_voucher?.voucher_date || invoice.invoice_date),
+      amount: Number(adj.adjusted_amount || adj.receipt_voucher?.total_amount || 0),
+      status: "ADJUSTED",
+      badgeVariant: "purple" as const,
+      isCurrent: false,
+      onPress: adj.receipt_voucher
+        ? () =>
+            navigation.navigate("InvoiceDetail", {
+              voucherId: adj.receipt_voucher!.id,
+              type: "voucher",
+            })
+        : undefined,
+    })),
     ...(invoice.proforma_invoice
       ? [
           {
@@ -665,11 +957,22 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
               ? Number(item.tax_rate)
               : docTaxRate;
 
+          const expectedInclusiveTax =
+            itemTaxRate > 0
+              ? Math.round((rawAmount - rawAmount / (1 + itemTaxRate / 100)) * 100) / 100
+              : 0;
+          const itemMatchesInclusive =
+            item.tax_amount !== null &&
+            item.tax_amount !== undefined &&
+            Math.abs(Number(item.tax_amount) - expectedInclusiveTax) < 1;
+
+          const lineIsInclusive = isInclusive || itemMatchesInclusive;
+
           let lineGross: number;
           let lineTaxable: number;
           let lineTax: number;
 
-          if (isInclusive) {
+          if (lineIsInclusive) {
             lineGross = rawAmount;
             lineTaxable =
               itemTaxRate > 0
@@ -695,7 +998,7 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           const taxLabel =
             itemTaxRate === 0
               ? "0% Exempt"
-              : isInclusive
+              : lineIsInclusive
               ? `Incl. ${itemTaxRate}% GST`
               : `+${itemTaxRate}% GST`;
 
@@ -792,11 +1095,28 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           </View>
         )}
 
+        {advanceAdjustedNum > 0 && (
+          <View style={styles.summaryRow}>
+            <Text style={[styles.summaryLabel, { color: colors.success }]}>
+              Less: Advance Adjusted (Rule 46 & Table 11B)
+            </Text>
+            <Text style={[styles.summaryValue, { color: colors.success }]}>
+              -{formatCurrency(advanceAdjustedNum)}
+            </Text>
+          </View>
+        )}
+
         <View style={styles.summaryDivider} />
 
         <View style={styles.summaryRow}>
-          <Text style={styles.grossLabel}>Total Payable (INR)</Text>
-          <Text style={styles.grossValue}>{formatCurrency(invoiceTotalNum)}</Text>
+          <Text style={styles.grossLabel}>
+            {advanceAdjustedNum > 0 ? "Net Balance Due" : "Total Payable (INR)"}
+          </Text>
+          <Text style={styles.grossValue}>
+            {formatCurrency(
+              Number(invoice.due_amount ?? (invoiceTotalNum - advanceAdjustedNum))
+            )}
+          </Text>
         </View>
       </Card>
 

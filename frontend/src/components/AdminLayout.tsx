@@ -196,6 +196,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           ],
         },
         {
+          name: "Receipt Vouchers",
+          icon: ShieldCheck,
+          roles: ["superadmin", "admin", "manager"],
+          children: [
+            { name: "All Vouchers", href: "/dashboard/receipt-vouchers", icon: ShieldCheck },
+            { name: "+ Issue Voucher", href: "/dashboard/receipt-vouchers/create", icon: Plus, roles: ["superadmin", "admin", "manager"] },
+          ],
+        },
+        {
           name: "Proforma Invoices",
           icon: Receipt,
           roles: ["superadmin", "admin", "manager"],
@@ -373,6 +382,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       const section = segments[1];
       let sectionLabel = section.charAt(0).toUpperCase() + section.slice(1);
       if (section === "estimates") sectionLabel = "Estimates";
+      if (section === "receipt-vouchers") sectionLabel = "Receipt Vouchers";
       if (section === "proforma") sectionLabel = "Proforma Invoices";
       if (section === "invoices") sectionLabel = "Tax Invoices";
       if (section === "accounts") sectionLabel = "Ledger & Income";
@@ -434,6 +444,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             switch (sec) {
               case "users": return { record: "Member Profile", edit: "Edit Profile" };
               case "estimates": return { record: "Estimate Details", edit: "Edit Estimate" };
+              case "receipt-vouchers": return { record: "Voucher Details", edit: "Edit Voucher" };
               case "proforma": return { record: "Proforma Details", edit: "Edit Proforma" };
               case "invoices": return { record: "Tax Invoice Details", edit: "Edit Invoice" };
               case "clients": return { record: "Client Profile", edit: "Edit Client" };

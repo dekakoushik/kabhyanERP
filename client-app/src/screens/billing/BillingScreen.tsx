@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   FlatList,
+  ScrollView,
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
@@ -26,7 +27,9 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "action_required" | "unpaid" | "settled">("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "invoices" | "vouchers" | "quotations" | "unpaid" | "settled"
+  >("all");
   const [payingId, setPayingId] = useState<number | null>(null);
 
   const fetchThreads = useCallback(async () => {
@@ -74,6 +77,8 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const navigateToDocument = (thread: CommercialThread) => {
     if (thread.stage === "tax_invoice") {
       navigation.navigate("InvoiceDetail", { invoiceId: thread.headline_id, type: "tax" });
+    } else if (thread.stage === "receipt_voucher") {
+      navigation.navigate("InvoiceDetail", { voucherId: thread.headline_id, type: "voucher" });
     } else if (thread.stage === "proforma") {
       navigation.navigate("InvoiceDetail", { proformaId: thread.headline_id, type: "proforma" });
     } else {
@@ -85,8 +90,10 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     switch (stage) {
       case "tax_invoice":
         return <Badge label="TAX INVOICE" variant="success" size="sm" />;
+      case "receipt_voucher":
+        return <Badge label="RECEIPT VOUCHER" variant="purple" size="sm" />;
       case "proforma":
-        return <Badge label="PROFORMA" variant="purple" size="sm" />;
+        return <Badge label="PROFORMA" variant="neutral" size="sm" />;
       case "estimate":
         return <Badge label="QUOTATION" variant="warning" size="sm" />;
       default:
@@ -103,9 +110,10 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
     let variant: "success" | "warning" | "danger" | "purple" | "neutral" = "neutral";
     if (s === "paid" || s === "accepted") variant = "success";
-    else if (s === "unpaid" || s === "partially_paid") variant = "warning";
-    else if (s === "overdue" || s === "declined" || s === "cancelled") variant = "danger";
-    else if (s === "invoiced" || s === "converted") variant = "purple";
+    else if (s === "active") variant = "purple";
+    else if (s === "unpaid" || s === "partially_paid" || s === "partially_adjusted") variant = "warning";
+    else if (s === "overdue" || s === "declined" || s === "cancelled" || s === "refunded") variant = "danger";
+    else if (s === "invoiced" || s === "converted" || s === "adjusted" || s === "fully_adjusted") variant = "neutral";
 
     return (
       <Badge
@@ -118,6 +126,7 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
   const renderThreadCard = ({ item }: { item: CommercialThread }) => {
     const isTax = item.stage === "tax_invoice";
+    const isVoucher = item.stage === "receipt_voucher";
     const isPaid = item.headline_status === "paid";
     const isPaying = payingId === item.headline_id;
     const dateFormatted = formatDate(item.due_date || item.headline_date);
@@ -126,9 +135,11 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     const lineageText =
       item.history && item.history.length > 0
         ? ` • via ${item.history
-            .map((h: DocumentHistoryItem) =>
-              h.stage === "proforma" ? `PI #${h.number}` : `Quote #${h.number}`
-            )
+            .map((h: DocumentHistoryItem) => {
+              if (h.stage === "receipt_voucher") return `RV #${h.number}`;
+              if (h.stage === "proforma") return `PI #${h.number}`;
+              return `Quote #${h.number}`;
+            })
             .join(", ")}`
         : "";
 
@@ -144,15 +155,24 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
               <Text style={styles.documentNumber}>{item.headline_number}</Text>
               {renderStageBadge(item.stage)}
             </View>
-            <Text style={styles.amountValue}>
-              {formatCurrency(item.total_amount)}
-            </Text>
+            <View style={{ alignItems: "flex-end" }}>
+              <Text style={styles.amountValue}>
+                {formatCurrency(item.total_amount)}
+              </Text>
+              {isVoucher && (
+                <Text style={{ fontSize: 10, color: colors.purple, fontFamily: fonts.medium }}>
+                  Advance Received
+                </Text>
+              )}
+            </View>
           </View>
 
           {/* Row 2: Context / Date / Lineage (Left) | Status / Action (Right) */}
           <View style={styles.bottomRow}>
             <Text style={styles.contextText} numberOfLines={1}>
-              {item.project_name
+              {isVoucher
+                ? `Received ${formatDate(item.headline_date)}${item.project_name ? ` • ${item.project_name}` : ""}`
+                : item.project_name
                 ? `${item.project_name} • ${item.due_date ? `Due ${dateFormatted}` : dateFormatted}`
                 : item.due_date
                 ? `Due: ${dateFormatted}`
@@ -212,28 +232,36 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         )}
       </View>
 
-      {/* Filter Chips Bar (Zero Tabs: Quick filter chips only) */}
-      <View style={styles.filterBar}>
-        {[
-          { key: "all", label: "All" },
-          { key: "action_required", label: "Action Required" },
-          { key: "unpaid", label: "Unpaid" },
-          { key: "settled", label: "Paid" },
-        ].map((chip) => {
-          const isSelected = statusFilter === chip.key;
-          return (
-            <TouchableOpacity
-              key={chip.key}
-              style={[styles.filterChip, isSelected && styles.filterChipActive]}
-              onPress={() => setStatusFilter(chip.key as any)}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
-                {chip.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+      {/* Filter Chips Bar */}
+      <View style={styles.filterBarContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterBar}
+        >
+          {[
+            { key: "all", label: "All" },
+            { key: "invoices", label: "Invoices" },
+            { key: "vouchers", label: "Advance Receipts" },
+            { key: "quotations", label: "Quotations" },
+            { key: "unpaid", label: "Unpaid" },
+            { key: "settled", label: "Paid" },
+          ].map((chip) => {
+            const isSelected = statusFilter === chip.key;
+            return (
+              <TouchableOpacity
+                key={chip.key}
+                style={[styles.filterChip, isSelected && styles.filterChipActive]}
+                onPress={() => setStatusFilter(chip.key as any)}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
+                  {chip.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {/* Content List */}
@@ -295,6 +323,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.text,
     height: "100%",
+  },
+  filterBarContainer: {
+    marginBottom: 2,
   },
   filterBar: {
     flexDirection: "row",

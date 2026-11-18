@@ -14,6 +14,8 @@ use App\Http\Controllers\Api\PdfController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ProformaInvoiceController;
 use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\ReceiptVoucherController;
+use App\Http\Controllers\Api\RefundVoucherController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\TaskController;
@@ -55,6 +57,9 @@ Route::prefix('v1')->group(function () {
     Route::get('portal/invoices/{id}/download-pdf', [ClientPortalController::class, 'downloadInvoicePdfDirect'])
         ->name('portal.invoice.download-pdf');
 
+    Route::get('portal/receipt-vouchers/{id}/download-pdf', [ClientPortalController::class, 'downloadReceiptVoucherPdfDirect'])
+        ->name('portal.receipt-voucher.download-pdf');
+
     // Protected Routes (Requires valid Sanctum Bearer Token)
     Route::middleware('auth:sanctum')->group(function () {
 
@@ -88,6 +93,10 @@ Route::prefix('v1')->group(function () {
             Route::get('estimates/{estimate}/pdf', [ClientPortalController::class, 'downloadEstimatePdfDirect']);
             Route::get('estimates/{estimate}/download-url', [ClientPortalController::class, 'getEstimatePdfUrl']);
             Route::post('estimates/{estimate}/respond', [ClientPortalController::class, 'respondEstimate']);
+            Route::get('receipt-vouchers', [ClientPortalController::class, 'receiptVouchers']);
+            Route::get('receipt-vouchers/{receiptVoucher}', [ClientPortalController::class, 'showReceiptVoucher']);
+            Route::get('receipt-vouchers/{receiptVoucher}/pdf', [ClientPortalController::class, 'downloadReceiptVoucherPdfDirect']);
+            Route::get('receipt-vouchers/{receiptVoucher}/download-url', [ClientPortalController::class, 'getReceiptVoucherPdfUrl']);
             Route::get('tickets', [ClientPortalController::class, 'tickets']);
             Route::post('tickets', [ClientPortalController::class, 'createTicket']);
             Route::get('tickets/{ticket}', [ClientPortalController::class, 'showTicket']);
@@ -130,8 +139,14 @@ Route::prefix('v1')->group(function () {
 
             // Estimate Generation Module
             Route::get('estimates/{id}/pdf', [PdfController::class, 'downloadEstimate']);
+            Route::post('estimates/{estimate}/convert-to-invoice', [InvoiceController::class, 'convertFromEstimate']);
             Route::apiResource('estimates', EstimateController::class);
             Route::patch('estimates/{estimate}/status', [EstimateController::class, 'updateStatus']);
+
+            // Statutory GST Receipt & Refund Vouchers (Rule 50 & 51)
+            Route::get('receipt-vouchers/{id}/pdf', [PdfController::class, 'downloadReceiptVoucher']);
+            Route::apiResource('receipt-vouchers', ReceiptVoucherController::class)->only(['index', 'store', 'show']);
+            Route::post('refund-vouchers', [RefundVoucherController::class, 'store']);
 
             // Proforma Invoice Generation & Conversion
             Route::get('proforma-invoices/{id}/pdf', [PdfController::class, 'downloadProforma']);

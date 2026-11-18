@@ -11,6 +11,8 @@ use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
 use App\Models\ProformaInvoice;
 use App\Models\Estimate;
+use App\Models\ReceiptVoucher;
+use App\Models\InvoiceAdvanceAdjustment;
 use App\Services\DocumentNumberService;
 use App\Services\PushNotificationService;
 use Illuminate\Http\JsonResponse;
@@ -70,6 +72,121 @@ class InvoiceController extends Controller
             'invoices' => $invoices,
             'stats' => $stats,
         ]);
+    }
+
+    /**
+     * Convert an approved Quotation (Estimate) directly into a 100% Final Tax Invoice.
+     * Automatically adjusts linked advance Receipt Vouchers under Section 31(3)(d) & Rule 46 (GSTR-1 Table 11B).
+     */
+    public function convertFromEstimate(Request $request, Estimate $estimate): JsonResponse
+    {
+        $invoice = DB::transaction(function () use ($request, $estimate) {
+            $invoiceNumber = DocumentNumberService::getNextInvoiceNumber(true);
+            $taxRate = (float) ($estimate->tax_rate ?? 18.00);
+
+            // 1. Create the 100% Final Tax Invoice
+            $newInvoice = Invoice::create([
+                'invoice_number' => $invoiceNumber,
+                'estimate_id' => $estimate->id,
+                'project_id' => $estimate->project_id,
+                'created_by' => $request->user()?->id ?? $estimate->created_by,
+                'client_name' => $estimate->client_name,
+                'client_company' => $estimate->client_company,
+                'client_email' => $estimate->client_email,
+                'client_phone' => $estimate->client_phone,
+                'client_address' => $estimate->client_address,
+                'client_gstin' => $request->input('client_gstin', '19AAECK4829K1ZX'),
+                'invoice_date' => $request->input('invoice_date', now()->toDateString()),
+                'due_date' => $request->input('due_date', now()->addDays(15)->toDateString()),
+                'status' => 'unpaid',
+                'currency' => $estimate->currency ?? 'INR',
+                'tax_calculation_type' => $estimate->tax_calculation_type ?? 'exclusive',
+                'subtotal' => $estimate->subtotal,
+                'tax_rate' => $taxRate,
+                'tax_amount' => $estimate->tax_amount,
+                'round_off' => $estimate->round_off ?? 0.00,
+                'discount_rate' => $estimate->discount_rate ?? 0.00,
+                'discount_amount' => $estimate->discount_amount ?? 0.00,
+                'total_amount' => $estimate->total_amount,
+                'advance_adjusted' => 0.00,
+                'paid_amount' => 0.00,
+                'due_amount' => $estimate->total_amount,
+                'notes' => $request->input('notes', 'Final Tax Invoice issued against accepted Quotation ' . $estimate->estimate_number),
+                'terms_and_conditions' => $estimate->terms_and_conditions ?? "1. All payments must be made in favor of Kabhyan Technologies Private Limited.\n2. In accordance with Section 31 of CGST Act, this is an official Tax Invoice for IT & Software Consultancy Services (SAC 998314).\n3. Any discrepancies must be notified within 7 days of invoice issuance.",
+                'bank_details' => $estimate->bank_details ?? null,
+            ]);
+
+            // 2. Copy 100% of line items and specifications
+            foreach ($estimate->items as $item) {
+                $newInvoice->items()->create([
+                    'item_name' => $item->item_name,
+                    'hsn_sac' => $item->hsn_sac ?? '998314',
+                    'description' => $item->description,
+                    'quantity' => $item->quantity,
+                    'unit' => $item->unit,
+                    'unit_price' => $item->unit_price,
+                    'tax_rate' => $item->tax_rate ?? $estimate->tax_rate ?? 18.00,
+                    'tax_amount' => $item->tax_amount ?? 0.00,
+                    'amount' => $item->amount,
+                ]);
+            }
+
+            // 3. Process statutory Advance Adjustments (Receipt Vouchers)
+            $selectedVoucherIds = $request->input('receipt_voucher_ids');
+            $vouchersQuery = ReceiptVoucher::where('status', 'active')
+                ->where('remaining_advance', '>', 0.01);
+
+            if (is_array($selectedVoucherIds) && count($selectedVoucherIds) > 0) {
+                $vouchersQuery->whereIn('id', $selectedVoucherIds);
+            } else {
+                // Auto-detect vouchers linked to this estimate or client
+                $vouchersQuery->where(function ($q) use ($estimate) {
+                    $q->where('estimate_id', $estimate->id);
+                    if ($estimate->client_email) {
+                        $q->orWhere('client_email', $estimate->client_email);
+                    }
+                });
+            }
+
+            $activeVouchers = $vouchersQuery->orderBy('voucher_date', 'asc')->get();
+            $totalAdvanceAdjusted = 0.00;
+            $invoiceTotal = (float) $newInvoice->total_amount;
+
+            foreach ($activeVouchers as $rv) {
+                $unadjustedDue = max(0, $invoiceTotal - $totalAdvanceAdjusted);
+                if ($unadjustedDue <= 0.01) {
+                    break;
+                }
+
+                $adjustAmount = min((float) $rv->remaining_advance, $unadjustedDue);
+                if ($adjustAmount > 0) {
+                    InvoiceAdvanceAdjustment::create([
+                        'invoice_id' => $newInvoice->id,
+                        'receipt_voucher_id' => $rv->id,
+                        'amount_adjusted' => $adjustAmount,
+                    ]);
+
+                    $totalAdvanceAdjusted += $adjustAmount;
+                    $rv->syncAdjustedTotals();
+                }
+            }
+
+            // 4. Update advance_adjusted and recalculate balance due
+            $newInvoice->advance_adjusted = $totalAdvanceAdjusted;
+            $newInvoice->recalculateTotals();
+
+            // 5. Update Estimate status
+            $estimate->update(['status' => 'invoiced']);
+
+            return $newInvoice;
+        });
+
+        $this->notifyClientInvoiceIssued($invoice);
+
+        return response()->json([
+            'message' => 'Final Tax Invoice successfully created from Quotation with advance adjustment.',
+            'invoice' => $invoice->fresh()->load(['items', 'payments', 'advanceAdjustments.receiptVoucher', 'project:id,name,code', 'estimate:id,estimate_number']),
+        ], 201);
     }
 
     /**
@@ -319,6 +436,38 @@ class InvoiceController extends Controller
 
                 $newInvoice->recalculateTotals();
 
+                // Process statutory advance adjustments if Receipt Vouchers are selected
+                $voucherIds = $request->input('receipt_voucher_ids', []);
+                if (!empty($voucherIds) && is_array($voucherIds)) {
+                    $vouchers = ReceiptVoucher::whereIn('id', $voucherIds)
+                        ->where('status', 'active')
+                        ->where('remaining_advance', '>', 0.01)
+                        ->orderBy('voucher_date', 'asc')
+                        ->get();
+
+                    $totalAdjusted = 0.00;
+                    $invoiceTotal = (float) $newInvoice->total_amount;
+
+                    foreach ($vouchers as $rv) {
+                        $unadjustedDue = max(0, $invoiceTotal - $totalAdjusted);
+                        if ($unadjustedDue <= 0.01) break;
+
+                        $adjustAmount = min((float) $rv->remaining_advance, $unadjustedDue);
+                        if ($adjustAmount > 0) {
+                            InvoiceAdvanceAdjustment::create([
+                                'invoice_id' => $newInvoice->id,
+                                'receipt_voucher_id' => $rv->id,
+                                'amount_adjusted' => $adjustAmount,
+                            ]);
+                            $totalAdjusted += $adjustAmount;
+                            $rv->syncAdjustedTotals();
+                        }
+                    }
+
+                    $newInvoice->advance_adjusted = $totalAdjusted;
+                    $newInvoice->recalculateTotals();
+                }
+
                 if (($validated['status'] ?? 'unpaid') === 'paid' || !empty($validated['payment_reference'])) {
                     $newInvoice->payments()->create([
                         'recorded_by' => $validated['created_by'],
@@ -363,6 +512,7 @@ class InvoiceController extends Controller
             'invoice' => $invoice->load([
                 'items',
                 'payments.recorder:id,name',
+                'advanceAdjustments.receiptVoucher',
                 'project:id,name,code',
                 'proformaInvoice:id,proforma_number',
                 'estimate:id,estimate_number',

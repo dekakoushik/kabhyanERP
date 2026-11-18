@@ -78,6 +78,16 @@ class Estimate extends Model
         return $this->hasMany(ProformaInvoice::class);
     }
 
+    public function receiptVouchers(): HasMany
+    {
+        return $this->hasMany(ReceiptVoucher::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
     /**
      * Dual-lookup route binding: allows finding by estimate_number (e.g. EST-2026-001) or numeric id.
      */

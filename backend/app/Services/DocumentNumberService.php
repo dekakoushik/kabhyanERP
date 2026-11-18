@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Estimate;
 use App\Models\Invoice;
 use App\Models\ProformaInvoice;
+use App\Models\ReceiptVoucher;
+use App\Models\RefundVoucher;
 use App\Models\SystemSetting;
 use Illuminate\Support\Facades\DB;
 
@@ -36,6 +38,8 @@ class DocumentNumberService
             'estimate' => self::getNextEstimateNumber(false, $overrides),
             'proforma' => self::getNextProformaNumber(false, $overrides),
             'invoice' => self::getNextInvoiceNumber(false, $overrides),
+            'receipt_voucher' => self::getNextReceiptVoucherNumber(false, $overrides),
+            'refund_voucher' => self::getNextRefundVoucherNumber(false, $overrides),
         ];
     }
 
@@ -107,6 +111,54 @@ class DocumentNumberService
 
         if ($increment) {
             SystemSetting::set('invoice_next_number', $nextNum + 1, 'document_numbering', 'integer');
+        }
+
+        return $candidate;
+    }
+
+    /**
+     * Get next GST Receipt Voucher number (Rule 50).
+     */
+    public static function getNextReceiptVoucherNumber(bool $increment = false, ?array $overrides = null): string
+    {
+        $prefix = (string) ($overrides['receipt_voucher_prefix'] ?? SystemSetting::get('receipt_voucher_prefix', 'RV-') ?? 'RV-');
+        $suffix = (string) ($overrides['receipt_voucher_suffix'] ?? SystemSetting::get('receipt_voucher_suffix', '') ?? '');
+        $padding = (int) ($overrides['receipt_voucher_padding'] ?? SystemSetting::get('receipt_voucher_padding', 3) ?? 3);
+        $includeYear = filter_var($overrides['receipt_voucher_include_year'] ?? SystemSetting::get('receipt_voucher_include_year', true) ?? true, FILTER_VALIDATE_BOOLEAN);
+        $nextNum = (int) ($overrides['receipt_voucher_next_number'] ?? SystemSetting::get('receipt_voucher_next_number', 1) ?? 1);
+
+        $candidate = self::formatNumber($prefix, $includeYear, $nextNum, $padding, $suffix);
+        while (ReceiptVoucher::withTrashed()->where('voucher_number', $candidate)->exists()) {
+            $nextNum++;
+            $candidate = self::formatNumber($prefix, $includeYear, $nextNum, $padding, $suffix);
+        }
+
+        if ($increment) {
+            SystemSetting::set('receipt_voucher_next_number', $nextNum + 1, 'document_numbering', 'integer');
+        }
+
+        return $candidate;
+    }
+
+    /**
+     * Get next GST Refund Voucher number (Rule 51).
+     */
+    public static function getNextRefundVoucherNumber(bool $increment = false, ?array $overrides = null): string
+    {
+        $prefix = (string) ($overrides['refund_voucher_prefix'] ?? SystemSetting::get('refund_voucher_prefix', 'RFV-') ?? 'RFV-');
+        $suffix = (string) ($overrides['refund_voucher_suffix'] ?? SystemSetting::get('refund_voucher_suffix', '') ?? '');
+        $padding = (int) ($overrides['refund_voucher_padding'] ?? SystemSetting::get('refund_voucher_padding', 3) ?? 3);
+        $includeYear = filter_var($overrides['refund_voucher_include_year'] ?? SystemSetting::get('refund_voucher_include_year', true) ?? true, FILTER_VALIDATE_BOOLEAN);
+        $nextNum = (int) ($overrides['refund_voucher_next_number'] ?? SystemSetting::get('refund_voucher_next_number', 1) ?? 1);
+
+        $candidate = self::formatNumber($prefix, $includeYear, $nextNum, $padding, $suffix);
+        while (RefundVoucher::where('voucher_number', $candidate)->exists()) {
+            $nextNum++;
+            $candidate = self::formatNumber($prefix, $includeYear, $nextNum, $padding, $suffix);
+        }
+
+        if ($increment) {
+            SystemSetting::set('refund_voucher_next_number', $nextNum + 1, 'document_numbering', 'integer');
         }
 
         return $candidate;

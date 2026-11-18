@@ -77,6 +77,21 @@ function EstimateDetailContent({
     }
   };
 
+  const handleConvertToInvoice = async () => {
+    if (!estimate) return;
+    try {
+      setConverting(true);
+      const res = await api.request(`/estimates/${estimate.id}/convert-to-invoice`, {
+        method: "POST",
+      });
+      toast.success(`Final Tax Invoice ${res.invoice.invoice_number} generated!`);
+      router.push(`/dashboard/invoices/${res.invoice.invoice_number || res.invoice.id}`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to generate Tax Invoice");
+      setConverting(false);
+    }
+  };
+
   const handleConvertToProforma = async () => {
     if (!estimate) return;
     try {
@@ -208,14 +223,24 @@ function EstimateDetailContent({
           </button>
 
           {estimate.status === "accepted" && (
-            <button
-              onClick={handleConvertToProforma}
-              disabled={converting}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold shadow-xs transition disabled:opacity-50 cursor-pointer"
-            >
-              {converting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
-              <span>Convert to Proforma Invoice</span>
-            </button>
+            <>
+              <Link
+                href={`/dashboard/receipt-vouchers/from-estimate/${estimate.id}`}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm font-semibold shadow-xs transition cursor-pointer"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>Record Advance (Rule 50)</span>
+              </Link>
+
+              <button
+                onClick={handleConvertToInvoice}
+                disabled={converting}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold shadow-xs transition disabled:opacity-50 cursor-pointer"
+              >
+                {converting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
+                <span>Issue Final Tax Invoice</span>
+              </button>
+            </>
           )}
 
           {estimate.status === "invoiced" && estimate.proforma_invoices && estimate.proforma_invoices.length > 0 && (
@@ -492,17 +517,25 @@ function EstimateDetailContent({
             </div>
 
             {estimate.status === "accepted" && (
-              <div className="pt-2">
+              <div className="pt-2 space-y-2">
+                <Link
+                  href={`/dashboard/receipt-vouchers/from-estimate/${estimate.id}`}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs shadow-xs hover:shadow transition cursor-pointer"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Record Advance (Rule 50)</span>
+                </Link>
+
                 <button
-                  onClick={handleConvertToProforma}
+                  onClick={handleConvertToInvoice}
                   disabled={converting}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs hover:shadow transition disabled:opacity-50 cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs hover:shadow transition disabled:opacity-50 cursor-pointer"
                 >
                   {converting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
-                  <span>Generate Proforma Invoice</span>
+                  <span>Issue Final Tax Invoice</span>
                 </button>
-                <p className="text-[11px] text-slate-400 text-center mt-1.5">
-                  1-click copy of line items, deliverables & commercial terms.
+                <p className="text-[11px] text-slate-400 text-center mt-1">
+                  100% Tax Invoice deducting any advances adjusted under Table 11B.
                 </p>
               </div>
             )}

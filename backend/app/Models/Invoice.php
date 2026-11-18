@@ -37,6 +37,7 @@ class Invoice extends Model
         'discount_rate',
         'discount_amount',
         'total_amount',
+        'advance_adjusted',
         'paid_amount',
         'due_amount',
         'cashfree_link_id',
@@ -79,9 +80,20 @@ class Invoice extends Model
             'discount_rate' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'total_amount' => 'decimal:2',
+            'advance_adjusted' => 'decimal:2',
             'paid_amount' => 'decimal:2',
             'due_amount' => 'decimal:2',
         ];
+    }
+
+    public function advanceAdjustments(): HasMany
+    {
+        return $this->hasMany(InvoiceAdvanceAdjustment::class);
+    }
+
+    public function receiptVouchers()
+    {
+        return $this->belongsToMany(ReceiptVoucher::class, 'invoice_advance_adjustments')->withPivot('amount_adjusted');
     }
 
     public function proformaInvoice(): BelongsTo
@@ -197,15 +209,16 @@ class Invoice extends Model
         $roundOff = (float) ($this->round_off ?? 0);
         $total = max(0, $rawTotal + $roundOff);
 
+        $advanceAdjusted = (float) ($this->advance_adjusted ?? 0);
         $paid = (float) $this->payments()->sum('amount');
-        $due = max(0, $total - $paid);
+        $due = max(0, $total - $advanceAdjusted - $paid);
 
         $status = $this->status;
-        if ($paid >= $total && $total > 0) {
+        if (($paid + $advanceAdjusted) >= $total && $total > 0) {
             $status = 'paid';
-        } elseif ($paid > 0 && $paid < $total) {
+        } elseif (($paid + $advanceAdjusted) > 0 && ($paid + $advanceAdjusted) < $total) {
             $status = 'partially_paid';
-        } elseif ($paid == 0 && $status !== 'cancelled') {
+        } elseif (($paid + $advanceAdjusted) == 0 && $status !== 'cancelled') {
             $status = ($this->due_date && $this->due_date->isPast()) ? 'overdue' : 'unpaid';
         }
 
@@ -216,6 +229,7 @@ class Invoice extends Model
             'tax_amount' => $taxAmount,
             'round_off' => $roundOff,
             'total_amount' => $total,
+            'advance_adjusted' => $advanceAdjusted,
             'paid_amount' => $paid,
             'due_amount' => $due,
             'status' => $status,

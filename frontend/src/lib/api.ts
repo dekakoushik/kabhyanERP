@@ -320,6 +320,7 @@ export interface Estimate {
   client_name: string;
   client_email?: string | null;
   client_company?: string | null;
+  client_gstin?: string | null;
   client_phone?: string | null;
   client_address?: string | null;
   estimate_date: string;
@@ -333,6 +334,7 @@ export interface Estimate {
   discount_rate: number;
   discount_amount: number;
   total_amount: number;
+  total?: number;
   notes?: string | null;
   terms_and_conditions?: string | null;
   items?: EstimateItem[];
@@ -479,6 +481,8 @@ export interface Invoice {
   total_amount: number;
   paid_amount: number;
   due_amount: number;
+  advance_adjusted?: number;
+  advance_adjustments?: InvoiceAdvanceAdjustment[];
   notes?: string | null;
   terms_and_conditions?: string | null;
   bank_details?: string | null;
@@ -486,6 +490,87 @@ export interface Invoice {
   payments?: InvoicePayment[];
   created_at?: string;
   updated_at?: string;
+}
+
+export interface InvoiceAdvanceAdjustment {
+  id: number;
+  invoice_id: number;
+  receipt_voucher_id: number;
+  adjusted_amount: number;
+  created_at?: string;
+  receipt_voucher?: ReceiptVoucher;
+  invoice?: Invoice;
+}
+
+export interface ReceiptVoucher {
+  id: number;
+  voucher_number: string;
+  estimate_id?: number | null;
+  estimate?: { id: number; estimate_number: string; total_amount: number } | null;
+  proforma_invoice_id?: number | null;
+  project_id?: number | null;
+  project?: Project | null;
+  client_id?: number | null;
+  created_by?: number | null;
+  creator?: User | null;
+  client_name: string;
+  client_company?: string | null;
+  client_gstin?: string | null;
+  client_email?: string | null;
+  client_phone?: string | null;
+  client_address?: string | null;
+  voucher_date: string;
+  amount_received: number;
+  taxable_amount: number;
+  tax_rate: number;
+  tax_amount: number;
+  cgst_amount: number;
+  sgst_amount: number;
+  igst_amount: number;
+  is_inter_state: boolean;
+  place_of_supply?: string | null;
+  payment_mode: "bank_transfer" | "upi" | "cheque" | "card" | "cash" | "other";
+  payment_reference?: string | null;
+  adjusted_amount: number;
+  remaining_advance: number;
+  status: "active" | "partially_adjusted" | "fully_adjusted" | "refunded";
+  notes?: string | null;
+  adjustments?: InvoiceAdvanceAdjustment[];
+  invoice_advance_adjustments?: InvoiceAdvanceAdjustment[];
+  refund_vouchers?: RefundVoucher[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface RefundVoucher {
+  id: number;
+  refund_number: string;
+  receipt_voucher_id: number;
+  created_by?: number | null;
+  refund_date: string;
+  amount_refunded: number;
+  taxable_amount: number;
+  tax_rate: number;
+  tax_amount: number;
+  cgst_amount: number;
+  sgst_amount: number;
+  igst_amount: number;
+  refund_mode: string;
+  refund_reference?: string | null;
+  reason: string;
+  receipt_voucher?: ReceiptVoucher;
+  created_at?: string;
+}
+
+export interface ReceiptVoucherStats {
+  total_vouchers: number;
+  total_advance_received: number;
+  total_adjusted: number;
+  total_remaining: number;
+  active: number;
+  partially_adjusted: number;
+  fully_adjusted: number;
+  refunded: number;
 }
 
 export interface InvoiceStats {

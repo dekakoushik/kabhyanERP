@@ -234,6 +234,39 @@
                         </td>
                     </tr>
                     @endif
+                    @if((float)($invoice->advance_adjusted ?? 0) > 0)
+                    <tr>
+                        <td style="color: #4f46e5; font-weight: 600; font-size: 8pt; padding-top: 6px;">
+                            Less: Advance Adjusted:
+                            @if($invoice->advanceAdjustments && $invoice->advanceAdjustments->count() > 0)
+                                <div style="font-size: 7pt; color: #64748b; font-weight: normal; margin-top: 1px;">
+                                    @foreach($invoice->advanceAdjustments as $adj)
+                                        vide {{ $adj->receiptVoucher?->voucher_number }} ({{ \Carbon\Carbon::parse($adj->receiptVoucher?->voucher_date)->format('d M Y') }})<br/>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </td>
+                        <td style="text-align: right; color: #4f46e5; font-weight: 700; font-size: 8.5pt; vertical-align: top; padding-top: 6px;">
+                            -&#8377;{{ number_format($invoice->advance_adjusted, 2) }}
+                        </td>
+                    </tr>
+                    @endif
+                    @if((float)($invoice->paid_amount ?? 0) > 0)
+                    <tr>
+                        <td style="color: #059669; font-weight: 600; font-size: 8pt; padding-top: 4px;">Less: Amount Paid:</td>
+                        <td style="text-align: right; color: #059669; font-weight: 700; font-size: 8.5pt; padding-top: 4px;">
+                            -&#8377;{{ number_format($invoice->paid_amount, 2) }}
+                        </td>
+                    </tr>
+                    @endif
+                    @if((float)($invoice->advance_adjusted ?? 0) > 0 || (float)($invoice->paid_amount ?? 0) > 0)
+                    <tr>
+                        <td style="border-top: 1.5px solid #0f172a; font-weight: 700; color: #0f172a; padding-top: 5px; font-size: 8.5pt;">Net Balance Due:</td>
+                        <td style="border-top: 1.5px solid #0f172a; text-align: right; font-weight: 800; color: #2563eb; font-size: 10pt; padding-top: 5px;">
+                            &#8377;{{ number_format($invoice->due_amount, 2) }}
+                        </td>
+                    </tr>
+                    @endif
                 </table>
             </td>
         </tr>

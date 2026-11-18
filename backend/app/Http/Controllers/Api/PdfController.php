@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Estimate;
 use App\Models\Invoice;
 use App\Models\ProformaInvoice;
+use App\Models\ReceiptVoucher;
+use App\Models\RefundVoucher;
 use App\Models\SystemSetting;
 use App\Services\PdfSecurityService;
 use Illuminate\Http\Request;
@@ -25,7 +27,7 @@ class PdfController extends Controller
      */
     public function downloadInvoice(Request $request, $id): Response
     {
-        $invoice = Invoice::with(['items', 'project', 'proformaInvoice'])
+        $invoice = Invoice::with(['items', 'project', 'proformaInvoice', 'advanceAdjustments.receiptVoucher'])
             ->where('id', $id)
             ->orWhere('invoice_number', $id)
             ->firstOrFail();
@@ -275,6 +277,47 @@ class PdfController extends Controller
         );
 
         $filename = sprintf('Estimate-%s.pdf', $estimate->estimate_number);
+        $disposition = $request->query('download') === '1' ? 'attachment' : 'inline';
+
+        return response($pdfBytes, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => sprintf('%s; filename="%s"', $disposition, $filename),
+            'Cache-Control' => 'private, max-age=0, must-revalidate',
+            'Pragma' => 'public',
+        ]);
+    }
+
+    /**
+     * Download or view certified PDF for Statutory GST Receipt Voucher (Rule 50).
+     */
+    public function downloadReceiptVoucher(Request $request, $id): Response
+    {
+        $voucher = ReceiptVoucher::with(['estimate', 'project', 'client'])
+            ->where('id', $id)
+            ->orWhere('voucher_number', $id)
+            ->firstOrFail();
+
+        $company = $this->getCompanySettings();
+        $bank = $this->getBankSettings();
+        $logoBase64 = $this->getLogoBase64();
+        $amountInWords = $this->amountToWords((float) $voucher->amount_received);
+
+        $html = view('pdf.receipt-voucher', [
+            'voucher' => $voucher,
+            'company' => $company,
+            'bank' => $bank,
+            'logoBase64' => $logoBase64,
+            'amountInWords' => $amountInWords,
+        ])->render();
+
+        $pdfBytes = $this->pdfSecurityService->renderCertifiedPdf(
+            $html,
+            'Receipt-Voucher',
+            $voucher->voucher_number,
+            ['subject' => 'Official GST Advance Receipt Voucher']
+        );
+
+        $filename = sprintf('Receipt-Voucher-%s.pdf', $voucher->voucher_number);
         $disposition = $request->query('download') === '1' ? 'attachment' : 'inline';
 
         return response($pdfBytes, 200, [

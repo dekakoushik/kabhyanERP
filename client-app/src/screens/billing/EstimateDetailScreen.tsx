@@ -152,13 +152,18 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
   const isConverted = estimate.status === "invoiced" || Boolean(linkedProforma);
   const isPending = !isConverted && estimate.status === "sent";
   const items = estimate.items || [];
-  const isInclusive = estimate.tax_calculation_type === "inclusive";
 
   const totalAmountNum = Number(estimate.total_amount || estimate.total || 0);
   const taxAmountNum = Number(estimate.tax_amount || 0);
   const subtotalNum = Number(estimate.subtotal || 0);
   const roundOffNum = Number(estimate.round_off || 0);
   const discountNum = Number(estimate.discount_amount || 0);
+
+  const isInclusive =
+    estimate.tax_calculation_type === "inclusive" ||
+    (totalAmountNum > 0 && taxAmountNum > 0 && Math.abs(totalAmountNum - subtotalNum) < 1) ||
+    (totalAmountNum > 0 && taxAmountNum > 0 && totalAmountNum < (subtotalNum + taxAmountNum - 1));
+
   const taxableTurnover = isInclusive
     ? Math.max(0, totalAmountNum - roundOffNum - taxAmountNum)
     : subtotalNum - discountNum;

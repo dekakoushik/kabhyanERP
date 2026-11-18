@@ -34,15 +34,61 @@ export interface DashboardStats {
   total_invoiced?: number;
 }
 
-export type DocumentStage = "estimate" | "proforma" | "tax_invoice";
+export type DocumentStage = "estimate" | "proforma" | "tax_invoice" | "receipt_voucher";
 
 export interface DocumentHistoryItem {
-  stage: "estimate" | "proforma";
+  stage: "estimate" | "proforma" | "receipt_voucher" | "tax_invoice";
   id: number;
   number: string;
   date: string;
   total_amount: number;
   status: string;
+}
+
+export interface ReceiptVoucher {
+  id: number;
+  voucher_number: string;
+  voucher_date: string;
+  estimate_id?: number;
+  proforma_invoice_id?: number;
+  project_id?: number;
+  client_id?: number;
+  client_name: string;
+  client_company?: string;
+  client_email?: string;
+  client_phone?: string;
+  client_address?: string;
+  client_gstin?: string;
+  place_of_supply?: string;
+  amount_received: number;
+  total_amount?: number;
+  taxable_amount: number;
+  tax_rate: number;
+  tax_amount: number;
+  cgst_amount: number;
+  sgst_amount: number;
+  igst_amount: number;
+  is_inter_state: boolean;
+  payment_mode: string;
+  payment_reference?: string;
+  adjusted_amount: number;
+  remaining_advance?: number;
+  remaining_amount?: number;
+  status: "active" | "partially_adjusted" | "fully_adjusted" | "refunded";
+  notes?: string;
+  project?: { id: number; name: string; code?: string };
+  estimate?: EstimateSummary;
+  invoice_advance_adjustments?: Array<{
+    id: number;
+    invoice_id: number;
+    adjusted_amount: number;
+    invoice?: {
+      id: number;
+      invoice_number: string;
+      invoice_date: string;
+      total_amount: number;
+    };
+  }>;
 }
 
 export interface CommercialThread {
@@ -56,9 +102,10 @@ export interface CommercialThread {
   total_amount: number;
   due_amount?: number;
   paid_amount?: number;
+  advance_adjusted?: number;
   project_name?: string;
   history: DocumentHistoryItem[];
-  raw_document: Invoice | ProformaInvoice | Estimate;
+  raw_document: Invoice | ProformaInvoice | Estimate | ReceiptVoucher;
 }
 
 export interface InvoiceItem {
@@ -129,6 +176,18 @@ export interface Invoice {
   total?: number;
   paid_amount?: number;
   due_amount?: number;
+  advance_adjusted?: number;
+  advance_adjustments?: Array<{
+    id: number;
+    receipt_voucher_id: number;
+    adjusted_amount: number;
+    receipt_voucher?: {
+      id: number;
+      voucher_number: string;
+      voucher_date: string;
+      total_amount: number;
+    };
+  }>;
   client?: ClientProfile;
   items?: InvoiceItem[];
   project?: { id: number; name: string; code?: string };
@@ -305,6 +364,18 @@ export const portalApi = {
 
   getInvoicePdfUrl: (id: number | string) =>
     apiClient<{ download_url: string; filename: string }>(`/portal/invoices/${id}/download-url`),
+
+  // Statutory GST Advance Receipt Vouchers (Section 31(3)(d) & Rule 50)
+  getReceiptVouchers: (status?: string) =>
+    apiClient<{ receipt_vouchers: { data?: ReceiptVoucher[] } | ReceiptVoucher[] }>("/portal/receipt-vouchers", {
+      params: { status },
+    }),
+
+  getReceiptVoucher: (id: number | string) =>
+    apiClient<{ receipt_voucher: ReceiptVoucher }>(`/portal/receipt-vouchers/${id}`),
+
+  getReceiptVoucherPdfUrl: (id: number | string) =>
+    apiClient<{ download_url: string; filename: string }>(`/portal/receipt-vouchers/${id}/download-url`),
 
   // Unified Commercial Documents Lifecycle Feed (Zero-Tab Billing)
   getCommercialDocuments: (search?: string, status?: string) =>
