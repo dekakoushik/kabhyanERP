@@ -327,6 +327,7 @@ export interface Estimate {
   expiry_date?: string | null;
   status: "draft" | "sent" | "accepted" | "declined" | "invoiced";
   currency: string;
+  tax_calculation_type?: "inclusive" | "exclusive";
   subtotal: number;
   tax_rate: number;
   tax_amount: number;
@@ -387,6 +388,7 @@ export interface ProformaInvoice {
   due_date?: string | null;
   status: "unpaid" | "partially_paid" | "paid" | "partially_invoiced" | "fully_invoiced" | "cancelled";
   currency: string;
+  tax_calculation_type?: "inclusive" | "exclusive";
   subtotal: number;
   tax_rate: number;
   tax_amount: number;
@@ -402,6 +404,7 @@ export interface ProformaInvoice {
   bank_details?: string | null;
   items?: ProformaInvoiceItem[];
   tax_invoices?: Invoice[];
+  receipt_vouchers?: any[];
   created_at?: string;
   updated_at?: string;
 }
@@ -466,6 +469,7 @@ export interface Invoice {
   due_date?: string | null;
   status: "unpaid" | "partially_paid" | "paid" | "overdue" | "cancelled";
   currency: string;
+  tax_calculation_type?: "inclusive" | "exclusive";
   subtotal: number;
   tax_rate: number;
   tax_amount: number;

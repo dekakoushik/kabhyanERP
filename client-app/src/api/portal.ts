@@ -220,6 +220,7 @@ export interface ProformaInvoice {
   project?: { id: number; name: string; code?: string };
   estimate?: EstimateSummary;
   tax_invoices?: TaxInvoiceSummary[];
+  receipt_vouchers?: ReceiptVoucher[];
 }
 
 export interface Estimate {

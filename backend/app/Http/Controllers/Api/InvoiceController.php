@@ -340,8 +340,50 @@ class InvoiceController extends Controller
                 ]);
             }
 
+            // Statutory Advance Adjustment (Section 13(2) & 31(5) of CGST Act 2017)
+            // Automatically offset advances collected via Receipt Vouchers for this Proforma or origin Estimate
+            $activeVouchers = ReceiptVoucher::where('remaining_advance', '>', 0)
+                ->where(function ($q) use ($proformaInvoice) {
+                    $q->where('proforma_invoice_id', $proformaInvoice->id);
+                    if ($proformaInvoice->estimate_id) {
+                        $q->orWhere('estimate_id', $proformaInvoice->estimate_id);
+                    }
+                })
+                ->orderBy('voucher_date', 'asc')
+                ->get();
+
+            $totalAdvanceAdjusted = 0.00;
+            $invoiceTotal = (float) $newInvoice->total_amount;
+
+            foreach ($activeVouchers as $rv) {
+                $unadjustedDue = max(0, $invoiceTotal - $totalAdvanceAdjusted);
+                if ($unadjustedDue <= 0.01) {
+                    break;
+                }
+
+                $adjustAmount = min((float) $rv->remaining_advance, $unadjustedDue);
+                if ($adjustAmount > 0) {
+                    InvoiceAdvanceAdjustment::create([
+                        'invoice_id' => $newInvoice->id,
+                        'receipt_voucher_id' => $rv->id,
+                        'amount_adjusted' => $adjustAmount,
+                    ]);
+
+                    $totalAdvanceAdjusted += $adjustAmount;
+                    $rv->syncAdjustedTotals();
+                }
+            }
+
+            if ($totalAdvanceAdjusted > 0) {
+                $newInvoice->advance_adjusted = $totalAdvanceAdjusted;
+            }
+
             $newInvoice->recalculateTotals();
             $proformaInvoice->syncInvoicedTotals();
+
+            if ($proformaInvoice->estimate) {
+                $proformaInvoice->estimate->update(['status' => 'invoiced']);
+            }
 
             return $newInvoice;
         });
@@ -349,8 +391,8 @@ class InvoiceController extends Controller
         $this->notifyClientInvoiceIssued($invoice);
 
         return response()->json([
-            'message' => 'Tax Invoice successfully created from Proforma Invoice.',
-            'invoice' => $invoice->fresh()->load(['items', 'payments', 'project:id,name,code', 'proformaInvoice:id,proforma_number']),
+            'message' => 'Tax Invoice successfully created from Proforma Invoice with advance adjustments.',
+            'invoice' => $invoice->fresh()->load(['items', 'payments', 'advanceAdjustments.receiptVoucher', 'project:id,name,code', 'proformaInvoice:id,proforma_number']),
         ], 201);
     }
 

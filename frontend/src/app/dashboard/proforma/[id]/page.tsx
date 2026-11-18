@@ -184,6 +184,14 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
 
         <div className="flex items-center gap-2 flex-wrap">
           <Link
+            href={`/dashboard/receipt-vouchers/from-proforma/${proforma.proforma_number}`}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
+          >
+            <Receipt className="w-4 h-4" />
+            <span>+ Issue Advance Voucher</span>
+          </Link>
+
+          <Link
             href={`/dashboard/proforma/${proforma.proforma_number}/edit`}
             className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition cursor-pointer"
           >
@@ -202,14 +210,14 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
           <button
             onClick={handleDownloadPdf}
             disabled={downloadingPdf}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition cursor-pointer disabled:opacity-50"
           >
             {downloadingPdf ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              <Download className="w-4 h-4" />
+              <Download className="w-4 h-4 text-slate-500" />
             )}
-            <span>Download PDF</span>
+            <span>PDF</span>
           </button>
 
           {proforma.remaining_amount !== undefined && proforma.remaining_amount <= 0 ? (
@@ -218,13 +226,27 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
               <span>Fully Invoiced (100%)</span>
             </span>
           ) : (
-            <Link
-              href={`/dashboard/invoices/from-proforma/${proforma.proforma_number}`}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs hover:shadow transition cursor-pointer"
-            >
-              <FileCheck className="w-4 h-4" />
-              <span>+ Create Milestone Invoice</span>
-            </Link>
+            <>
+              <button
+                onClick={handleConvertToTaxInvoice}
+                disabled={converting}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs hover:shadow transition cursor-pointer disabled:opacity-50"
+              >
+                {converting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <FileCheck className="w-4 h-4" />
+                )}
+                <span>Convert to Tax Invoice</span>
+              </button>
+
+              <Link
+                href={`/dashboard/invoices/from-proforma/${proforma.proforma_number}`}
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold shadow-xs transition cursor-pointer"
+              >
+                <span>+ Milestone Invoice</span>
+              </Link>
+            </>
           )}
         </div>
       </div>
@@ -430,6 +452,115 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
           )}
         </div>
 
+        {/* Advance Receipts (Statutory GST Receipt Vouchers) */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 print:hidden space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-purple-50 text-purple-700">
+                <Receipt className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Advance Receipt Vouchers</h3>
+                <p className="text-[11px] text-slate-500">Statutory GST Section 31(3)(d) advances received for this proforma</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {proforma.receipt_vouchers && proforma.receipt_vouchers.length > 0 && (
+                <span className="text-xs font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2.5 py-1 rounded-full">
+                  {proforma.receipt_vouchers.length} {proforma.receipt_vouchers.length === 1 ? "Voucher" : "Vouchers"}
+                </span>
+              )}
+              <Link
+                href={`/dashboard/receipt-vouchers/from-proforma/${proforma.proforma_number}`}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white shadow-xs transition cursor-pointer"
+              >
+                <Receipt className="w-3.5 h-3.5" />
+                <span>+ Issue Advance Voucher</span>
+              </Link>
+            </div>
+          </div>
+
+          {proforma.receipt_vouchers && proforma.receipt_vouchers.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-100 text-slate-400 font-semibold uppercase text-[10px] tracking-wider">
+                    <th className="pb-2">Voucher #</th>
+                    <th className="pb-2">Date</th>
+                    <th className="pb-2 text-right">Taxable Base</th>
+                    <th className="pb-2 text-right">GST Discharged</th>
+                    <th className="pb-2 text-right">Gross Advance</th>
+                    <th className="pb-2 text-right">Remaining Credit</th>
+                    <th className="pb-2 text-center">Status</th>
+                    <th className="pb-2 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {proforma.receipt_vouchers.map((rv: any) => (
+                    <tr key={rv.id} className="hover:bg-slate-50/70 transition">
+                      <td className="py-3 font-mono font-bold text-purple-700">
+                        {rv.voucher_number}
+                      </td>
+                      <td className="py-3 text-slate-600">{formatDate(rv.voucher_date)}</td>
+                      <td className="py-3 text-right font-medium text-slate-700">
+                        ₹{Number(rv.taxable_amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-3 text-right font-medium text-purple-600">
+                        +₹{Number(rv.tax_amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-3 text-right font-bold text-slate-900">
+                        ₹{Number(rv.amount_received || rv.total_amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-3 text-right font-mono font-semibold text-emerald-600">
+                        ₹{Number(rv.remaining_advance ?? rv.remaining_amount ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-3 text-center">
+                        <span
+                          className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                            rv.status === "active"
+                              ? "bg-purple-50 text-purple-700 border-purple-200"
+                              : rv.status === "adjusted"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : "bg-blue-50 text-blue-700 border-blue-200"
+                          }`}
+                        >
+                          {String(rv.status || "active").replace("_", " ")}
+                        </span>
+                      </td>
+                      <td className="py-3 text-right">
+                        <Link
+                          href={`/dashboard/receipt-vouchers/${rv.id}`}
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-600 hover:text-purple-700 hover:underline"
+                        >
+                          <span>View</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="py-6 text-center space-y-2 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+              <ShieldCheck className="w-6 h-6 text-slate-400 mx-auto" />
+              <p className="text-xs font-semibold text-slate-700">No Advance Receipts Issued</p>
+              <p className="text-[11px] text-slate-500 max-w-md mx-auto">
+                No statutory advance receipts have been recorded for this proforma invoice yet. You can issue a GST Receipt Voucher when receiving advance client mobilization funds.
+              </p>
+              <div className="pt-2">
+                <Link
+                  href={`/dashboard/receipt-vouchers/from-proforma/${proforma.proforma_number}`}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold transition cursor-pointer shadow-xs"
+                >
+                  <Receipt className="w-3.5 h-3.5" />
+                  <span>+ Issue Advance Voucher</span>
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Linked GST Tax Invoices (Discharged Liabilities) */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 print:hidden space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -583,20 +714,30 @@ function ProformaDetailContent({ proformaParam }: { proformaParam: string }) {
               When client payment or milestone completion is verified, raise a milestone Tax Invoice for that specific portion. This prevents premature GST liability on unreceived funds.
             </p>
 
-            {proforma.remaining_amount !== undefined && proforma.remaining_amount <= 0 ? (
-              <div className="w-full py-2.5 rounded-xl bg-slate-100 text-slate-500 font-semibold text-xs tracking-wide flex items-center justify-center gap-2 border border-slate-200">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Fully Invoiced (100% Settled)</span>
-              </div>
-            ) : (
+            <div className="space-y-2 pt-1">
               <Link
-                href={`/dashboard/invoices/from-proforma/${proforma.proforma_number}`}
-                className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs tracking-wide shadow-xs hover:shadow transition flex items-center justify-center gap-2 cursor-pointer"
+                href={`/dashboard/receipt-vouchers/from-proforma/${proforma.proforma_number}`}
+                className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs tracking-wide shadow-xs hover:shadow transition flex items-center justify-center gap-2 cursor-pointer"
               >
-                <FileCheck className="w-4 h-4" />
-                <span>+ Generate Milestone Tax Invoice</span>
+                <Receipt className="w-4 h-4" />
+                <span>+ Issue Advance Voucher</span>
               </Link>
-            )}
+
+              {proforma.remaining_amount !== undefined && proforma.remaining_amount <= 0 ? (
+                <div className="w-full py-2.5 rounded-xl bg-slate-100 text-slate-500 font-semibold text-xs tracking-wide flex items-center justify-center gap-2 border border-slate-200">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>Fully Invoiced (100% Settled)</span>
+                </div>
+              ) : (
+                <Link
+                  href={`/dashboard/invoices/from-proforma/${proforma.proforma_number}`}
+                  className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs tracking-wide shadow-xs hover:shadow transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <FileCheck className="w-4 h-4" />
+                  <span>+ Generate Milestone Tax Invoice</span>
+                </Link>
+              )}
+            </div>
           </div>
 
           {/* Status Lifecycle Stepper */}

@@ -367,14 +367,19 @@ class ClientPortalController extends Controller
             ->with([
                 'project:id,name,code',
                 'estimate:id,estimate_number,status,estimate_date,total_amount',
+                'proformaInvoice:id,proforma_number,invoice_date,total_amount',
                 'invoiceAdvanceAdjustments.invoice:id,invoice_number,invoice_date,total_amount',
             ])
             ->orderBy('voucher_date', 'desc')
             ->get();
 
         // 3. Fetch all non-draft Estimates / Quotations
+        // Exclude estimates that have already generated a Proforma Invoice or Tax Invoice to eliminate thread duplication
         $estimates = Estimate::where('client_email', $client->email)
             ->where('status', '!=', 'draft')
+            ->whereDoesntHave('proformaInvoices')
+            ->whereDoesntHave('invoices')
+            ->whereNotIn('status', ['invoiced', 'converted'])
             ->with([
                 'project:id,name,code',
                 'receiptVouchers:id,estimate_id,voucher_number,status,amount_received,remaining_advance,voucher_date',
@@ -384,12 +389,13 @@ class ClientPortalController extends Controller
             ->orderBy('estimate_date', 'desc')
             ->get();
 
-        // 4. Fetch legacy Proformas (if any exist for backward compatibility)
+        // 4. Fetch Proformas
         $proformas = ProformaInvoice::where('client_email', $client->email)
             ->where('status', '!=', 'draft')
             ->with([
                 'project:id,name,code',
                 'estimate:id,estimate_number,status,estimate_date,total_amount',
+                'receiptVouchers:id,proforma_invoice_id,voucher_number,status,amount_received,remaining_advance,voucher_date',
             ])
             ->orderBy('invoice_date', 'desc')
             ->get();
@@ -466,6 +472,16 @@ class ClientPortalController extends Controller
                     'status' => $rv->estimate->status,
                 ];
             }
+            if ($rv->proformaInvoice) {
+                $history[] = [
+                    'stage' => 'proforma',
+                    'id' => $rv->proformaInvoice->id,
+                    'number' => $rv->proformaInvoice->proforma_number,
+                    'date' => $rv->proformaInvoice->invoice_date,
+                    'total_amount' => (float) $rv->proformaInvoice->total_amount,
+                    'status' => $rv->proformaInvoice->status,
+                ];
+            }
 
             $threads[] = [
                 'thread_id' => 'rv-' . $rv->id,
@@ -517,7 +533,7 @@ class ClientPortalController extends Controller
             ];
         }
 
-        // Step D: Legacy Proformas (if any exist)
+        // Step D: Proformas
         foreach ($proformas as $pi) {
             $history = [];
             if ($pi->estimate) {
@@ -529,6 +545,19 @@ class ClientPortalController extends Controller
                     'total_amount' => (float) $pi->estimate->total_amount,
                     'status' => $pi->estimate->status,
                 ];
+            }
+
+            if ($pi->receiptVouchers) {
+                foreach ($pi->receiptVouchers as $srv) {
+                    $history[] = [
+                        'stage' => 'receipt_voucher',
+                        'id' => $srv->id,
+                        'number' => $srv->voucher_number,
+                        'date' => $srv->voucher_date,
+                        'total_amount' => (float) ($srv->amount_received ?? $srv->total_amount ?? 0),
+                        'status' => $srv->status,
+                    ];
+                }
             }
 
             $threads[] = [
@@ -668,6 +697,7 @@ class ClientPortalController extends Controller
         $receiptVoucher->load([
             'project:id,name,code',
             'estimate:id,estimate_number,status,estimate_date,total_amount,tax_calculation_type',
+            'proformaInvoice:id,proforma_number,invoice_date,total_amount',
             'invoiceAdvanceAdjustments.invoice:id,invoice_number,invoice_date,total_amount',
             'refundVouchers',
         ]);
@@ -717,6 +747,7 @@ class ClientPortalController extends Controller
             'project:id,name,code',
             'estimate:id,estimate_number,status,estimate_date,total_amount,tax_calculation_type',
             'taxInvoices.payments',
+            'receiptVouchers:id,proforma_invoice_id,voucher_number,status,amount_received,remaining_advance,voucher_date,taxable_amount,tax_amount,payment_mode,payment_reference',
         ]);
 
         return response()->json(['proforma_invoice' => $proformaInvoice]);

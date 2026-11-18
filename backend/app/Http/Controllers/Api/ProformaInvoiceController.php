@@ -293,6 +293,7 @@ class ProformaInvoiceController extends Controller
                 'estimate:id,estimate_number',
                 'creator:id,name,email',
                 'taxInvoices.payments.recorder:id,name',
+                'receiptVouchers:id,proforma_invoice_id,voucher_number,status,amount_received,remaining_advance,adjusted_amount,voucher_date,taxable_amount,tax_amount',
             ]),
         ]);
     }

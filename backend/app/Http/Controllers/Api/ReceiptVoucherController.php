@@ -123,11 +123,23 @@ class ReceiptVoucherController extends Controller
                 $sgst = round($taxAmount - $cgst, 2);
             }
 
+            $estimateId = $validated['estimate_id'] ?? null;
+            $proformaId = $validated['proforma_invoice_id'] ?? null;
+            $projectId = $validated['project_id'] ?? null;
+
+            if ($proformaId && (!$estimateId || !$projectId)) {
+                $proforma = \App\Models\ProformaInvoice::find($proformaId);
+                if ($proforma) {
+                    $estimateId = $estimateId ?? $proforma->estimate_id;
+                    $projectId = $projectId ?? $proforma->project_id;
+                }
+            }
+
             return ReceiptVoucher::create([
                 'voucher_number' => $voucherNumber,
-                'estimate_id' => $validated['estimate_id'] ?? null,
-                'proforma_invoice_id' => $validated['proforma_invoice_id'] ?? null,
-                'project_id' => $validated['project_id'] ?? null,
+                'estimate_id' => $estimateId,
+                'proforma_invoice_id' => $proformaId,
+                'project_id' => $projectId,
                 'client_id' => $validated['client_id'] ?? null,
                 'created_by' => $request->user()->id,
                 'client_name' => $validated['client_name'],
@@ -158,7 +170,7 @@ class ReceiptVoucherController extends Controller
 
         return response()->json([
             'message' => 'GST Receipt Voucher successfully issued.',
-            'receipt_voucher' => $voucher->load(['estimate', 'client']),
+            'receipt_voucher' => $voucher->load(['estimate', 'client', 'proformaInvoice']),
         ], 201);
     }
 

@@ -91,6 +91,11 @@ class ProformaInvoice extends Model
         return $this->hasMany(Invoice::class, 'proforma_invoice_id');
     }
 
+    public function receiptVouchers(): HasMany
+    {
+        return $this->hasMany(ReceiptVoucher::class);
+    }
+
     /**
      * Synchronize and recalculate progressive billing progress against linked Tax Invoices.
      */

@@ -485,6 +485,23 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
         isCurrent: true,
         onPress: undefined,
       },
+      ...(proforma.receipt_vouchers && proforma.receipt_vouchers.length > 0
+        ? proforma.receipt_vouchers.map((rv) => ({
+            key: `rv-${rv.id}`,
+            title: "Receipt Voucher",
+            number: rv.voucher_number,
+            date: formatDate(rv.voucher_date || proforma.invoice_date),
+            amount: Number(rv.amount_received || rv.total_amount || 0),
+            status: (rv.status || "active").toUpperCase(),
+            badgeVariant: "purple" as const,
+            isCurrent: false,
+            onPress: () =>
+              navigation.navigate("InvoiceDetail", {
+                voucherId: rv.id,
+                type: "voucher",
+              }),
+          }))
+        : []),
       ...linkedTaxInvoices.map((inv) => ({
         key: `invoice-${inv.id}`,
         title: "Tax Invoice",
@@ -719,6 +736,75 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
             <Text style={styles.grossValue}>{formatCurrency(totalAmountNum)}</Text>
           </View>
         </Card>
+
+        {/* Advance Receipts Section (Statutory GST Receipt Vouchers) */}
+        {proforma.receipt_vouchers && proforma.receipt_vouchers.length > 0 && (
+          <Card style={styles.taxInvCard}>
+            <View style={styles.taxInvCardHeader}>
+              <View style={styles.taxInvIconBg}>
+                <Ionicons name="shield-checkmark" size={18} color="#7E22CE" />
+              </View>
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={styles.taxInvCardTitle}>Advance Receipts (Receipt Vouchers)</Text>
+                <Text style={styles.taxInvCardSub}>
+                  {proforma.receipt_vouchers.length} {proforma.receipt_vouchers.length === 1 ? "voucher" : "vouchers"} issued against this proforma
+                </Text>
+              </View>
+            </View>
+
+            <View style={{ marginTop: 12, gap: 8 }}>
+              {proforma.receipt_vouchers.map((rv) => (
+                <TouchableOpacity
+                  key={`rv-card-${rv.id}`}
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    backgroundColor: "#FFFFFF",
+                    padding: 10,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: "#E9D5FF",
+                  }}
+                  activeOpacity={0.75}
+                  onPress={() =>
+                    navigation.navigate("InvoiceDetail", {
+                      voucherId: rv.id,
+                      type: "voucher",
+                    })
+                  }
+                >
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: colors.text }}>
+                        {rv.voucher_number}
+                      </Text>
+                      <Badge
+                        label={(rv.status || "active").toUpperCase()}
+                        variant="purple"
+                        size="sm"
+                      />
+                    </View>
+                    <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
+                      Received {formatDate(rv.voucher_date)} • {rv.payment_mode ? rv.payment_mode.replace("_", " ").toUpperCase() : "Advance"}
+                    </Text>
+                  </View>
+                  <View style={{ alignItems: "flex-end" }}>
+                    <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: "#6B21A8" }}>
+                      {formatCurrency(Number(rv.amount_received || rv.total_amount || 0))}
+                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 2, marginTop: 2 }}>
+                      <Text style={{ fontSize: 10, color: colors.primary, fontFamily: fonts.medium }}>
+                        View
+                      </Text>
+                      <Ionicons name="chevron-forward" size={10} color={colors.primary} />
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Card>
+        )}
 
         {/* Commercial Progression Timeline (History Only) */}
         {proformaTimelineItems.length > 1 && (
