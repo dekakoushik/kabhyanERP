@@ -183,7 +183,13 @@ export const EstimateDetailScreen: React.FC<{ route: any; navigation: any }> = (
             )}
           </View>
           <Badge
-            label={isConverted ? "CONVERTED TO PROFORMA" : estimate.status.toUpperCase()}
+            label={
+              isConverted
+                ? "CONVERTED TO PROFORMA"
+                : estimate.status === "sent"
+                ? "AWAITING APPROVAL"
+                : estimate.status.toUpperCase()
+            }
             variant={
               isConverted
                 ? "purple"

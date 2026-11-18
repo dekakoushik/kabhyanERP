@@ -96,9 +96,14 @@ export const BillingScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
   const renderStatusBadge = (status: string) => {
     const s = status.toLowerCase();
+    // Do not show internal "sent" or "draft" statuses in client-facing cards
+    if (s === "sent" || s === "draft") {
+      return null;
+    }
+
     let variant: "success" | "warning" | "danger" | "purple" | "neutral" = "neutral";
     if (s === "paid" || s === "accepted") variant = "success";
-    else if (s === "unpaid" || s === "sent" || s === "partially_paid") variant = "warning";
+    else if (s === "unpaid" || s === "partially_paid") variant = "warning";
     else if (s === "overdue" || s === "declined" || s === "cancelled") variant = "danger";
     else if (s === "invoiced" || s === "converted") variant = "purple";
 
