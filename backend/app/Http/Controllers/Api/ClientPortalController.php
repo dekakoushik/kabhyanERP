@@ -655,7 +655,10 @@ class ClientPortalController extends Controller
     public function showEstimate(Request $request, Estimate $estimate)
     {
         $client = $this->getClient($request);
-        if ($estimate->client_email !== $client->email) {
+        $user = $request->user();
+        $isStaff = in_array($user->role, ['superadmin', 'admin', 'manager', 'hr', 'employee']);
+
+        if (!$isStaff && strcasecmp(trim($estimate->client_email), trim($client->email)) !== 0) {
             abort(403, 'Unauthorized access to this quotation.');
         }
 
@@ -681,7 +684,10 @@ class ClientPortalController extends Controller
     public function respondEstimate(Request $request, Estimate $estimate)
     {
         $client = $this->getClient($request);
-        if ($estimate->client_email !== $client->email) {
+        $user = $request->user();
+        $isStaff = in_array($user->role, ['superadmin', 'admin', 'manager', 'hr', 'employee']);
+
+        if (!$isStaff && strcasecmp(trim($estimate->client_email), trim($client->email)) !== 0) {
             abort(403, 'Unauthorized access to this quotation.');
         }
 
@@ -692,15 +698,23 @@ class ClientPortalController extends Controller
         $validated = $request->validate([
             'action' => 'required|in:accepted,declined',
             'feedback' => 'nullable|string|max:1000',
+            'reason' => 'nullable|string|max:1000',
         ]);
+
+        $feedback = $request->input('feedback') ?? $request->input('reason');
+        $updatedNotes = $estimate->notes;
+        if (!empty($feedback)) {
+            $updatedNotes = ($updatedNotes ? $updatedNotes . "\n" : "") . "Client " . ucfirst($validated['action']) . " Note: " . trim($feedback);
+        }
 
         $estimate->update([
             'status' => $validated['action'],
-            'notes' => $estimate->notes . ($validated['feedback'] ? "\nClient Feedback: " . $validated['feedback'] : ""),
+            'notes' => $updatedNotes,
         ]);
 
         return response()->json([
-            'message' => "Quotation has been {$validated['action']} successfully.",
+            'success' => true,
+            'message' => "Quotation has been " . ($validated['action'] === 'accepted' ? 'accepted' : 'declined') . " successfully.",
             'estimate' => $estimate->fresh(),
         ]);
     }
@@ -711,7 +725,10 @@ class ClientPortalController extends Controller
     public function getEstimatePdfUrl(Request $request, Estimate $estimate)
     {
         $client = $this->getClient($request);
-        if ($estimate->client_email !== $client->email) {
+        $user = $request->user();
+        $isStaff = in_array($user->role, ['superadmin', 'admin', 'manager', 'hr', 'employee']);
+
+        if (!$isStaff && strcasecmp(trim($estimate->client_email), trim($client->email)) !== 0) {
             abort(403, 'Unauthorized access to this quotation.');
         }
         if ($estimate->status === 'draft') {
