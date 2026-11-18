@@ -9,6 +9,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -51,10 +52,13 @@ export const LoginScreen: React.FC = () => {
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           {/* Logo & Header */}
           <View style={styles.header}>
-            <View style={styles.logoBadge}>
-              <Text style={styles.logoText}>K</Text>
-            </View>
-            <Text style={styles.brandTitle}>KABHYAN CONNECT</Text>
+            <Image
+              source={require("../../../assets/logo.png")}
+              style={styles.brandLogo}
+              resizeMode="contain"
+              accessible={true}
+              accessibilityLabel="Kabhyan Technologies"
+            />
             <Text style={styles.brandSubtitle}>Enterprise Client Workspace</Text>
             <View style={styles.portalTag}>
               <Text style={styles.portalTagText}>CLIENT PORTAL</Text>
@@ -168,32 +172,12 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    marginBottom: 28,
+    marginBottom: 24,
   },
-  logoBadge: {
-    width: 60,
-    height: 60,
-    borderRadius: 18,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
-    marginBottom: 12,
-  },
-  logoText: {
-    color: colors.textLight,
-    fontSize: 28,
-    fontWeight: "900",
-  },
-  brandTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: colors.text,
-    letterSpacing: 2,
+  brandLogo: {
+    width: 220,
+    height: 68,
+    marginBottom: 6,
   },
   brandSubtitle: {
     fontSize: 12,

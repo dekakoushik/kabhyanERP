@@ -1,16 +1,16 @@
 export const colors = {
-  primary: "#2563EB",       // Royal Blue
-  primaryDark: "#1D4ED8",
-  primaryLight: "#EFF6FF",
+  primary: "#1B43FF",       // Kabhyan Royal Blue (extracted from official logo)
+  primaryDark: "#1334CC",
+  primaryLight: "#EEF2FF",
   secondary: "#0F172A",     // Dark Navy / Slate 900
-  accent: "#3B82F6",
+  accent: "#B69BFF",        // Kabhyan Geometric Lavender Triangle Accent
   
   background: "#F8FAFC",   // Slate 50
   card: "#FFFFFF",
   border: "#E2E8F0",       // Slate 200
   borderLight: "#F1F5F9",  // Slate 100
   
-  text: "#0F172A",         // Slate 900
+  text: "#111827",         // Charcoal (Technologies sub-line)
   textSecondary: "#475569",// Slate 600
   textMuted: "#94A3B8",    // Slate 400
   textLight: "#FFFFFF",

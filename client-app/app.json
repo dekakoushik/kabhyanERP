@@ -8,8 +8,9 @@
     "scheme": "kabhyanconnect",
     "userInterfaceStyle": "light",
     "splash": {
-      "backgroundColor": "#2563EB",
-      "resizeMode": "contain"
+      "image": "./assets/logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": true,
@@ -18,7 +19,7 @@
     "android": {
       "package": "com.kabhyan.kconnect",
       "adaptiveIcon": {
-        "backgroundColor": "#2563EB",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

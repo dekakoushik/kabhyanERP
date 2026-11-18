@@ -1,5 +1,5 @@
 import React from "react";
-import { TouchableOpacity, View, Text, StyleSheet } from "react-native";
+import { TouchableOpacity, View, Text, StyleSheet, Image } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../theme/colors";
@@ -28,6 +28,16 @@ export const BottomTabNavigator: React.FC<{ navigation: any }> = ({ navigation }
         </Text>
       </View>
     </TouchableOpacity>
+  );
+
+  const renderHeaderLogo = () => (
+    <Image
+      source={require("../../assets/logo.png")}
+      style={styles.headerLogo}
+      resizeMode="contain"
+      accessible={true}
+      accessibilityLabel="Kabhyan Technologies"
+    />
   );
 
   return (
@@ -66,7 +76,8 @@ export const BottomTabNavigator: React.FC<{ navigation: any }> = ({ navigation }
         name="DashboardTab"
         component={DashboardScreen}
         options={{
-          title: "Overview",
+          headerTitle: renderHeaderLogo,
+          headerTitleAlign: "left",
           tabBarLabel: "Overview",
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? "grid" : "grid-outline"} size={size} color={color} />
@@ -126,6 +137,11 @@ export const BottomTabNavigator: React.FC<{ navigation: any }> = ({ navigation }
 };
 
 const styles = StyleSheet.create({
+  headerLogo: {
+    width: 140,
+    height: 38,
+    marginLeft: 4,
+  },
   avatarButton: {
     marginRight: 16,
   },
