@@ -385,18 +385,26 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
                       disabled={!item.onPress}
                       activeOpacity={item.onPress ? 0.7 : 1}
                     >
-                      <View style={styles.timelineMainInfo}>
-                        <View style={styles.timelineTitleRow}>
-                          <Text style={styles.timelineItemTitle}>{item.title}</Text>
-                          <Badge label={item.status} variant={item.badgeVariant as any} size="sm" />
+                      <View style={styles.timelineCardHeader}>
+                        <View style={styles.timelineTitleGroup}>
+                          <Text style={styles.timelineItemTitle} numberOfLines={1}>{item.title}</Text>
+                          <Badge
+                            label={(item.status || "").replace(/_/g, " ")}
+                            variant={item.badgeVariant as any}
+                            size="sm"
+                          />
                         </View>
-                        <Text style={styles.timelineItemNumber}>{item.number} • {item.date}</Text>
+                        <Text style={styles.timelineAmount}>{formatCurrency(item.amount)}</Text>
                       </View>
 
-                      <View style={styles.timelineActionCol}>
-                        <Text style={styles.timelineAmount}>{formatCurrency(item.amount)}</Text>
+                      <View style={styles.timelineCardMeta}>
+                        <Text style={styles.timelineItemNumber} numberOfLines={1}>
+                          {item.number} • {item.date}
+                        </Text>
                         {item.isCurrent ? (
-                          <Text style={styles.currentViewingText}>Viewing</Text>
+                          <View style={styles.currentViewingPill}>
+                            <Text style={styles.currentViewingText}>Viewing</Text>
+                          </View>
                         ) : item.onPress ? (
                           <View style={styles.viewRow}>
                             <Text style={styles.viewText}>View</Text>
@@ -476,7 +484,7 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           ? "INVOICED"
           : proforma.status === "paid"
           ? "PAID"
-          : (proforma.status || "unpaid").toUpperCase()) as string,
+          : (proforma.status || "unpaid").replace(/_/g, " ").toUpperCase()) as string,
         badgeVariant: (isConverted
           ? "purple"
           : proforma.status === "paid"
@@ -485,23 +493,6 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
         isCurrent: true,
         onPress: undefined,
       },
-      ...(proforma.receipt_vouchers && proforma.receipt_vouchers.length > 0
-        ? proforma.receipt_vouchers.map((rv) => ({
-            key: `rv-${rv.id}`,
-            title: "Receipt Voucher",
-            number: rv.voucher_number,
-            date: formatDate(rv.voucher_date || proforma.invoice_date),
-            amount: Number(rv.amount_received || rv.total_amount || 0),
-            status: (rv.status || "active").toUpperCase(),
-            badgeVariant: "purple" as const,
-            isCurrent: false,
-            onPress: () =>
-              navigation.navigate("InvoiceDetail", {
-                voucherId: rv.id,
-                type: "voucher",
-              }),
-          }))
-        : []),
       ...linkedTaxInvoices.map((inv) => ({
         key: `invoice-${inv.id}`,
         title: "Tax Invoice",
@@ -832,18 +823,26 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
                       disabled={!item.onPress}
                       activeOpacity={item.onPress ? 0.7 : 1}
                     >
-                      <View style={styles.timelineMainInfo}>
-                        <View style={styles.timelineTitleRow}>
-                          <Text style={styles.timelineItemTitle}>{item.title}</Text>
-                          <Badge label={item.status} variant={item.badgeVariant} size="sm" />
+                      <View style={styles.timelineCardHeader}>
+                        <View style={styles.timelineTitleGroup}>
+                          <Text style={styles.timelineItemTitle} numberOfLines={1}>{item.title}</Text>
+                          <Badge
+                            label={(item.status || "").replace(/_/g, " ")}
+                            variant={item.badgeVariant as any}
+                            size="sm"
+                          />
                         </View>
-                        <Text style={styles.timelineItemNumber}>{item.number} • {item.date}</Text>
+                        <Text style={styles.timelineAmount}>{formatCurrency(item.amount)}</Text>
                       </View>
 
-                      <View style={styles.timelineActionCol}>
-                        <Text style={styles.timelineAmount}>{formatCurrency(item.amount)}</Text>
+                      <View style={styles.timelineCardMeta}>
+                        <Text style={styles.timelineItemNumber} numberOfLines={1}>
+                          {item.number} • {item.date}
+                        </Text>
                         {item.isCurrent ? (
-                          <Text style={styles.currentViewingText}>Viewing</Text>
+                          <View style={styles.currentViewingPill}>
+                            <Text style={styles.currentViewingText}>Viewing</Text>
+                          </View>
                         ) : item.onPress ? (
                           <View style={styles.viewRow}>
                             <Text style={styles.viewText}>View</Text>
@@ -1232,18 +1231,26 @@ export const InvoiceDetailScreen: React.FC<{ route: any; navigation: any }> = ({
                     disabled={!item.onPress}
                     activeOpacity={item.onPress ? 0.7 : 1}
                   >
-                    <View style={styles.timelineMainInfo}>
-                      <View style={styles.timelineTitleRow}>
-                        <Text style={styles.timelineItemTitle}>{item.title}</Text>
-                        <Badge label={item.status} variant={item.badgeVariant} size="sm" />
+                    <View style={styles.timelineCardHeader}>
+                      <View style={styles.timelineTitleGroup}>
+                        <Text style={styles.timelineItemTitle} numberOfLines={1}>{item.title}</Text>
+                        <Badge
+                          label={(item.status || "").replace(/_/g, " ")}
+                          variant={item.badgeVariant as any}
+                          size="sm"
+                        />
                       </View>
-                      <Text style={styles.timelineItemNumber}>{item.number} • {item.date}</Text>
+                      <Text style={styles.timelineAmount}>{formatCurrency(item.amount)}</Text>
                     </View>
 
-                    <View style={styles.timelineActionCol}>
-                      <Text style={styles.timelineAmount}>{formatCurrency(item.amount)}</Text>
+                    <View style={styles.timelineCardMeta}>
+                      <Text style={styles.timelineItemNumber} numberOfLines={1}>
+                        {item.number} • {item.date}
+                      </Text>
                       {item.isCurrent ? (
-                        <Text style={styles.currentViewingText}>Viewing</Text>
+                        <View style={styles.currentViewingPill}>
+                          <Text style={styles.currentViewingText}>Viewing</Text>
+                        </View>
                       ) : item.onPress ? (
                         <View style={styles.viewRow}>
                           <Text style={styles.viewText}>View</Text>
@@ -1605,9 +1612,6 @@ const styles = StyleSheet.create({
   },
   timelineContentBox: {
     flex: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     backgroundColor: "#F8FAFC",
     borderWidth: 1,
     borderColor: colors.borderLight,
@@ -1616,35 +1620,50 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginBottom: 12,
   },
-  timelineMainInfo: {
-    flex: 1,
-    marginRight: 8,
+  timelineCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 6,
   },
-  timelineTitleRow: {
+  timelineTitleGroup: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
+    flexWrap: "wrap",
     gap: 6,
-    marginBottom: 3,
+    marginRight: 10,
   },
   timelineItemTitle: {
     fontFamily: fonts.bold,
     fontSize: 13,
     color: colors.text,
   },
-  timelineItemNumber: {
-    fontFamily: fonts.regular,
-    fontSize: 11,
-    color: colors.textSecondary,
-  },
-  timelineActionCol: {
-    alignItems: "flex-end",
-    justifyContent: "center",
-  },
   timelineAmount: {
     fontFamily: fonts.bold,
     fontSize: 13,
     color: colors.text,
-    marginBottom: 2,
+    textAlign: "right",
+    flexShrink: 0,
+  },
+  timelineCardMeta: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  timelineItemNumber: {
+    flex: 1,
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginRight: 8,
+  },
+  currentViewingPill: {
+    backgroundColor: "#EFF6FF",
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    flexShrink: 0,
   },
   currentViewingText: {
     fontFamily: fonts.medium,
@@ -1655,6 +1674,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 2,
+    flexShrink: 0,
   },
   viewText: {
     fontFamily: fonts.medium,
