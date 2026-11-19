@@ -242,6 +242,32 @@ export interface UserStats {
   custom_role_users?: number;
 }
 
+export interface ProjectFileRequest {
+  id: number;
+  project_id: number;
+  client_id: number;
+  requested_by: number;
+  title: string;
+  description?: string | null;
+  file_type_allowed?: string;
+  due_date?: string | null;
+  priority: "normal" | "high" | "urgent";
+  status: "pending" | "submitted" | "approved" | "rejected";
+  file_path?: string | null;
+  file_name?: string | null;
+  file_size?: number | null;
+  mime_type?: string | null;
+  uploaded_at?: string | null;
+  review_notes?: string | null;
+  reviewed_by?: number | null;
+  reviewed_at?: string | null;
+  requester?: { id: number; name: string; email?: string } | null;
+  reviewer?: { id: number; name: string; email?: string } | null;
+  client?: { id: number; name: string; company_name?: string } | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Project {
   id: number;
   name: string;
@@ -259,9 +285,11 @@ export interface Project {
   start_date?: string | null;
   deadline?: string | null;
   progress_percentage: number;
+  show_tasks_to_client?: boolean;
   tasks_count?: number;
   completed_tasks_count?: number;
   tasks?: Task[];
+  file_requests?: ProjectFileRequest[];
   created_at?: string;
   updated_at?: string;
 }
@@ -1538,6 +1566,62 @@ export const api = {
       api.request(`/portal/tickets/${id}/reply`, {
         method: "POST",
         body: JSON.stringify({ message }),
+      }),
+    projectFileRequests: (projectId: number | string) =>
+      api.request<{ file_requests: ProjectFileRequest[] }>(`/portal/projects/${projectId}/file-requests`),
+    uploadFileRequest: (projectId: number | string, requestId: number | string, formData: FormData) =>
+      api.request<{ message: string; file_request: ProjectFileRequest }>(
+        `/portal/projects/${projectId}/file-requests/${requestId}/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      ),
+    downloadFileRequest: (projectId: number | string, requestId: number | string, filename: string) =>
+      api.downloadPdf(`/portal/projects/${projectId}/file-requests/${requestId}/download`, filename),
+  },
+
+  projectFileRequests: {
+    list: (projectId: number | string) =>
+      api.request<{ file_requests: ProjectFileRequest[]; can_manage: boolean; show_tasks_to_client: boolean }>(
+        `/projects/${projectId}/file-requests`
+      ),
+    create: (
+      projectId: number | string,
+      data: {
+        title: string;
+        description?: string;
+        file_type_allowed?: string;
+        due_date?: string;
+        priority?: string;
+      }
+    ) =>
+      api.request<{ message: string; file_request: ProjectFileRequest }>(`/projects/${projectId}/file-requests`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    review: (
+      projectId: number | string,
+      requestId: number | string,
+      data: { status: "approved" | "rejected"; review_notes?: string }
+    ) =>
+      api.request<{ message: string; file_request: ProjectFileRequest }>(
+        `/projects/${projectId}/file-requests/${requestId}/review`,
+        {
+          method: "PATCH",
+          body: JSON.stringify(data),
+        }
+      ),
+    downloadFile: (projectId: number | string, requestId: number | string, filename: string) =>
+      api.downloadPdf(`/projects/${projectId}/file-requests/${requestId}/download`, filename),
+    delete: (projectId: number | string, requestId: number | string) =>
+      api.request<{ message: string }>(`/projects/${projectId}/file-requests/${requestId}`, {
+        method: "DELETE",
+      }),
+    updateVisibility: (projectId: number | string, show_tasks_to_client: boolean) =>
+      api.request<{ message: string; show_tasks_to_client: boolean }>(`/projects/${projectId}/client-visibility`, {
+        method: "PATCH",
+        body: JSON.stringify({ show_tasks_to_client }),
       }),
   },
 

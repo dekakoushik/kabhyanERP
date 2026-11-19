@@ -98,19 +98,42 @@ export default function ClientProjectsPage() {
                   </p>
                 )}
 
-                {/* Progress Bar */}
-                <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                  <div className="flex items-center justify-between text-xs text-slate-600 font-medium">
-                    <span>Deliverable Milestones</span>
-                    <span>{progressPct}% ({completedTasks}/{totalTasks})</span>
+                {/* Progress Bar (Only if tasks are visible to client) */}
+                {proj.show_tasks_to_client !== false ? (
+                  <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                    <div className="flex items-center justify-between text-xs text-slate-600 font-medium">
+                      <span>Deliverable Milestones</span>
+                      <span>{progressPct}% ({completedTasks}/{totalTasks})</span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-600 rounded-full transition-all duration-300"
+                        style={{ width: `${progressPct}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-blue-600 rounded-full transition-all duration-300"
-                      style={{ width: `${progressPct}%` }}
-                    />
+                ) : (
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                    <span>Internal Milestones</span>
+                    <span className="text-2xs font-semibold text-slate-400">Managed by Team</span>
                   </div>
-                </div>
+                )}
+
+                {/* Requested Documents Indicator */}
+                {proj.file_requests && proj.file_requests.length > 0 && (
+                  <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                    <span className="text-slate-600 font-medium">Requested Documents</span>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        proj.file_requests.some((r: any) => r.status === "pending" || r.status === "rejected")
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-emerald-100 text-emerald-800"
+                      }`}
+                    >
+                      {proj.file_requests.length} Document{proj.file_requests.length > 1 ? "s" : ""}
+                    </span>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between pt-2">
                   <div className="text-[11px] text-slate-400 flex items-center gap-1.5">

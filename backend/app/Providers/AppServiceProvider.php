@@ -98,7 +98,7 @@ class AppServiceProvider extends ServiceProvider
                 }
 
                 // 2. Auto-run pending database migrations & self-healing tasks (debounced every 5 minutes to keep requests fast)
-                $cacheKey = 'kabhyan_auto_migration_last_run_v13';
+                $cacheKey = 'kabhyan_auto_migration_last_run_v14';
                 if (!\Illuminate\Support\Facades\Cache::has($cacheKey)) {
                     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
 

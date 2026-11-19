@@ -75,6 +75,15 @@ export const ProjectsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 
           <View style={styles.divider} />
 
+          {item.file_requests && item.file_requests.length > 0 && (
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 6 }}>
+              <Ionicons name="document-text-outline" size={13} color={colors.primary} />
+              <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: "600" }}>
+                {item.file_requests.length} Document Request{item.file_requests.length > 1 ? "s" : ""}
+              </Text>
+            </View>
+          )}
+
           <View style={styles.footerRow}>
             <View style={styles.metaCol}>
               <Ionicons name="calendar-outline" size={14} color={colors.textMuted} />
@@ -84,7 +93,9 @@ export const ProjectsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             </View>
 
             <View style={styles.viewLink}>
-              <Text style={styles.viewLinkText}>Milestones</Text>
+              <Text style={styles.viewLinkText}>
+                {item.show_tasks_to_client !== false ? "Deliverables" : "Workspace"}
+              </Text>
               <Ionicons name="chevron-forward" size={14} color={colors.primary} />
             </View>
           </View>

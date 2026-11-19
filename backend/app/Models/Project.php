@@ -26,6 +26,7 @@ class Project extends Model
         'start_date',
         'deadline',
         'progress_percentage',
+        'show_tasks_to_client',
     ];
 
     /**
@@ -40,6 +41,7 @@ class Project extends Model
             'start_date' => 'date',
             'deadline' => 'date',
             'progress_percentage' => 'integer',
+            'show_tasks_to_client' => 'boolean',
         ];
     }
 
@@ -67,6 +69,14 @@ class Project extends Model
     public function tasks(): HasMany
     {
         return $this->hasMany(Task::class);
+    }
+
+    /**
+     * Client Document & File Requests.
+     */
+    public function fileRequests(): HasMany
+    {
+        return $this->hasMany(ProjectFileRequest::class);
     }
 
     /**

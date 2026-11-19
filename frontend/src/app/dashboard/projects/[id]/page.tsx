@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, use, Suspense } from "react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import Link from "next/link";
 import AdminLayout from "@/components/AdminLayout";
-import { api, Project, Task, User } from "@/lib/api";
+import { api, Project, Task, User, ProjectFileRequest } from "@/lib/api";
 import {
   Briefcase,
   Calendar,
@@ -21,6 +21,15 @@ import {
   Trash2,
   X,
   ChevronRight,
+  FileText,
+  CheckCircle,
+  Clock,
+  Download,
+  Eye,
+  EyeOff,
+  FileCheck2,
+  UploadCloud,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -43,13 +52,43 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const initialTab = (searchParams?.get("tab") as "kanban" | "list" | "overview") || "kanban";
+  const initialTab = (searchParams?.get("tab") as "kanban" | "list" | "documents" | "overview") || "kanban";
 
-  const [activeTab, setActiveTab] = useState<"kanban" | "list" | "overview">(initialTab);
+  const [activeTab, setActiveTab] = useState<"kanban" | "list" | "documents" | "overview">(initialTab);
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Client Document Requests & Client Tasks Visibility State
+  const [fileRequests, setFileRequests] = useState<ProjectFileRequest[]>([]);
+  const [canManageFiles, setCanManageFiles] = useState(false);
+  const [showTasksToClient, setShowTasksToClient] = useState(true);
+  const [togglingVisibility, setTogglingVisibility] = useState(false);
+  const [isDocModalOpen, setIsDocModalOpen] = useState(false);
+  const [savingDocRequest, setSavingDocRequest] = useState(false);
+  const [downloadingFileId, setDownloadingFileId] = useState<number | null>(null);
+  const [docFormData, setDocFormData] = useState({
+    title: "",
+    description: "",
+    file_type_allowed: "PDF, PNG, JPG, ZIP, DOCX",
+    due_date: "",
+    priority: "normal" as "normal" | "high" | "urgent",
+  });
+  const [reviewModal, setReviewModal] = useState<{
+    isOpen: boolean;
+    requestId: number | null;
+    status: "approved" | "rejected";
+    review_notes: string;
+    requestTitle: string;
+  }>({
+    isOpen: false,
+    requestId: null,
+    status: "approved",
+    review_notes: "",
+    requestTitle: "",
+  });
+  const [savingReview, setSavingReview] = useState(false);
 
   // Native HTML5 DnD State
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
@@ -77,9 +116,24 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
   const loadProjectData = async () => {
     try {
       setLoading(true);
-      const res = (await api.request(`/projects/${projectId}`)) as { project: Project };
+      const [res, fileRes] = await Promise.all([
+        api.request(`/projects/${projectId}`) as Promise<{ project: Project }>,
+        api.projectFileRequests.list(projectId).catch(() => ({
+          file_requests: [] as ProjectFileRequest[],
+          can_manage: false,
+          show_tasks_to_client: true,
+        })),
+      ]);
+
       setProject(res.project);
       setTasks(res.project?.tasks || []);
+      setFileRequests(fileRes.file_requests || []);
+      setCanManageFiles(fileRes.can_manage);
+      setShowTasksToClient(
+        typeof fileRes.show_tasks_to_client === "boolean"
+          ? fileRes.show_tasks_to_client
+          : res.project.show_tasks_to_client ?? true
+      );
 
       // Load team users for assignment - safely handle both Array and Laravel LengthAwarePaginator
       try {
@@ -106,9 +160,136 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
   }, [projectId]);
 
   // Sync tab with URL
-  const switchTab = (tab: "kanban" | "list" | "overview") => {
+  const switchTab = (tab: "kanban" | "list" | "documents" | "overview") => {
     setActiveTab(tab);
     router.replace(`/dashboard/projects/${projectId}?tab=${tab}`, { scroll: false });
+  };
+
+  // Toggle client task visibility
+  const handleToggleClientVisibility = async () => {
+    if (!canManageFiles) {
+      toast.error("Only the assigned Project Lead or Admin can adjust client task visibility.");
+      return;
+    }
+    try {
+      setTogglingVisibility(true);
+      const next = !showTasksToClient;
+      const res = await api.projectFileRequests.updateVisibility(projectId, next);
+      setShowTasksToClient(res.show_tasks_to_client);
+      toast.success(
+        res.show_tasks_to_client
+          ? "Client visibility enabled. Tasks are now visible in Client Portal & App."
+          : "Client visibility disabled. Internal tasks are now hidden from the client."
+      );
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update client visibility.");
+    } finally {
+      setTogglingVisibility(false);
+    }
+  };
+
+  // Create file request
+  const handleCreateDocRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!docFormData.title.trim()) {
+      toast.error("Please enter a document title.");
+      return;
+    }
+
+    try {
+      setSavingDocRequest(true);
+      const res = await api.projectFileRequests.create(projectId, {
+        title: docFormData.title.trim(),
+        description: docFormData.description.trim() || undefined,
+        file_type_allowed: docFormData.file_type_allowed.trim() || undefined,
+        due_date: docFormData.due_date || undefined,
+        priority: docFormData.priority,
+      });
+
+      toast.success("Document request sent to client.");
+      setIsDocModalOpen(false);
+      setDocFormData({
+        title: "",
+        description: "",
+        file_type_allowed: "PDF, PNG, JPG, ZIP, DOCX",
+        due_date: "",
+        priority: "normal",
+      });
+      setFileRequests((prev) => [res.file_request, ...prev]);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to submit document request.");
+    } finally {
+      setSavingDocRequest(false);
+    }
+  };
+
+  // Download submitted document file
+  const handleDownloadDoc = async (req: ProjectFileRequest) => {
+    if (!req.file_name) return;
+    try {
+      setDownloadingFileId(req.id);
+      await api.projectFileRequests.downloadFile(projectId, req.id, req.file_name);
+      toast.success("Document downloaded successfully.");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to download document file.");
+    } finally {
+      setDownloadingFileId(null);
+    }
+  };
+
+  // Open PM Review Modal
+  const handleOpenReview = (req: ProjectFileRequest, status: "approved" | "rejected") => {
+    setReviewModal({
+      isOpen: true,
+      requestId: req.id,
+      status,
+      review_notes: req.review_notes || "",
+      requestTitle: req.title,
+    });
+  };
+
+  // Submit PM Review
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reviewModal.requestId) return;
+    try {
+      setSavingReview(true);
+      const res = await api.projectFileRequests.review(projectId, reviewModal.requestId, {
+        status: reviewModal.status,
+        review_notes: reviewModal.review_notes.trim() || undefined,
+      });
+      toast.success(
+        reviewModal.status === "approved"
+          ? "Document approved and verified."
+          : "Revision request submitted to client."
+      );
+      setReviewModal({
+        isOpen: false,
+        requestId: null,
+        status: "approved",
+        review_notes: "",
+        requestTitle: "",
+      });
+      setFileRequests((prev) =>
+        prev.map((item) => (item.id === res.file_request.id ? res.file_request : item))
+      );
+    } catch (err: any) {
+      toast.error(err.message || "Failed to submit review.");
+    } finally {
+      setSavingReview(false);
+    }
+  };
+
+  // Delete / cancel file request
+  const handleDeleteDocRequest = async (requestId: number) => {
+    if (!confirm("Are you sure you want to cancel and remove this client file request?")) return;
+    try {
+      await api.projectFileRequests.delete(projectId, requestId);
+      setFileRequests((prev) => prev.filter((r) => r.id !== requestId));
+      toast.success("File request cancelled and removed.");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to remove file request.");
+    }
   };
 
   // Move task status via Native Drag and Drop
@@ -329,7 +510,47 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
             )}
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {/* CLIENT TASKS VISIBILITY TOGGLE */}
+            <div
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition ${
+                showTasksToClient
+                  ? "bg-blue-50/70 border-blue-200/80 text-blue-800"
+                  : "bg-slate-50 border-slate-200 text-slate-600"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={handleToggleClientVisibility}
+                disabled={togglingVisibility || !canManageFiles}
+                title={
+                  canManageFiles
+                    ? (showTasksToClient ? "Click to hide tasks from client" : "Click to show tasks to client")
+                    : "Only Project Lead or Admin can adjust client visibility"
+                }
+                className={`relative inline-flex h-4 w-7 sm:h-5 sm:w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  showTasksToClient ? "bg-blue-600" : "bg-slate-300"
+                } ${!canManageFiles ? "opacity-60 cursor-not-allowed" : ""}`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-3 w-3 sm:h-4 sm:w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    showTasksToClient ? "translate-x-3 sm:translate-x-4" : "translate-x-0"
+                  }`}
+                />
+              </button>
+              <div className="flex items-center gap-1.5 text-xs font-semibold select-none">
+                {showTasksToClient ? (
+                  <Eye className="w-3.5 h-3.5 text-blue-600" />
+                ) : (
+                  <EyeOff className="w-3.5 h-3.5 text-slate-400" />
+                )}
+                <span className="hidden sm:inline">Client Tasks:</span>
+                <span className={showTasksToClient ? "text-blue-700" : "text-slate-500"}>
+                  {showTasksToClient ? "Visible" : "Hidden"}
+                </span>
+              </div>
+            </div>
+
             <button
               onClick={() => openCreateModal("todo")}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-2xs transition cursor-pointer"
@@ -376,7 +597,7 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
       {/* TAB CONTROLS & SEARCH / FILTERS */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-3">
         {/* TABS */}
-        <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl w-fit">
+        <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl w-fit flex-wrap">
           <button
             onClick={() => switchTab("kanban")}
             className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
@@ -400,6 +621,28 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
             <span>List</span>
           </button>
           <button
+            onClick={() => switchTab("documents")}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+              activeTab === "documents"
+                ? "bg-white text-blue-700 shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>Client Documents</span>
+            {fileRequests.length > 0 && (
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  fileRequests.some((r) => r.status === "submitted")
+                    ? "bg-blue-600 text-white animate-pulse"
+                    : "bg-slate-200 text-slate-700"
+                }`}
+              >
+                {fileRequests.length}
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => switchTab("overview")}
             className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
               activeTab === "overview"
@@ -413,7 +656,7 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
         </div>
 
         {/* SEARCH & FILTERS (Only in kanban and list tabs) */}
-        {activeTab !== "overview" && (
+        {(activeTab === "kanban" || activeTab === "list") && (
           <div className="flex items-center gap-2 flex-wrap">
             <div className="relative min-w-[200px]">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -810,6 +1053,272 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
         </div>
       )}
 
+      {/* TAB 4: CLIENT DOCUMENTS */}
+      {activeTab === "documents" && (
+        <div className="space-y-6">
+          {/* HEADER STRIP */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
+            <div>
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-blue-600" />
+                <h3 className="text-sm font-bold text-slate-900 tracking-tight">
+                  Client Document & Asset Requests
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500 mt-1 max-w-xl">
+                Request verified contracts, specifications, brand assets, and KYC deliverables directly from the client.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {canManageFiles ? (
+                <button
+                  type="button"
+                  onClick={() => setIsDocModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Request Document</span>
+                </button>
+              ) : (
+                <span className="text-2xs text-slate-400 bg-slate-50 border border-slate-200/80 px-2.5 py-1.5 rounded-lg">
+                  Read-only: Only Project Lead can request files
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* METRICS MINI-STRIP */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Total Requested</p>
+              <p className="text-lg font-bold text-slate-900 mt-0.5">{fileRequests.length}</p>
+            </div>
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-600">Awaiting Upload</p>
+              <p className="text-lg font-bold text-amber-700 mt-0.5">
+                {fileRequests.filter((r) => r.status === "pending").length}
+              </p>
+            </div>
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-blue-600">Ready for Review</p>
+              <p className="text-lg font-bold text-blue-700 mt-0.5">
+                {fileRequests.filter((r) => r.status === "submitted").length}
+              </p>
+            </div>
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-600">Approved & Verified</p>
+              <p className="text-lg font-bold text-emerald-700 mt-0.5">
+                {fileRequests.filter((r) => r.status === "approved").length}
+              </p>
+            </div>
+          </div>
+
+          {/* REQUESTS LIST */}
+          {fileRequests.length === 0 ? (
+            <div className="bg-white p-12 rounded-2xl border border-slate-200/80 shadow-2xs text-center max-w-lg mx-auto space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
+                <FileText className="w-6 h-6" />
+              </div>
+              <h4 className="text-sm font-bold text-slate-900">No Document Requests Yet</h4>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Need assets, credentials, or signed agreements from the client? Use the request button to create a dedicated upload checkpoint.
+              </p>
+              {canManageFiles && (
+                <button
+                  type="button"
+                  onClick={() => setIsDocModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Create First Document Request</span>
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {fileRequests.map((req) => {
+                const isSubmitted = req.status === "submitted";
+                const isApproved = req.status === "approved";
+                const isRejected = req.status === "rejected";
+                const isPending = req.status === "pending";
+
+                return (
+                  <div
+                    key={req.id}
+                    className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-4 hover:border-slate-300 transition"
+                  >
+                    {/* Top Row: Title, Priority, Status Badges */}
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className={`text-3xs font-extrabold uppercase px-2 py-0.5 rounded-md border ${
+                              req.priority === "urgent"
+                                ? "bg-rose-50 text-rose-700 border-rose-200"
+                                : req.priority === "high"
+                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                : "bg-slate-100 text-slate-700 border-slate-200"
+                            }`}
+                          >
+                            {req.priority} Priority
+                          </span>
+
+                          <span
+                            className={`text-3xs font-extrabold uppercase px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${
+                              isApproved
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : isSubmitted
+                                ? "bg-blue-50 text-blue-700 border-blue-200"
+                                : isRejected
+                                ? "bg-rose-50 text-rose-700 border-rose-200"
+                                : "bg-amber-50 text-amber-700 border-amber-200"
+                            }`}
+                          >
+                            {isApproved && <CheckCircle className="w-3 h-3" />}
+                            {isSubmitted && <UploadCloud className="w-3 h-3" />}
+                            {isRejected && <AlertTriangle className="w-3 h-3" />}
+                            {isPending && <Clock className="w-3 h-3" />}
+                            <span>
+                              {isApproved
+                                ? "Approved & Verified"
+                                : isSubmitted
+                                ? "Uploaded • Ready for Review"
+                                : isRejected
+                                ? "Revision Requested"
+                                : "Awaiting Client Upload"}
+                            </span>
+                          </span>
+                        </div>
+
+                        <h4 className="text-sm font-bold text-slate-900 mt-1">{req.title}</h4>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {canManageFiles && isPending && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteDocRequest(req.id)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                            title="Cancel Request"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Description / Instructions */}
+                    {req.description && (
+                      <p className="text-xs text-slate-600 leading-relaxed bg-slate-50/70 p-3 rounded-xl border border-slate-100">
+                        {req.description}
+                      </p>
+                    )}
+
+                    {/* Metadata strip: Allowed formats & Due date */}
+                    <div className="flex items-center gap-4 text-2xs text-slate-500 flex-wrap">
+                      {req.file_type_allowed && (
+                        <div>
+                          <span className="font-semibold text-slate-700">Format:</span>{" "}
+                          <span className="font-mono text-slate-600">{req.file_type_allowed}</span>
+                        </div>
+                      )}
+                      {req.due_date && (
+                        <div>
+                          <span className="font-semibold text-slate-700">Due:</span>{" "}
+                          <span>
+                            {new Date(req.due_date).toLocaleDateString("en-IN", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </span>
+                        </div>
+                      )}
+                      {req.created_at && (
+                        <div className="text-slate-400">
+                          Requested: {new Date(req.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Uploaded File Box (if submitted/approved) */}
+                    {req.file_name && (
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+                            <FileCheck2 className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-900 truncate">{req.file_name}</p>
+                            <p className="text-3xs text-slate-500">
+                              {req.file_size ? `${(req.file_size / 1024).toFixed(1)} KB` : "Uploaded Document"} •{" "}
+                              {req.uploaded_at
+                                ? new Date(req.uploaded_at).toLocaleString("en-IN", {
+                                    month: "short",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })
+                                : "Recent"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadDoc(req)}
+                          disabled={downloadingFileId === req.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 font-semibold text-xs shadow-2xs transition cursor-pointer shrink-0"
+                        >
+                          {downloadingFileId === req.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
+                          ) : (
+                            <Download className="w-3.5 h-3.5 text-blue-600" />
+                          )}
+                          <span>Download</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Review Notes (Revision feedback if present) */}
+                    {req.review_notes && (
+                      <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200/80 text-xs text-amber-900 space-y-1">
+                        <p className="font-bold text-2xs uppercase tracking-wider text-amber-800">
+                          PM Review Notes:
+                        </p>
+                        <p className="leading-relaxed">{req.review_notes}</p>
+                      </div>
+                    )}
+
+                    {/* PM Action Bar */}
+                    {canManageFiles && (isSubmitted || isRejected) && (
+                      <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenReview(req, "rejected")}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition cursor-pointer"
+                        >
+                          Request Revision
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenReview(req, "approved")}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-2xs transition cursor-pointer"
+                        >
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          <span>Approve Document</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* MODAL: CREATE / EDIT TASK */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
@@ -961,6 +1470,227 @@ function ProjectWorkspaceContent({ projectId }: { projectId: string }) {
                 >
                   {savingTask && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   <span>{editingTask ? "Update Task" : "Create Task"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: REQUEST DOCUMENT FROM CLIENT */}
+      {isDocModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full border border-slate-200 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">Request Document from Client</h3>
+                  <p className="text-2xs text-slate-400">
+                    Project: <strong className="text-slate-700">{project.name}</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsDocModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateDocRequest} className="p-5 space-y-4">
+              <div>
+                <label className="block text-2xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                  Document Title <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g., Signed Statement of Work, Brand Identity Vector (SVG)"
+                  value={docFormData.title}
+                  onChange={(e) => setDocFormData({ ...docFormData, title: e.target.value })}
+                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-2xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                  Instructions & Requirements
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Explain exactly what file, resolution, or format is required..."
+                  value={docFormData.description}
+                  onChange={(e) => setDocFormData({ ...docFormData, description: e.target.value })}
+                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-2xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                    Priority
+                  </label>
+                  <select
+                    value={docFormData.priority}
+                    onChange={(e) =>
+                      setDocFormData({ ...docFormData, priority: e.target.value as "normal" | "high" | "urgent" })
+                    }
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white font-medium"
+                  >
+                    <option value="normal">Normal</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-2xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                    Allowed Format(s)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., PDF, PNG, JPG, ZIP"
+                    value={docFormData.file_type_allowed}
+                    onChange={(e) => setDocFormData({ ...docFormData, file_type_allowed: e.target.value })}
+                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-2xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                  Target Due Date
+                </label>
+                <input
+                  type="date"
+                  value={docFormData.due_date}
+                  onChange={(e) => setDocFormData({ ...docFormData, due_date: e.target.value })}
+                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsDocModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingDocRequest}
+                  className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition disabled:opacity-60 cursor-pointer"
+                >
+                  {savingDocRequest && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>Send Request to Client</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: PM DOCUMENT REVIEW / REVISION */}
+      {reviewModal.isOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full border border-slate-200 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                    reviewModal.status === "approved"
+                      ? "bg-emerald-50 text-emerald-600"
+                      : "bg-amber-50 text-amber-600"
+                  }`}
+                >
+                  {reviewModal.status === "approved" ? (
+                    <CheckCircle className="w-4 h-4" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">
+                    {reviewModal.status === "approved"
+                      ? "Approve Client Document"
+                      : "Request Document Revision"}
+                  </h3>
+                  <p className="text-2xs text-slate-400 truncate max-w-xs">{reviewModal.requestTitle}</p>
+                </div>
+              </div>
+              <button
+                onClick={() =>
+                  setReviewModal({
+                    isOpen: false,
+                    requestId: null,
+                    status: "approved",
+                    review_notes: "",
+                    requestTitle: "",
+                  })
+                }
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitReview} className="p-5 space-y-4">
+              <div>
+                <label className="block text-2xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                  {reviewModal.status === "approved"
+                    ? "Approval Remarks (Optional)"
+                    : "Revision Notes & Missing Items *"}
+                </label>
+                <textarea
+                  rows={4}
+                  required={reviewModal.status === "rejected"}
+                  placeholder={
+                    reviewModal.status === "approved"
+                      ? "e.g., Verified vector format and dimensions. Accepted."
+                      : "e.g., The uploaded PDF is missing the signature on page 3. Please re-upload with all signatures."
+                  }
+                  value={reviewModal.review_notes}
+                  onChange={(e) =>
+                    setReviewModal({ ...reviewModal, review_notes: e.target.value })
+                  }
+                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setReviewModal({
+                      isOpen: false,
+                      requestId: null,
+                      status: "approved",
+                      review_notes: "",
+                      requestTitle: "",
+                    })
+                  }
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingReview}
+                  className={`inline-flex items-center gap-2 px-5 py-2 rounded-xl text-white font-semibold text-xs shadow-xs transition disabled:opacity-60 cursor-pointer ${
+                    reviewModal.status === "approved"
+                      ? "bg-emerald-600 hover:bg-emerald-700"
+                      : "bg-amber-600 hover:bg-amber-700"
+                  }`}
+                >
+                  {savingReview && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>
+                    {reviewModal.status === "approved" ? "Approve Document" : "Send Revision Request"}
+                  </span>
                 </button>
               </div>
             </form>

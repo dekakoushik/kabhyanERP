@@ -254,6 +254,26 @@ export interface ProjectDeliverable {
   due_date?: string;
 }
 
+export interface ProjectFileRequest {
+  id: number;
+  project_id: number;
+  client_id: number;
+  requested_by: number;
+  title: string;
+  description?: string | null;
+  file_type_allowed?: string;
+  due_date?: string | null;
+  priority: "normal" | "high" | "urgent";
+  status: "pending" | "submitted" | "approved" | "rejected";
+  file_path?: string | null;
+  file_name?: string | null;
+  file_size?: number | null;
+  mime_type?: string | null;
+  uploaded_at?: string | null;
+  review_notes?: string | null;
+  created_at?: string;
+}
+
 export interface Project {
   id: number;
   name: string;
@@ -263,7 +283,9 @@ export interface Project {
   progress?: number;
   start_date?: string;
   deadline?: string;
+  show_tasks_to_client?: boolean;
   deliverables?: ProjectDeliverable[];
+  file_requests?: ProjectFileRequest[];
 }
 
 export interface TicketMessage {
@@ -388,7 +410,19 @@ export const portalApi = {
   getProjects: () => apiClient<{ projects: Project[] }>("/portal/projects"),
 
   getProject: (id: number | string) =>
-    apiClient<{ project: Project }>(`/portal/projects/${id}`),
+    apiClient<{ project: Project; show_tasks_to_client?: boolean; file_requests?: ProjectFileRequest[] }>(`/portal/projects/${id}`),
+
+  getProjectFileRequests: (projectId: number | string) =>
+    apiClient<{ file_requests: ProjectFileRequest[] }>(`/portal/projects/${projectId}/file-requests`),
+
+  uploadFileRequest: (projectId: number | string, requestId: number | string, formData: FormData) =>
+    apiClient<{ message: string; file_request: ProjectFileRequest }>(
+      `/portal/projects/${projectId}/file-requests/${requestId}/upload`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    ),
 
   // Support Tickets
   getTickets: (status?: string) =>

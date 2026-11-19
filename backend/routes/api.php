@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\PdfController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ProformaInvoiceController;
 use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\ProjectFileRequestController;
 use App\Http\Controllers\Api\ReceiptVoucherController;
 use App\Http\Controllers\Api\RefundVoucherController;
 use App\Http\Controllers\Api\ReportController;
@@ -80,6 +81,9 @@ Route::prefix('v1')->group(function () {
             Route::get('documents', [ClientPortalController::class, 'commercialDocuments']);
             Route::get('projects', [ClientPortalController::class, 'projects']);
             Route::get('projects/{project}', [ClientPortalController::class, 'showProject']);
+            Route::get('projects/{project}/file-requests', [ClientPortalController::class, 'fileRequests']);
+            Route::post('projects/{project}/file-requests/{fileRequest}/upload', [ClientPortalController::class, 'uploadFileRequest']);
+            Route::get('projects/{project}/file-requests/{fileRequest}/download', [ClientPortalController::class, 'downloadFileRequest']);
             Route::get('invoices', [ClientPortalController::class, 'invoices']);
             Route::get('invoices/{invoice}', [ClientPortalController::class, 'showInvoice']);
             Route::get('invoices/{invoice}/pdf', [ClientPortalController::class, 'downloadInvoicePdfDirect']);
@@ -131,7 +135,13 @@ Route::prefix('v1')->group(function () {
                 Route::get('permissions', [PermissionController::class, 'index']);
             });
 
-            // Project Management Module
+            // Project Management Module & Client Document Requests
+            Route::get('projects/{project}/file-requests', [ProjectFileRequestController::class, 'index']);
+            Route::post('projects/{project}/file-requests', [ProjectFileRequestController::class, 'store']);
+            Route::patch('projects/{project}/file-requests/{fileRequest}/review', [ProjectFileRequestController::class, 'review']);
+            Route::get('projects/{project}/file-requests/{fileRequest}/download', [ProjectFileRequestController::class, 'download']);
+            Route::delete('projects/{project}/file-requests/{fileRequest}', [ProjectFileRequestController::class, 'destroy']);
+            Route::patch('projects/{project}/client-visibility', [ProjectFileRequestController::class, 'updateClientVisibility']);
             Route::apiResource('projects', ProjectController::class);
 
             // Task Management Module

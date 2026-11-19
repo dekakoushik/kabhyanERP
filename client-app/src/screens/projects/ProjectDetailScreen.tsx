@@ -6,12 +6,14 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  TouchableOpacity,
+  Linking,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../theme/colors";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
-import { portalApi, Project } from "../../api/portal";
+import { portalApi, Project, ProjectFileRequest } from "../../api/portal";
 import { formatDate } from "../../utils/date";
 
 export const ProjectDetailScreen: React.FC<{ route: any }> = ({ route }) => {
@@ -44,6 +46,15 @@ export const ProjectDetailScreen: React.FC<{ route: any }> = ({ route }) => {
   }
 
   const deliverables = project.deliverables || [];
+  const fileRequests: ProjectFileRequest[] = (project as any).file_requests || [];
+  const showTasks = project.show_tasks_to_client !== false;
+
+  const handleOpenUploadPortal = () => {
+    const url = `https://erp.kabhyan.com/portal/projects/${project.id}`;
+    Linking.openURL(url).catch(() => {
+      Alert.alert("Portal", `Please visit ${url} in your browser to upload documents.`);
+    });
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -70,58 +81,166 @@ export const ProjectDetailScreen: React.FC<{ route: any }> = ({ route }) => {
         </View>
       </Card>
 
+      {/* SECTION 1: REQUESTED DOCUMENTS */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Deliverables</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <Text style={styles.sectionTitle}>Requested Documents</Text>
+          {fileRequests.length > 0 && (
+            <Badge label={`${fileRequests.length}`} variant="neutral" />
+          )}
+        </View>
       </View>
 
-      {deliverables.length === 0 ? (
+      {fileRequests.length === 0 ? (
         <Card style={styles.emptyCard}>
-          <Ionicons name="checkmark-done-circle-outline" size={32} color={colors.textMuted} />
-          <Text style={styles.emptyTitle}>No deliverables yet</Text>
+          <Ionicons name="document-text-outline" size={30} color={colors.textMuted} />
+          <Text style={styles.emptyTitle}>No documents requested</Text>
           <Text style={styles.emptySub}>
-            Project deliverables will appear here.
+            Your project lead has not requested any additional files or documents.
           </Text>
         </Card>
       ) : (
-        deliverables.map((item, idx) => (
-          <Card key={item.id || idx} style={styles.deliverableCard}>
-            <View style={styles.deliverableRow}>
-              <Ionicons
-                name={
-                  item.status === "completed"
-                    ? "checkmark-circle"
-                    : item.status === "in_progress"
-                    ? "sync-circle-outline"
-                    : "ellipse-outline"
-                }
-                size={20}
-                color={
-                  item.status === "completed"
-                    ? colors.success
-                    : item.status === "in_progress"
-                    ? colors.primary
-                    : colors.textMuted
-                }
-              />
-              <View style={{ flex: 1, marginLeft: 10 }}>
-                <Text style={styles.deliverableTitle}>{item.title}</Text>
-                {item.due_date && (
-                  <Text style={styles.deliverableDate}>Target: {item.due_date}</Text>
-                )}
+        fileRequests.map((req) => {
+          const isApproved = req.status === "approved";
+          const isSubmitted = req.status === "submitted";
+          const isRejected = req.status === "rejected";
+
+          return (
+            <Card key={req.id} style={styles.docCard}>
+              <View style={styles.docTopRow}>
+                <View style={{ flex: 1, marginRight: 8 }}>
+                  <Text style={styles.docTitle}>{req.title}</Text>
+                  {req.due_date && (
+                    <Text style={styles.docDueText}>Due: {formatDate(req.due_date)}</Text>
+                  )}
+                </View>
+                <Badge
+                  label={
+                    isApproved
+                      ? "Approved"
+                      : isSubmitted
+                      ? "In Review"
+                      : isRejected
+                      ? "Revision Needed"
+                      : "Awaiting Upload"
+                  }
+                  variant={
+                    isApproved
+                      ? "success"
+                      : isSubmitted
+                      ? "info"
+                      : isRejected
+                      ? "danger"
+                      : "warning"
+                  }
+                />
               </View>
-              <Badge
-                label={(item.status || "pending").replace("_", " ")}
-                variant={
-                  item.status === "completed"
-                    ? "success"
-                    : item.status === "in_progress"
-                    ? "info"
-                    : "neutral"
-                }
-              />
-            </View>
+
+              {req.description && (
+                <Text style={styles.docDesc}>{req.description}</Text>
+              )}
+
+              {req.file_type_allowed && (
+                <Text style={styles.docFormat}>
+                  Format: {req.file_type_allowed}
+                </Text>
+              )}
+
+              {req.review_notes && isRejected && (
+                <View style={styles.revisionBox}>
+                  <Text style={styles.revisionTitle}>Revision Notes:</Text>
+                  <Text style={styles.revisionText}>{req.review_notes}</Text>
+                </View>
+              )}
+
+              {req.file_name && (
+                <View style={styles.uploadedFileRow}>
+                  <Ionicons name="attach" size={16} color={colors.primary} />
+                  <Text style={styles.uploadedFileName} numberOfLines={1}>
+                    {req.file_name}
+                  </Text>
+                </View>
+              )}
+
+              {!isApproved && (
+                <TouchableOpacity
+                  style={styles.uploadBtn}
+                  activeOpacity={0.8}
+                  onPress={handleOpenUploadPortal}
+                >
+                  <Ionicons name="cloud-upload-outline" size={15} color="#fff" />
+                  <Text style={styles.uploadBtnText}>
+                    {req.file_name ? "Re-upload File via Portal" : "Upload File via Portal"}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </Card>
+          );
+        })
+      )}
+
+      {/* SECTION 2: DELIVERABLES */}
+      <View style={[styles.sectionHeader, { marginTop: 16 }]}>
+        <Text style={styles.sectionTitle}>Deliverables</Text>
+      </View>
+
+      {showTasks ? (
+        deliverables.length === 0 ? (
+          <Card style={styles.emptyCard}>
+            <Ionicons name="checkmark-done-circle-outline" size={32} color={colors.textMuted} />
+            <Text style={styles.emptyTitle}>No deliverables yet</Text>
+            <Text style={styles.emptySub}>
+              Project deliverables will appear here.
+            </Text>
           </Card>
-        ))
+        ) : (
+          deliverables.map((item, idx) => (
+            <Card key={item.id || idx} style={styles.deliverableCard}>
+              <View style={styles.deliverableRow}>
+                <Ionicons
+                  name={
+                    item.status === "completed"
+                      ? "checkmark-circle"
+                      : item.status === "in_progress"
+                      ? "sync-circle-outline"
+                      : "ellipse-outline"
+                  }
+                  size={20}
+                  color={
+                    item.status === "completed"
+                      ? colors.success
+                      : item.status === "in_progress"
+                      ? colors.primary
+                      : colors.textMuted
+                  }
+                />
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={styles.deliverableTitle}>{item.title}</Text>
+                  {item.due_date && (
+                    <Text style={styles.deliverableDate}>Target: {item.due_date}</Text>
+                  )}
+                </View>
+                <Badge
+                  label={(item.status || "pending").replace("_", " ")}
+                  variant={
+                    item.status === "completed"
+                      ? "success"
+                      : item.status === "in_progress"
+                      ? "info"
+                      : "neutral"
+                  }
+                />
+              </View>
+            </Card>
+          ))
+        )
+      ) : (
+        <Card style={styles.internalCoordCard}>
+          <Ionicons name="information-circle-outline" size={24} color={colors.textSecondary} />
+          <Text style={styles.internalCoordText}>
+            Sprint tasks and technical engineering milestones are managed internally by the project lead. Check requested documents above for deliverable handoffs.
+          </Text>
+        </Card>
       )}
     </ScrollView>
   );
@@ -225,7 +344,9 @@ const styles = StyleSheet.create({
   emptyCard: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 32,
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    marginBottom: 8,
   },
   emptyTitle: {
     fontSize: 14,
@@ -238,6 +359,101 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: "center",
     marginTop: 4,
-    maxWidth: 260,
+    maxWidth: 280,
+  },
+  docCard: {
+    marginBottom: 10,
+    padding: 14,
+  },
+  docTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 6,
+  },
+  docTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.text,
+  },
+  docDueText: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  docDesc: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    lineHeight: 17,
+    marginTop: 4,
+    marginBottom: 6,
+  },
+  docFormat: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontFamily: "monospace",
+    marginBottom: 8,
+  },
+  revisionBox: {
+    backgroundColor: "#fef2f2",
+    borderRadius: 8,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#fecaca",
+    marginBottom: 10,
+  },
+  revisionTitle: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#b91c1c",
+    marginBottom: 2,
+  },
+  revisionText: {
+    fontSize: 12,
+    color: "#7f1d1d",
+  },
+  uploadedFileRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f8fafc",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 8,
+    gap: 6,
+  },
+  uploadedFileName: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.text,
+    flex: 1,
+  },
+  uploadBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.primary,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    marginTop: 4,
+    gap: 6,
+  },
+  uploadBtnText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  internalCoordCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+    gap: 12,
+  },
+  internalCoordText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    flex: 1,
+    lineHeight: 17,
   },
 });

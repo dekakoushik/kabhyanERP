@@ -10,6 +10,7 @@ use App\Models\Invoice;
 use App\Models\ProformaInvoice;
 use App\Models\ReceiptVoucher;
 use App\Models\Project;
+use App\Models\ProjectFileRequest;
 use App\Models\Ticket;
 use App\Models\TicketReply;
 use App\Services\DocumentNumberService;
@@ -17,6 +18,7 @@ use App\Services\MailNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 
 class ClientPortalController extends Controller
@@ -198,8 +200,18 @@ class ClientPortalController extends Controller
     {
         $client = $this->getClient($request);
         $projects = Project::where('client_id', $client->id)
-            ->with(['manager', 'tasks'])
-            ->get();
+            ->with(['manager', 'fileRequests'])
+            ->get()
+            ->map(function ($proj) {
+                if ($proj->show_tasks_to_client) {
+                    $proj->load('tasks');
+                    $proj->setAttribute('deliverables', $proj->tasks);
+                } else {
+                    $proj->setRelation('tasks', collect([]));
+                    $proj->setAttribute('deliverables', []);
+                }
+                return $proj;
+            });
 
         return response()->json(['projects' => $projects]);
     }
@@ -214,7 +226,17 @@ class ClientPortalController extends Controller
             abort(403, 'Unauthorized access to this project.');
         }
 
-        $project->load(['manager', 'tasks', 'members']);
+        $project->load(['manager', 'members', 'fileRequests' => function ($q) {
+            $q->orderBy('created_at', 'desc');
+        }]);
+
+        if ($project->show_tasks_to_client) {
+            $project->load('tasks');
+            $project->setAttribute('deliverables', $project->tasks);
+        } else {
+            $project->setRelation('tasks', collect([]));
+            $project->setAttribute('deliverables', []);
+        }
 
         $tickets = Ticket::where('client_id', $client->id)
             ->where('project_id', $project->id)
@@ -224,7 +246,99 @@ class ClientPortalController extends Controller
         return response()->json([
             'project' => $project,
             'tickets' => $tickets,
+            'show_tasks_to_client' => (bool)$project->show_tasks_to_client,
+            'file_requests' => $project->fileRequests,
         ]);
+    }
+
+    /**
+     * List file requests for a project in the client portal.
+     */
+    public function fileRequests(Request $request, Project $project)
+    {
+        $client = $this->getClient($request);
+        if ((int)$project->client_id !== (int)$client->id) {
+            abort(403, 'Unauthorized access to this project.');
+        }
+
+        $fileRequests = $project->fileRequests()
+            ->with('requester:id,name')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'file_requests' => $fileRequests,
+        ]);
+    }
+
+    /**
+     * Upload a requested file/document by client.
+     */
+    public function uploadFileRequest(Request $request, Project $project, ProjectFileRequest $fileRequest)
+    {
+        $client = $this->getClient($request);
+        if ((int)$project->client_id !== (int)$client->id) {
+            abort(403, 'Unauthorized access to this project.');
+        }
+
+        if ((int)$fileRequest->project_id !== (int)$project->id) {
+            abort(404, 'File request not found.');
+        }
+
+        $request->validate([
+            'file' => 'required|file|max:25600', // max 25MB
+        ]);
+
+        $file = $request->file('file');
+        $originalName = $file->getClientOriginalName();
+        $mimeType = $file->getClientMimeType();
+        $fileSize = $file->getSize();
+
+        // Delete previous uploaded file if re-uploading
+        if ($fileRequest->file_path && Storage::disk('public')->exists($fileRequest->file_path)) {
+            Storage::disk('public')->delete($fileRequest->file_path);
+        }
+
+        $path = $file->store("projects/{$project->id}/client-documents", 'public');
+
+        $fileRequest->update([
+            'file_path' => $path,
+            'file_name' => $originalName,
+            'file_size' => $fileSize,
+            'mime_type' => $mimeType,
+            'status' => 'submitted',
+            'uploaded_at' => now(),
+            'review_notes' => null,
+        ]);
+
+        return response()->json([
+            'message' => 'File uploaded and submitted for Project Manager review successfully.',
+            'file_request' => $fileRequest->fresh(['requester:id,name']),
+        ]);
+    }
+
+    /**
+     * Download client file request document.
+     */
+    public function downloadFileRequest(Request $request, Project $project, ProjectFileRequest $fileRequest)
+    {
+        $client = $this->getClient($request);
+        if ((int)$project->client_id !== (int)$client->id) {
+            abort(403, 'Unauthorized access to this project.');
+        }
+
+        if ((int)$fileRequest->project_id !== (int)$project->id) {
+            abort(404, 'File request not found.');
+        }
+
+        if (!$fileRequest->file_path || !Storage::disk('public')->exists($fileRequest->file_path)) {
+            abort(404, 'File does not exist or has been removed.');
+        }
+
+        $fullPath = Storage::disk('public')->path($fileRequest->file_path);
+        $fileName = $fileRequest->file_name ?: basename($fullPath);
+
+        return response()->download($fullPath, $fileName);
     }
 
     /**
