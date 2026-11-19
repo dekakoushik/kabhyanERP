@@ -191,7 +191,7 @@ class ProjectFileRequestController extends Controller
     }
 
     /**
-     * Download the submitted document file.
+     * Download the submitted document file with security response headers.
      */
     public function download(Project $project, ProjectFileRequest $fileRequest)
     {
@@ -206,7 +206,14 @@ class ProjectFileRequestController extends Controller
         $fullPath = Storage::disk('public')->path($fileRequest->file_path);
         $fileName = $fileRequest->file_name ?: basename($fullPath);
 
-        return response()->download($fullPath, $fileName);
+        $headers = [
+            'Content-Type' => $fileRequest->mime_type ?: 'application/octet-stream',
+            'X-Content-Type-Options' => 'nosniff',
+            'X-Download-Options' => 'noopen',
+            'Content-Security-Policy' => "default-src 'none'; sandbox",
+        ];
+
+        return response()->download($fullPath, $fileName, $headers);
     }
 
     /**

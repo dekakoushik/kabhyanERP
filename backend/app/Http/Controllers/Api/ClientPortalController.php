@@ -14,6 +14,7 @@ use App\Models\ProjectFileRequest;
 use App\Models\Ticket;
 use App\Models\TicketReply;
 use App\Services\DocumentNumberService;
+use App\Services\FileSanitizerService;
 use App\Services\MailNotificationService;
 use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
@@ -291,22 +292,25 @@ class ClientPortalController extends Controller
         ]);
 
         $file = $request->file('file');
-        $originalName = $file->getClientOriginalName();
-        $mimeType = $file->getClientMimeType();
-        $fileSize = $file->getSize();
+
+        // Multi-layer sanitization, binary inspection, and malware scanning
+        $sanitizer = app(FileSanitizerService::class);
+        $sanitized = $sanitizer->sanitizeAndValidate($file, $fileRequest->file_type_allowed);
 
         // Delete previous uploaded file if re-uploading
         if ($fileRequest->file_path && Storage::disk('public')->exists($fileRequest->file_path)) {
             Storage::disk('public')->delete($fileRequest->file_path);
         }
 
-        $path = $file->store("projects/{$project->id}/client-documents", 'public');
+        // Store file with safe cryptographically random filename on disk
+        $directory = "projects/{$project->id}/client-documents";
+        $path = $file->storeAs($directory, $sanitized['safe_stored_filename'], 'public');
 
         $fileRequest->update([
             'file_path' => $path,
-            'file_name' => $originalName,
-            'file_size' => $fileSize,
-            'mime_type' => $mimeType,
+            'file_name' => $sanitized['sanitized_original_name'],
+            'file_size' => $sanitized['file_size'],
+            'mime_type' => $sanitized['verified_mime_type'],
             'status' => 'submitted',
             'uploaded_at' => now(),
             'review_notes' => null,
@@ -339,7 +343,7 @@ class ClientPortalController extends Controller
     }
 
     /**
-     * Download client file request document.
+     * Download client file request document with security response headers.
      */
     public function downloadFileRequest(Request $request, Project $project, ProjectFileRequest $fileRequest)
     {
@@ -359,7 +363,14 @@ class ClientPortalController extends Controller
         $fullPath = Storage::disk('public')->path($fileRequest->file_path);
         $fileName = $fileRequest->file_name ?: basename($fullPath);
 
-        return response()->download($fullPath, $fileName);
+        $headers = [
+            'Content-Type' => $fileRequest->mime_type ?: 'application/octet-stream',
+            'X-Content-Type-Options' => 'nosniff',
+            'X-Download-Options' => 'noopen',
+            'Content-Security-Policy' => "default-src 'none'; sandbox",
+        ];
+
+        return response()->download($fullPath, $fileName, $headers);
     }
 
     /**
