@@ -1,28 +1,24 @@
 {
-    # Global options
-    frankenphp
-    order php_server before file_server
+	auto_https off
+	frankenphp
+	order php_server before file_server
 }
 
 :80 {
-    root * /var/www/html/public
-    encode zstd gzip
+	root * /var/www/html/public
+	encode zstd gzip
 
-    # Execute PHP files with FrankenPHP
-    php_server
+	php_server
 
-    # Allow client to upload documents up to 64MB
-    request_body {
-        max_size 64MB
-    }
+	request_body {
+		max_size 64MB
+	}
 
-    # Security headers
-    header {
-        X-Content-Type-Options nosniff
-        X-Frame-Options DENY
-        Referrer-Policy strict-origin-when-cross-origin
-    }
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+	}
 
-    # Serve static assets directly
-    file_server
+	file_server
 }
