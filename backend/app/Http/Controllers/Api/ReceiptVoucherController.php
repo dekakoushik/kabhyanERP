@@ -193,4 +193,39 @@ class ReceiptVoucherController extends Controller
 
         return response()->json(['receipt_voucher' => $receiptVoucher]);
     }
+
+    /**
+     * Delete a Receipt Voucher.
+     * Only unadjusted vouchers with zero invoice adjustments and zero refund vouchers can be deleted.
+     */
+    public function destroy(ReceiptVoucher $receiptVoucher): JsonResponse
+    {
+        // 1. Guard against vouchers adjusted against Tax Invoices
+        if ($receiptVoucher->adjustments()->exists() || (float) $receiptVoucher->adjusted_amount > 0) {
+            return response()->json([
+                'message' => 'Cannot delete this Receipt Voucher because an advance of ₹' . number_format($receiptVoucher->adjusted_amount, 2) . ' has already been adjusted against Tax Invoice(s). Please remove the invoice adjustment first.',
+            ], 422);
+        }
+
+        // 2. Guard against vouchers with Refund Vouchers issued
+        if ($receiptVoucher->refundVouchers()->exists()) {
+            return response()->json([
+                'message' => 'Cannot delete this Receipt Voucher because a statutory Refund Voucher has already been issued against it.',
+            ], 422);
+        }
+
+        // 3. Execute soft delete and re-sync linked proforma totals if applicable
+        DB::transaction(function () use ($receiptVoucher) {
+            $proforma = $receiptVoucher->proformaInvoice;
+            $receiptVoucher->delete();
+
+            if ($proforma) {
+                $proforma->syncInvoicedTotals();
+            }
+        });
+
+        return response()->json([
+            'message' => 'Receipt Voucher ' . $receiptVoucher->voucher_number . ' successfully deleted.',
+        ]);
+    }
 }

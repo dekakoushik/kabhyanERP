@@ -156,7 +156,7 @@ Route::prefix('v1')->group(function () {
 
             // Statutory GST Receipt & Refund Vouchers (Rule 50 & 51)
             Route::get('receipt-vouchers/{id}/pdf', [PdfController::class, 'downloadReceiptVoucher']);
-            Route::apiResource('receipt-vouchers', ReceiptVoucherController::class)->only(['index', 'store', 'show']);
+            Route::apiResource('receipt-vouchers', ReceiptVoucherController::class)->only(['index', 'store', 'show', 'destroy']);
             Route::post('refund-vouchers', [RefundVoucherController::class, 'store']);
 
             // Proforma Invoice Generation & Conversion
