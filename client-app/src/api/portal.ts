@@ -446,8 +446,24 @@ export const portalApi = {
 
         if (response.ok) {
           return (await response.json()) as { message: string; file_request: ProjectFileRequest };
+        } else {
+          const errJson = await response.json().catch(() => ({}));
+          const errMsg =
+            errJson.message ||
+            (errJson.errors ? Object.values(errJson.errors).flat().join(" ") : null) ||
+            `Upload failed (Status ${response.status})`;
+          throw new Error(errMsg);
         }
-      } catch (err) {
+      } catch (err: any) {
+        // If the server deliberately rejected the request (validation/permissions), throw immediately
+        if (
+          err.message &&
+          !err.message.includes("Network request failed") &&
+          !err.message.includes("Unsupported FormDataPart") &&
+          !err.message.includes("Failed to fetch")
+        ) {
+          throw err;
+        }
         logger.warn("[Upload] Blob fetch upload failed, falling back to native XHR:", err);
       }
 

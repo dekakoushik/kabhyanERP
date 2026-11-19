@@ -302,8 +302,13 @@ class ClientPortalController extends Controller
             Storage::disk('public')->delete($fileRequest->file_path);
         }
 
-        // Store file with safe cryptographically random filename on disk
+        // Ensure destination storage directory exists with proper write permissions
         $directory = "projects/{$project->id}/client-documents";
+        $absoluteDirPath = Storage::disk('public')->path($directory);
+        if (!file_exists($absoluteDirPath)) {
+            @mkdir($absoluteDirPath, 0775, true);
+        }
+
         $path = $file->storeAs($directory, $sanitized['safe_stored_filename'], 'public');
 
         $fileRequest->update([

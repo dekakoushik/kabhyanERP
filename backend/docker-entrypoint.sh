@@ -15,7 +15,18 @@ if [ -n "$DB_HOST" ]; then
     done
 fi
 
-# 2. Ensure storage link
+# 2. Self-Healing Storage Permissions & Directory Structure (Dokploy / Coolify Volume Mounts)
+echo "[Kabhyan ERP] Initializing storage directories & permissions..."
+mkdir -p /var/www/html/storage/app/public \
+         /var/www/html/storage/framework/cache/data \
+         /var/www/html/storage/framework/sessions \
+         /var/www/html/storage/framework/views \
+         /var/www/html/storage/logs \
+         /var/www/html/bootstrap/cache
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
+# 3. Ensure storage link
 php artisan storage:link --force || true
 
 # 3. Auto-run database migrations with force
@@ -31,6 +42,10 @@ echo "[Kabhyan ERP] Optimizing configuration..."
 php artisan optimize:clear || true
 php artisan config:cache || true
 php artisan route:cache || true
+
+# 6. Final ownership enforcement so www-data owns all artisan-generated caches & storage
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 echo "[Kabhyan ERP] Automated startup complete. Launching Apache..."
 exec apache2-foreground
