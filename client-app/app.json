@@ -7,11 +7,6 @@
     "icon": "./assets/icon.png",
     "scheme": "kabhyanconnect",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash-logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.kabhyan.kconnect"
