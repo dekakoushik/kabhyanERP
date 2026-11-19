@@ -6,6 +6,7 @@ import {
   ScrollView,
   Alert,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../theme/colors";
@@ -15,10 +16,13 @@ import { Button } from "../../components/Button";
 import { portalApi, ClientProfile } from "../../api/portal";
 import { useAuth } from "../../context/AuthContext";
 import { logger } from "../../utils/logger";
+import { getUpdateMetadata, checkAppUpdate } from "../../utils/updates";
 
 export const ProfileScreen: React.FC = () => {
   const { user, logout } = useAuth();
   const [profile, setProfile] = useState<ClientProfile | null>(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const updateMeta = getUpdateMetadata();
 
   useEffect(() => {
     async function load() {
@@ -33,6 +37,15 @@ export const ProfileScreen: React.FC = () => {
     }
     load();
   }, []);
+
+  const handleCheckUpdate = async () => {
+    try {
+      setCheckingUpdate(true);
+      await checkAppUpdate(true);
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert("Log Out", "Are you sure you want to sign out of the client portal?", [
@@ -115,6 +128,53 @@ export const ProfileScreen: React.FC = () => {
         </View>
       </Card>
 
+      {/* Over-The-Air (OTA) Updates & App Release Section */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>App & System Updates</Text>
+      </View>
+
+      <Card style={styles.updatesCard}>
+        <View style={styles.row}>
+          <Text style={styles.label}>Installed Version</Text>
+          <Text style={styles.value}>v{updateMeta.runtimeVersion}</Text>
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.row}>
+          <Text style={styles.label}>Release Channel</Text>
+          <Text style={[styles.value, styles.mono]}>{updateMeta.channel}</Text>
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.row}>
+          <Text style={styles.label}>OTA Delivery Engine</Text>
+          <View style={styles.otaStatusPill}>
+            <View style={[styles.otaStatusDot, { backgroundColor: colors.success }]} />
+            <Text style={styles.otaStatusText}>
+              {updateMeta.isEnabled ? "EAS Live Active" : "Metro / Expo Go"}
+            </Text>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={styles.checkUpdateBtn}
+          onPress={handleCheckUpdate}
+          disabled={checkingUpdate}
+          activeOpacity={0.8}
+        >
+          {checkingUpdate ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <Ionicons name="cloud-download-outline" size={16} color={colors.primary} />
+          )}
+          <Text style={styles.checkUpdateBtnText}>
+            {checkingUpdate ? "Checking Update Servers..." : "Check for Updates"}
+          </Text>
+        </TouchableOpacity>
+      </Card>
+
       {/* Logout Action */}
       <Button
         title="Log Out"
@@ -124,7 +184,7 @@ export const ProfileScreen: React.FC = () => {
         style={styles.logoutBtn}
       />
 
-      <Text style={styles.versionText}>Kabhyan Connect • Version 1.0.0</Text>
+      <Text style={styles.versionText}>Kabhyan Connect • Version 1.0.0 (Build {updateMeta.updateId})</Text>
     </ScrollView>
   );
 };
@@ -220,7 +280,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   systemCard: {
-    marginBottom: 20,
+    marginBottom: 16,
     backgroundColor: colors.card,
   },
   systemRow: {
@@ -242,6 +302,48 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: colors.success,
+  },
+  updatesCard: {
+    marginBottom: 20,
+    backgroundColor: colors.card,
+  },
+  otaStatusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.background,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 5,
+  },
+  otaStatusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  otaStatusText: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: colors.textSecondary,
+  },
+  checkUpdateBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.primaryLight,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingVertical: 10,
+    marginTop: 12,
+    gap: 6,
+  },
+  checkUpdateBtnText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.primary,
   },
   logoutBtn: {
     paddingVertical: 14,

@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -6,6 +6,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { RootNavigator } from "./src/navigation/RootNavigator";
+import { checkAppUpdate } from "./src/utils/updates";
 
 // Prevent native splash screen from auto-hiding before authentication session is verified
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -69,6 +70,11 @@ function AppContent() {
   });
 
   const isReady = !loading && (fontsLoaded || Boolean(fontError));
+
+  // Proactive background OTA update check on launch for standalone release builds
+  useEffect(() => {
+    checkAppUpdate(false);
+  }, []);
 
   // Hide splash screen smoothly ONLY when the first frame of the app is laid out and fonts are ready
   const onLayoutRootView = useCallback(async () => {

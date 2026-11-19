@@ -33,6 +33,14 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "plugins": [
       "expo-web-browser",
       [
