@@ -312,23 +312,7 @@ class AppServiceProvider extends ServiceProvider
                         \Illuminate\Support\Facades\Log::warning('Self-healing document columns: ' . $colEx->getMessage());
                     }
 
-                    try {
-                        \Illuminate\Support\Facades\Artisan::call('route:clear');
-                    } catch (\Throwable $t) {
-                        // Safe ignore
-                    }
-                    \Illuminate\Support\Facades\Cache::put($cacheKey, now()->toIso8601String(), 300);
-                }
-
-                // 3. Autonomous route cache refresher for HRMS endpoints
-                $routeVersionKey = 'kabhyan_route_cache_v3_hrms_payroll_endpoints';
-                if (!\Illuminate\Support\Facades\Cache::has($routeVersionKey)) {
-                    try {
-                        \Illuminate\Support\Facades\Artisan::call('route:clear');
-                        \Illuminate\Support\Facades\Cache::forever($routeVersionKey, true);
-                    } catch (\Throwable $e) {
-                        // Safe ignore
-                    }
+                    \Illuminate\Support\Facades\Cache::put($cacheKey, now()->toIso8601String(), 3600);
                 }
             }
         } catch (\Throwable $e) {
