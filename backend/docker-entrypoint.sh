@@ -30,24 +30,40 @@ chmod -R 777 /var/www/html/storage/app/public
 # 3. Ensure storage link
 php artisan storage:link --force || true
 
-# 3. Auto-run database migrations with force
-echo "[Kabhyan ERP] Auto-running migrations..."
-php artisan migrate --force
+# 3. Auto-run database migrations and seeds (only on primary web backend)
+if [ "$CONTAINER_ROLE" != "reverb" ] && [ "$CONTAINER_ROLE" != "queue" ]; then
+    echo "[Kabhyan ERP] Auto-running migrations..."
+    php artisan migrate --force
 
-# 4. Auto-run seeds
-echo "[Kabhyan ERP] Auto-running seeds..."
-php artisan db:seed --force || true
+    echo "[Kabhyan ERP] Auto-running seeds..."
+    php artisan db:seed --force || true
+fi
 
-# 5. Clear old and re-cache configs
+# 4. Clear old and re-cache configs
 echo "[Kabhyan ERP] Optimizing configuration..."
 php artisan optimize:clear || true
 php artisan config:cache || true
 php artisan route:cache || true
 
-# 6. Final ownership enforcement so www-data owns all artisan-generated caches & storage
+# 5. Final ownership enforcement so www-data owns all artisan-generated caches & storage
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 777 /var/www/html/storage/app/public
+
+# 6. Service Execution Router (FrankenPHP Web / Laravel Reverb / Queue Worker)
+if [ "$CONTAINER_ROLE" = "reverb" ] || [ "$1" = "reverb" ]; then
+    echo "[Kabhyan ERP] Automated startup complete. Launching Laravel Reverb WebSocket Server on 0.0.0.0:8080..."
+    exec php artisan reverb:start --host=0.0.0.0 --port=8080 --hostname="${REVERB_HOST:-ws.erp.kabhyan.com}"
+fi
+
+if [ "$CONTAINER_ROLE" = "queue" ] || [ "$1" = "queue" ]; then
+    echo "[Kabhyan ERP] Automated startup complete. Launching Queue Worker..."
+    exec php artisan queue:work --sleep=3 --tries=3
+fi
+
+if [ "$#" -gt 0 ]; then
+    exec "$@"
+fi
 
 echo "[Kabhyan ERP] Automated startup complete. Launching FrankenPHP..."
 exec frankenphp run --config /etc/caddy/Caddyfile
