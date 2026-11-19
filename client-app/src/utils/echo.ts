@@ -3,8 +3,13 @@ import Pusher from 'pusher-js';
 import { API_BASE_URL, getStoredToken } from '../api/client';
 import { logger } from './logger';
 
-// Make Pusher globally available for Laravel Echo
-(window as any).Pusher = Pusher;
+// Make Pusher globally available for Laravel Echo in both web and React Native
+if (typeof window !== 'undefined') {
+  (window as any).Pusher = Pusher;
+}
+if (typeof globalThis !== 'undefined') {
+  (globalThis as any).Pusher = Pusher;
+}
 
 let echoInstance: Echo<any> | null = null;
 
