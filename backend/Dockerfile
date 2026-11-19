@@ -10,32 +10,23 @@ RUN composer install \
     --no-scripts \
     --ignore-platform-reqs
 
-# Stage 2: Official Standard PHP 8.3 Apache Image
-FROM php:8.3-apache AS runner
+# Stage 2: Official FrankenPHP 8.3 Runner (Go-powered Caddy Application Server)
+FROM dunglas/frankenphp:1-php8.3-bookworm AS runner
 
-# Install PostgreSQL client and required PHP extensions
-RUN apt-get update && apt-get install -y \
-    libpq-dev \
-    libpng-dev \
-    libzip-dev \
+# Install PostgreSQL client for healthcheck readiness and PHP extensions via install-php-extensions
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    postgresql-client \
     zip \
     unzip \
     curl \
-    postgresql-client \
-    && docker-php-ext-install pdo_pgsql bcmath pcntl opcache gd zip \
+    && install-php-extensions \
+    pdo_pgsql \
+    bcmath \
+    pcntl \
+    opcache \
+    gd \
+    zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Point Apache DocumentRoot to Laravel's public/ directory
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
-    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
-
-# Enable Apache rewrite module for Laravel routing and suppress ServerName warning
-# Silence routine Apache access logs from flooding container stdout, while keeping error.log on stderr for crashes
-RUN a2enmod rewrite \
-    && echo "ServerName localhost" >> /etc/apache2/apache2.conf \
-    && rm -f /var/log/apache2/access.log \
-    && ln -sf /dev/null /var/log/apache2/access.log
 
 # Production PHP Tuning
 RUN { \
@@ -43,9 +34,17 @@ RUN { \
         echo 'upload_max_filesize = 64M'; \
         echo 'post_max_size = 64M'; \
         echo 'expose_php = Off'; \
+        echo 'opcache.enable_cli = 1'; \
+        echo 'opcache.validate_timestamps = 0'; \
     } > /usr/local/etc/php/conf.d/custom.ini
 
+# Set default server name to listen on standard port 80
+ENV SERVER_NAME=":80"
+
 WORKDIR /var/www/html
+
+# Copy Caddyfile configuration
+COPY Caddyfile /etc/caddy/Caddyfile
 
 # Copy source code and vendor dependencies
 COPY . /var/www/html

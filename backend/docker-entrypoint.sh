@@ -49,5 +49,5 @@ chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 777 /var/www/html/storage/app/public
 
-echo "[Kabhyan ERP] Automated startup complete. Launching Apache..."
-exec apache2-foreground
+echo "[Kabhyan ERP] Automated startup complete. Launching FrankenPHP..."
+exec frankenphp run --config /etc/caddy/Caddyfile
