@@ -49,6 +49,12 @@ export const ProjectsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 
   const renderProjectCard = ({ item }: { item: Project }) => {
     const isCompleted = item.status === "completed";
+    const pendingDocRequests = (item.file_requests || []).filter(
+      (r) => r.status === "pending" || r.status === "rejected"
+    );
+    const underReviewDocRequests = (item.file_requests || []).filter(
+      (r) => r.status === "submitted"
+    );
 
     return (
       <Card style={styles.card}>
@@ -73,16 +79,23 @@ export const ProjectsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             </Text>
           )}
 
-          <View style={styles.divider} />
-
-          {item.file_requests && item.file_requests.length > 0 && (
-            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 6 }}>
-              <Ionicons name="document-text-outline" size={13} color={colors.primary} />
-              <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: "600" }}>
-                {item.file_requests.length} Document Request{item.file_requests.length > 1 ? "s" : ""}
+          {pendingDocRequests.length > 0 ? (
+            <View style={styles.actionNoticeRow}>
+              <Ionicons name="alert-circle" size={13} color={colors.warning} />
+              <Text style={styles.actionNoticeText}>
+                Action Required: {pendingDocRequests.length} document{pendingDocRequests.length > 1 ? "s" : ""} requested — Upload files
               </Text>
             </View>
-          )}
+          ) : underReviewDocRequests.length > 0 ? (
+            <View style={styles.infoNoticeRow}>
+              <Ionicons name="time-outline" size={13} color={colors.primary} />
+              <Text style={styles.infoNoticeText}>
+                {underReviewDocRequests.length} document{underReviewDocRequests.length > 1 ? "s" : ""} under review by lead
+              </Text>
+            </View>
+          ) : null}
+
+          <View style={styles.divider} />
 
           <View style={styles.footerRow}>
             <View style={styles.metaCol}>
@@ -182,6 +195,44 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.borderLight,
     marginVertical: 10,
+  },
+  actionNoticeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.warningBg,
+    borderColor: colors.warningBorder,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+    marginTop: 4,
+    marginBottom: 4,
+    gap: 6,
+  },
+  actionNoticeText: {
+    fontSize: 11,
+    fontFamily: fonts.bold,
+    color: colors.warning,
+    flex: 1,
+  },
+  infoNoticeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.infoBg,
+    borderColor: colors.infoBorder,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+    marginTop: 4,
+    marginBottom: 4,
+    gap: 6,
+  },
+  infoNoticeText: {
+    fontSize: 11,
+    fontFamily: fonts.medium,
+    color: colors.primary,
+    flex: 1,
   },
   footerRow: {
     flexDirection: "row",

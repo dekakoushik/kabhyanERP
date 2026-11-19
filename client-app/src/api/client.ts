@@ -117,11 +117,15 @@ interface RequestOptions extends RequestInit {
 
 export async function apiClient<T = any>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const token = await getStoredToken();
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
   const headers: Record<string, string> = {
     Accept: "application/json",
-    "Content-Type": "application/json",
     ...((options.headers as Record<string, string>) || {}),
   };
+
+  if (!isFormData && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;

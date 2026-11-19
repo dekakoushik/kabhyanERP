@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\ProjectFileRequest;
+use App\Services\PushNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -82,6 +84,28 @@ class ProjectFileRequestController extends Controller
 
         $fileRequest->load(['requester:id,name,email', 'client:id,name,company_name']);
 
+        // Dispatch instant push & in-app notification to the client
+        try {
+            $client = $project->client ?: $fileRequest->client;
+            if ($client) {
+                PushNotificationService::sendToClient(
+                    $client,
+                    "Document Requested: " . $fileRequest->title,
+                    "Your project lead requested a document for project \"{$project->name}\". Tap to upload files.",
+                    [
+                        'type' => 'project_document_request',
+                        'screen' => 'ProjectDetail',
+                        'projectId' => $project->id,
+                        'project_id' => $project->id,
+                        'request_id' => $fileRequest->id,
+                        'action_url' => "/portal/projects/{$project->id}",
+                    ]
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[ProjectFileRequestController] Failed to send document request notification: ' . $e->getMessage());
+        }
+
         return response()->json([
             'message' => 'File request sent to client successfully.',
             'file_request' => $fileRequest,
@@ -116,6 +140,45 @@ class ProjectFileRequestController extends Controller
         ]);
 
         $fileRequest->load(['requester:id,name,email', 'reviewer:id,name,email']);
+
+        // Dispatch instant push & in-app notification to client on review decision
+        try {
+            $client = $project->client ?: $fileRequest->client;
+            if ($client) {
+                if ($validated['status'] === 'rejected') {
+                    $notes = !empty($validated['review_notes']) ? ": " . $validated['review_notes'] : ". Please re-upload.";
+                    PushNotificationService::sendToClient(
+                        $client,
+                        "Revision Requested: " . $fileRequest->title,
+                        "Changes requested for project \"{$project->name}\"{$notes}",
+                        [
+                            'type' => 'project_document_revision',
+                            'screen' => 'ProjectDetail',
+                            'projectId' => $project->id,
+                            'project_id' => $project->id,
+                            'request_id' => $fileRequest->id,
+                            'action_url' => "/portal/projects/{$project->id}",
+                        ]
+                    );
+                } else {
+                    PushNotificationService::sendToClient(
+                        $client,
+                        "Document Approved: " . $fileRequest->title,
+                        "Your document has been verified and approved for project \"{$project->name}\".",
+                        [
+                            'type' => 'project_document_approved',
+                            'screen' => 'ProjectDetail',
+                            'projectId' => $project->id,
+                            'project_id' => $project->id,
+                            'request_id' => $fileRequest->id,
+                            'action_url' => "/portal/projects/{$project->id}",
+                        ]
+                    );
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[ProjectFileRequestController] Failed to send document review notification: ' . $e->getMessage());
+        }
 
         $message = $validated['status'] === 'approved'
             ? 'Document accepted and approved successfully.'

@@ -984,7 +984,7 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2">
                     <Layers className="w-4 h-4 text-purple-600" />
                     <h2 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
-                      Active Milestone Proformas
+                      Active Proforma Invoices
                     </h2>
                   </div>
                   <Link

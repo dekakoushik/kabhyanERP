@@ -28,7 +28,7 @@ export const RootNavigator: React.FC = () => {
   // Navigate when a push notification is tapped
   const handleNotificationNavigation = (response: Notifications.NotificationResponse) => {
     try {
-      const data = response?.notification?.request?.content?.data;
+      const data = response?.notification?.request?.content?.data as any;
       if (!data || !navigationRef.isReady()) return;
 
       if (data.screen === "EstimateDetail" && data.estimateId) {
@@ -40,8 +40,11 @@ export const RootNavigator: React.FC = () => {
         });
       } else if (data.screen === "TicketDetail" && data.ticketId) {
         navigationRef.navigate("TicketDetail", { ticketId: data.ticketId });
-      } else if (data.screen === "ProjectDetail" && data.projectId) {
-        navigationRef.navigate("ProjectDetail", { projectId: data.projectId });
+      } else if (
+        (data.screen === "ProjectDetail" || data.type?.startsWith("project_document_")) &&
+        (data.projectId || data.project_id)
+      ) {
+        navigationRef.navigate("ProjectDetail", { projectId: data.projectId || data.project_id });
       }
     } catch (err) {
       logger.warn("[Navigation] Failed to navigate from notification:", err);

@@ -7,8 +7,8 @@ import {
   ActivityIndicator,
   Alert,
   TouchableOpacity,
-  Linking,
 } from "react-native";
+import * as DocumentPicker from "expo-document-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../theme/colors";
 import { Card } from "../../components/Card";
@@ -20,6 +20,7 @@ export const ProjectDetailScreen: React.FC<{ route: any }> = ({ route }) => {
   const { projectId } = route.params;
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
+  const [uploadingId, setUploadingId] = useState<number | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -49,11 +50,43 @@ export const ProjectDetailScreen: React.FC<{ route: any }> = ({ route }) => {
   const fileRequests: ProjectFileRequest[] = (project as any).file_requests || [];
   const showTasks = project.show_tasks_to_client !== false;
 
-  const handleOpenUploadPortal = () => {
-    const url = `https://erp.kabhyan.com/portal/projects/${project.id}`;
-    Linking.openURL(url).catch(() => {
-      Alert.alert("Portal", `Please visit ${url} in your browser to upload documents.`);
-    });
+  const handlePickAndUpload = async (req: ProjectFileRequest) => {
+    try {
+      const res = await DocumentPicker.getDocumentAsync({
+        type: "*/*",
+        copyToCacheDirectory: true,
+      });
+
+      if (res.canceled || !res.assets || res.assets.length === 0) {
+        return;
+      }
+
+      const file = res.assets[0];
+      setUploadingId(req.id);
+
+      const formData = new FormData();
+      formData.append("file", {
+        uri: file.uri,
+        name: file.name,
+        type: file.mimeType || "application/octet-stream",
+      } as any);
+
+      const response = await portalApi.uploadFileRequest(projectId, req.id, formData);
+      Alert.alert("Success", "Document uploaded successfully. It is now under review.");
+
+      // Update state locally
+      setProject((prev: any) => {
+        if (!prev) return prev;
+        const updatedRequests = ((prev.file_requests || []) as ProjectFileRequest[]).map((item) =>
+          item.id === req.id ? response.file_request : item
+        );
+        return { ...prev, file_requests: updatedRequests };
+      });
+    } catch (err: any) {
+      Alert.alert("Upload Failed", err.message || "Failed to upload document file.");
+    } finally {
+      setUploadingId(null);
+    }
   };
 
   return (
@@ -155,14 +188,17 @@ export const ProjectDetailScreen: React.FC<{ route: any }> = ({ route }) => {
 
                 {!isApproved && (
                   <TouchableOpacity
-                    style={styles.uploadBtn}
+                    style={[styles.uploadBtn, uploadingId === req.id && { opacity: 0.7 }]}
                     activeOpacity={0.8}
-                    onPress={handleOpenUploadPortal}
+                    disabled={uploadingId === req.id}
+                    onPress={() => handlePickAndUpload(req)}
                   >
-                    <Ionicons name="cloud-upload-outline" size={15} color="#fff" />
-                    <Text style={styles.uploadBtnText}>
-                      {req.file_name ? "Re-upload File via Portal" : "Upload File via Portal"}
-                    </Text>
+                    {uploadingId === req.id ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Ionicons name="cloud-upload-outline" size={15} color="#fff" />
+                    )}
+                    <Text style={styles.uploadBtnText}>Upload Files</Text>
                   </TouchableOpacity>
                 )}
               </Card>

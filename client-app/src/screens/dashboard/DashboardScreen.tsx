@@ -246,7 +246,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           </View>
           <View style={styles.actionBannerContent}>
             <View style={styles.actionBannerHeadingRow}>
-              <Text style={styles.actionBannerTitle}>Active Milestone Proforma</Text>
+              <Text style={styles.actionBannerTitle}>Proforma Invoice</Text>
               <Badge
                 label={
                   pendingProforma.status === "paid"
@@ -360,40 +360,56 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
             </TouchableOpacity>
           </View>
 
-          {projects.slice(0, 2).map((proj: Project) => (
-            <TouchableOpacity
-              key={proj.id}
-              activeOpacity={0.85}
-              onPress={() => navigation.navigate("ProjectDetail", { projectId: proj.id })}
-            >
-              <Card style={styles.projectCard}>
-                <View style={styles.projectHeader}>
-                  <Text style={styles.projectName} numberOfLines={1}>
-                    {proj.name}
-                  </Text>
-                  <Badge
-                    label={(proj.status || "active").replace("_", " ").toUpperCase()}
-                    variant="info"
-                    size="sm"
-                  />
-                </View>
-                {proj.description ? (
-                  <Text style={styles.projectDesc} numberOfLines={2}>
-                    {proj.description}
-                  </Text>
-                ) : null}
-                <View style={styles.projectFooter}>
-                  <View style={styles.projectMeta}>
-                    <Ionicons name="calendar-outline" size={13} color={colors.textMuted} />
-                    <Text style={styles.projectMetaText}>
-                      {proj.deadline ? `Target: ${formatDate(proj.deadline)}` : "Ongoing"}
+          {projects.slice(0, 2).map((proj: Project) => {
+            const pendingDocs = (proj.file_requests || []).filter(
+              (r) => r.status === "pending" || r.status === "rejected"
+            );
+
+            return (
+              <TouchableOpacity
+                key={proj.id}
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate("ProjectDetail", { projectId: proj.id })}
+              >
+                <Card style={styles.projectCard}>
+                  <View style={styles.projectHeader}>
+                    <Text style={styles.projectName} numberOfLines={1}>
+                      {proj.name}
                     </Text>
+                    <Badge
+                      label={(proj.status || "active").replace("_", " ").toUpperCase()}
+                      variant="info"
+                      size="sm"
+                    />
                   </View>
-                  <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
-                </View>
-              </Card>
-            </TouchableOpacity>
-          ))}
+                  {proj.description ? (
+                    <Text style={styles.projectDesc} numberOfLines={2}>
+                      {proj.description}
+                    </Text>
+                  ) : null}
+
+                  {pendingDocs.length > 0 && (
+                    <View style={styles.projectNoticeRow}>
+                      <Ionicons name="alert-circle" size={12} color={colors.warning} />
+                      <Text style={styles.projectNoticeText}>
+                        Action Required: Document requested — Upload files
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={styles.projectFooter}>
+                    <View style={styles.projectMeta}>
+                      <Ionicons name="calendar-outline" size={13} color={colors.textMuted} />
+                      <Text style={styles.projectMetaText}>
+                        {proj.deadline ? `Target: ${formatDate(proj.deadline)}` : "Ongoing"}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+                  </View>
+                </Card>
+              </TouchableOpacity>
+            );
+          })}
         </>
       )}
 
@@ -479,25 +495,26 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  // 2. Hero Account Health Card
+  // 2. Hero Account Health Card (Slim & Compact Height)
   heroBalanceCard: {
     backgroundColor: colors.card,
     borderRadius: 16,
-    padding: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: 10,
+    marginBottom: 8,
     ...shadows.card,
   },
   heroTopRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 4,
+    marginBottom: 2,
   },
   heroLabel: {
     fontFamily: fonts.medium,
-    fontSize: 11,
+    fontSize: 10.5,
     color: colors.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -508,27 +525,27 @@ const styles = StyleSheet.create({
     backgroundColor: colors.warningBg,
     borderColor: colors.warningBorder,
     borderWidth: 1,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6,
     gap: 4,
   },
   dueBadgeText: {
     fontFamily: fonts.bold,
-    fontSize: 10.5,
+    fontSize: 10,
     color: colors.warning,
   },
   heroAmount: {
     fontFamily: fonts.bold,
-    fontSize: 26,
+    fontSize: 22,
     color: colors.text,
     letterSpacing: -0.4,
-    marginVertical: 2,
+    marginVertical: 1,
   },
   heroDivider: {
     height: 1,
     backgroundColor: colors.borderLight,
-    marginVertical: 8,
+    marginVertical: 5,
   },
   heroFooter: {
     flexDirection: "row",
@@ -537,14 +554,14 @@ const styles = StyleSheet.create({
   },
   heroFooterText: {
     fontFamily: fonts.regular,
-    fontSize: 11.5,
+    fontSize: 11,
     color: colors.textSecondary,
     flex: 1,
     marginRight: 8,
   },
   heroActionBtnText: {
     fontFamily: fonts.bold,
-    fontSize: 11.5,
+    fontSize: 11,
     color: colors.primary,
   },
 
@@ -784,6 +801,24 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 16,
     marginBottom: 6,
+  },
+  projectNoticeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.warningBg,
+    borderColor: colors.warningBorder,
+    borderWidth: 1,
+    paddingHorizontal: 7,
+    paddingVertical: 3.5,
+    borderRadius: 6,
+    marginBottom: 6,
+    gap: 5,
+  },
+  projectNoticeText: {
+    fontFamily: fonts.bold,
+    fontSize: 10.5,
+    color: colors.warning,
+    flex: 1,
   },
   projectFooter: {
     flexDirection: "row",

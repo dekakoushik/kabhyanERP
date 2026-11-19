@@ -15,6 +15,7 @@ use App\Models\Ticket;
 use App\Models\TicketReply;
 use App\Services\DocumentNumberService;
 use App\Services\MailNotificationService;
+use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -66,7 +67,7 @@ class ClientPortalController extends Controller
         $client = $this->getClient($request);
 
         $projects = Project::where('client_id', $client->id)
-            ->with(['manager', 'tasks' => function ($q) {
+            ->with(['manager', 'fileRequests', 'tasks' => function ($q) {
                 $q->select('id', 'project_id', 'title', 'status', 'priority', 'due_date');
             }])
             ->get();
@@ -310,6 +311,26 @@ class ClientPortalController extends Controller
             'uploaded_at' => now(),
             'review_notes' => null,
         ]);
+
+        // Notify Project Lead when client uploads a document
+        try {
+            $manager = $project->manager;
+            if ($manager) {
+                PushNotificationService::sendToUser(
+                    $manager,
+                    "Client Uploaded Document: {$fileRequest->title}",
+                    "Client {$client->name} uploaded a document for project \"{$project->name}\". Ready for review.",
+                    [
+                        'type' => 'project_document_submitted',
+                        'project_id' => $project->id,
+                        'request_id' => $fileRequest->id,
+                        'action_url' => "/dashboard/projects/{$project->id}?tab=documents",
+                    ]
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[ClientPortalController] Failed to notify PM of client upload: ' . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'File uploaded and submitted for Project Manager review successfully.',
