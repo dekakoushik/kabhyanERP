@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Kabhyan Connect - Client App",
+    "name": "Kabhyan Connect",
     "slug": "kabhyan-connect",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,7 +8,7 @@
     "scheme": "kabhyanconnect",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/logo.png",
+      "image": "./assets/splash-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#FFFFFF"
     },
@@ -18,9 +18,13 @@
     },
     "android": {
       "package": "com.kabhyan.kconnect",
+      "versionCode": 1,
       "allowBackup": false,
       "permissions": [
-        "NOTIFICATIONS"
+        "android.permission.NOTIFICATIONS",
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
@@ -47,19 +51,31 @@
         "expo-notifications",
         {
           "icon": "./assets/icon.png",
-          "color": "#2563EB",
-          "sounds": ["default"]
+          "color": "#1B43FF"
         }
       ],
       [
         "expo-splash-screen",
         {
-          "image": "./assets/logo.png",
-          "imageWidth": 260,
+          "image": "./assets/splash-logo.png",
+          "imageWidth": 240,
           "resizeMode": "contain",
           "backgroundColor": "#FFFFFF"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Kabhyan Connect to access your photos to attach screenshots and images to support tickets.",
+          "cameraPermission": "Allow Kabhyan Connect to access your camera to take and upload photos for support tickets."
+        }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "767967d6-fd7f-4c67-9680-65dbbfa36ace"
+      }
+    },
+    "owner": "kabyaa.tech"
   }
 }

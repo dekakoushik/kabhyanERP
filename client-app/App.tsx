@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as SplashScreen from "expo-splash-screen";
+import * as ScreenCapture from "expo-screen-capture";
 import { useFonts } from "expo-font";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { RootNavigator } from "./src/navigation/RootNavigator";
@@ -10,6 +11,9 @@ import { checkAppUpdate } from "./src/utils/updates";
 
 // Prevent native splash screen from auto-hiding before authentication session is verified
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// Block screenshots, screen recording, and app-switcher preview leaks
+ScreenCapture.preventScreenCaptureAsync().catch(() => {});
 
 class GlobalErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -71,9 +75,10 @@ function AppContent() {
 
   const isReady = !loading && (fontsLoaded || Boolean(fontError));
 
-  // Proactive background OTA update check on launch for standalone release builds
+  // Proactive background OTA update check and screenshot protection on launch
   useEffect(() => {
     checkAppUpdate(false);
+    ScreenCapture.preventScreenCaptureAsync().catch(() => {});
   }, []);
 
   // Hide splash screen smoothly ONLY when the first frame of the app is laid out and fonts are ready
