@@ -32,9 +32,9 @@ return [
 
         'reverb' => [
             'driver' => 'reverb',
-            'key' => env('REVERB_APP_KEY', 'kabhyan-erp-key-2026'),
-            'secret' => env('REVERB_APP_SECRET', 'kabhyan-erp-secret-secure-key'),
-            'app_id' => env('REVERB_APP_ID', 'kabhyan-erp-app'),
+            'key' => env('REVERB_APP_KEY', 'kby7f8a92c4e1d5b3a6081e74f29d3c8'),
+            'secret' => env('REVERB_APP_SECRET', '243219f146a0a1679fc52268c54bf8bd3e84970d95740039d73fdd8ec954382b'),
+            'app_id' => env('REVERB_APP_ID', 'kabhyan-erp'),
             'options' => [
                 'host' => env('REVERB_HOST', 'ws.erp.kabhyan.com'),
                 'port' => env('REVERB_PORT', 443),

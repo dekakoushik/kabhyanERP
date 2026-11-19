@@ -14,7 +14,7 @@ let echoInstance: Echo<any> | null = null;
 export const getEcho = async (): Promise<Echo<any>> => {
   const token = await getStoredToken();
   const host = process.env.EXPO_PUBLIC_REVERB_HOST || 'ws.erp.kabhyan.com';
-  const key = process.env.EXPO_PUBLIC_REVERB_APP_KEY || 'kabhyan-erp-key-2026';
+  const key = process.env.EXPO_PUBLIC_REVERB_APP_KEY || 'kby7f8a92c4e1d5b3a6081e74f29d3c8';
   const port = Number(process.env.EXPO_PUBLIC_REVERB_PORT || 443);
   const scheme = process.env.EXPO_PUBLIC_REVERB_SCHEME || 'https';
   const isTls = scheme === 'https' || port === 443;
