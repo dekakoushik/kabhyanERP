@@ -1,4 +1,5 @@
-import { apiClient } from "./client";
+import { apiClient, API_BASE_URL, getStoredToken } from "./client";
+import { logger } from "../utils/logger";
 
 export interface User {
   id: number;
@@ -415,14 +416,88 @@ export const portalApi = {
   getProjectFileRequests: (projectId: number | string) =>
     apiClient<{ file_requests: ProjectFileRequest[] }>(`/portal/projects/${projectId}/file-requests`),
 
-  uploadFileRequest: (projectId: number | string, requestId: number | string, formData: FormData) =>
-    apiClient<{ message: string; file_request: ProjectFileRequest }>(
+  uploadFileRequest: async (
+    projectId: number | string,
+    requestId: number | string,
+    fileOrFormData: FormData | { uri: string; name: string; type?: string }
+  ) => {
+    const token = await getStoredToken();
+    const url = `${API_BASE_URL}/portal/projects/${projectId}/file-requests/${requestId}/upload`;
+
+    // If a file descriptor is supplied, use standard Blob or native XHR
+    if ("uri" in fileOrFormData) {
+      const file = fileOrFormData;
+
+      // Pipeline 1: Convert file URI to standard Blob for modern expo/fetch
+      try {
+        const fileRes = await fetch(file.uri);
+        const blob = await fileRes.blob();
+        const formData = new FormData();
+        formData.append("file", blob, file.name);
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: formData,
+        });
+
+        if (response.ok) {
+          return (await response.json()) as { message: string; file_request: ProjectFileRequest };
+        }
+      } catch (err) {
+        logger.warn("[Upload] Blob fetch upload failed, falling back to native XHR:", err);
+      }
+
+      // Pipeline 2: React Native native XHR bridge (bulletproof for native files)
+      return new Promise<{ message: string; file_request: ProjectFileRequest }>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", url);
+        xhr.setRequestHeader("Accept", "application/json");
+        if (token) {
+          xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+        }
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              resolve(JSON.parse(xhr.responseText));
+            } catch {
+              resolve({ message: "File uploaded successfully", file_request: {} as any });
+            }
+          } else {
+            try {
+              const errJson = JSON.parse(xhr.responseText);
+              reject(new Error(errJson.message || `Upload failed with status ${xhr.status}`));
+            } catch {
+              reject(new Error(`Upload failed with status ${xhr.status}`));
+            }
+          }
+        };
+
+        xhr.onerror = () => reject(new Error("Network connection error during file upload."));
+
+        const formData = new FormData();
+        formData.append("file", {
+          uri: file.uri,
+          name: file.name,
+          type: file.type || "application/octet-stream",
+        } as any);
+
+        xhr.send(formData);
+      });
+    }
+
+    return apiClient<{ message: string; file_request: ProjectFileRequest }>(
       `/portal/projects/${projectId}/file-requests/${requestId}/upload`,
       {
         method: "POST",
-        body: formData,
+        body: fileOrFormData,
       }
-    ),
+    );
+  },
 
   // Support Tickets
   getTickets: (status?: string) =>

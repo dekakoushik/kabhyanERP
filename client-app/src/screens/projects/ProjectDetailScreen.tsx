@@ -64,14 +64,11 @@ export const ProjectDetailScreen: React.FC<{ route: any }> = ({ route }) => {
       const file = res.assets[0];
       setUploadingId(req.id);
 
-      const formData = new FormData();
-      formData.append("file", {
+      const response = await portalApi.uploadFileRequest(projectId, req.id, {
         uri: file.uri,
         name: file.name,
         type: file.mimeType || "application/octet-stream",
-      } as any);
-
-      const response = await portalApi.uploadFileRequest(projectId, req.id, formData);
+      });
       Alert.alert("Success", "Document uploaded successfully. It is now under review.");
 
       // Update state locally
