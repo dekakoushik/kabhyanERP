@@ -25,6 +25,7 @@ mkdir -p /var/www/html/storage/app/public \
          /var/www/html/bootstrap/cache
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+chmod -R 777 /var/www/html/storage/app/public
 
 # 3. Ensure storage link
 php artisan storage:link --force || true
@@ -46,6 +47,7 @@ php artisan route:cache || true
 # 6. Final ownership enforcement so www-data owns all artisan-generated caches & storage
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+chmod -R 777 /var/www/html/storage/app/public
 
 echo "[Kabhyan ERP] Automated startup complete. Launching Apache..."
 exec apache2-foreground
