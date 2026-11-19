@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import ReportHeader from "@/components/ReportHeader";
 import { api, ReportOverviewResponse } from "@/lib/api";
+import { getCurrentFiscalYear } from "@/lib/fiscalYear";
 import Link from "next/link";
 import {
   TrendingUp,
@@ -26,7 +27,7 @@ import {
 } from "lucide-react";
 
 export default function ReportsOverviewPage() {
-  const [fy, setFy] = useState("2026-2027");
+  const [fy, setFy] = useState(getCurrentFiscalYear());
   const [quarter, setQuarter] = useState("");
   const [data, setData] = useState<ReportOverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);

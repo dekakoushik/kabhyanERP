@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { getCurrentFiscalYear, getFiscalYearOptions } from "@/lib/fiscalYear";
 import {
   BarChart3,
   TrendingUp,
@@ -34,7 +35,7 @@ export default function ReportHeader({
   subtitle,
   icon,
   exportType,
-  fy = "2026-2027",
+  fy = getCurrentFiscalYear(),
   setFy,
   quarter = "",
   setQuarter,
@@ -106,9 +107,11 @@ export default function ReportHeader({
                 onChange={(e) => setFy(e.target.value)}
                 className="text-xs font-semibold text-slate-800 bg-transparent focus:outline-none cursor-pointer"
               >
-                <option value="2026-2027">FY 2026–27</option>
-                <option value="2025-2026">FY 2025–26</option>
-                <option value="2024-2025">FY 2024–25</option>
+                {getFiscalYearOptions().map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
               </select>
             </div>
           )}

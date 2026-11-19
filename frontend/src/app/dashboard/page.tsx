@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAuth } from "@/context/AuthContext";
 import { api, ReportOverviewResponse, ReportRevenueResponse, ReportReceivablesResponse } from "@/lib/api";
+import { getCurrentFiscalYear, getFiscalYearOptions, formatFiscalYearLabel } from "@/lib/fiscalYear";
 import Link from "next/link";
 import {
   Users,
@@ -43,7 +44,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [greeting, setGreeting] = useState("Good day");
-  const [fy, setFy] = useState("2026-2027");
+  const [fy, setFy] = useState(getCurrentFiscalYear());
   const [quarter, setQuarter] = useState("");
 
   // Determine Time-of-day Greeting
@@ -211,43 +212,92 @@ export default function DashboardPage() {
     <AdminLayout>
       <div className="space-y-6 pb-12">
         {/* Executive Hero Banner & Dynamic Role Greeting */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 rounded-2xl p-5 sm:p-6 text-white shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-          <div className="relative z-10 space-y-1.5">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-[11px] font-medium uppercase tracking-wider text-blue-200">
-              <Crown className="w-3 h-3 text-blue-300" />
-              <span>
-                {user?.custom_role?.name ||
-                  (user?.role === "superadmin"
-                    ? "Super Administrator"
-                    : user?.role === "admin"
-                    ? "Corporate Executive"
-                    : user?.role?.toUpperCase() || "Workspace Member")}
-              </span>
+        <div className="relative bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 rounded-2xl p-5 sm:p-6 text-white shadow-xs space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-[11px] font-medium uppercase tracking-wider text-blue-200">
+                <Crown className="w-3 h-3 text-blue-300" />
+                <span>
+                  {user?.custom_role?.name ||
+                    (user?.role === "superadmin"
+                      ? "Super Administrator"
+                      : user?.role === "admin"
+                      ? "Corporate Executive"
+                      : user?.role?.toUpperCase() || "Workspace Member")}
+                </span>
+              </div>
+              <h1 className="text-lg sm:text-xl font-bold tracking-tight">
+                {greeting}, {user?.name || "Administrator"}
+              </h1>
+              <p className="text-xs text-slate-300 max-w-xl">
+                Real-time operational command, financial realization, and project deliverables.
+              </p>
             </div>
-            <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-              {greeting}, {user?.name || "Administrator"}
-            </h1>
-            <p className="text-xs text-slate-300 max-w-xl">
-              Real-time operational command, financial realization, and project deliverables.
-            </p>
+
+            {/* Dynamic CTA Buttons based on Permissions */}
+            <div className="flex flex-wrap items-center gap-2">
+              {canCreateInvoice && (
+                <Link
+                  href="/dashboard/invoices/create"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs shadow-2xs transition"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>New Invoice</span>
+                </Link>
+              )}
+
+              {canCreateProforma && (
+                <Link
+                  href="/dashboard/proforma/create"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs shadow-2xs transition"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>New Proforma</span>
+                </Link>
+              )}
+
+              {canCreateProject && (
+                <Link
+                  href="/dashboard/projects/create"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-xs transition backdrop-blur-xs"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>New Project</span>
+                </Link>
+              )}
+            </div>
           </div>
 
-          <div className="relative z-10 flex flex-wrap items-center gap-2">
-            {/* Fiscal Year & Quarter Selector (For Financial Authorities) */}
-            {canViewFinance && (
-              <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md p-1 rounded-lg border border-white/15 text-xs mr-1">
-                <select
-                  value={fy}
-                  onChange={(e) => setFy(e.target.value)}
-                  className="bg-transparent text-white font-medium text-xs px-2 py-1 rounded outline-none cursor-pointer focus:bg-slate-800"
-                >
-                  <option value="2026-2027" className="bg-slate-900 text-white">FY 2026–27</option>
-                  <option value="2025-2026" className="bg-slate-900 text-white">FY 2025–26</option>
-                </select>
+          {/* Dedicated Financial Intelligence Horizon Toolbar (Uncropped & Auto-Updating) */}
+          {canViewFinance && (
+            <div className="pt-3.5 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-slate-300 text-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>
+                  Active Horizon: <strong className="text-white font-semibold">{formatFiscalYearLabel(fy)}</strong>
+                  {quarter ? ` (${quarter})` : " (All Quarters)"} • Live Realization
+                </span>
+              </div>
 
-                <div className="h-4 w-px bg-white/20" />
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Auto-updating Dynamic Fiscal Year Picker */}
+                <div className="flex items-center bg-slate-900/90 border border-white/20 rounded-lg px-2.5 py-1 text-xs shadow-inner">
+                  <Calendar className="w-3.5 h-3.5 text-blue-300 mr-1.5" />
+                  <select
+                    value={fy}
+                    onChange={(e) => setFy(e.target.value)}
+                    className="bg-transparent text-white font-medium text-xs focus:outline-none cursor-pointer"
+                  >
+                    {getFiscalYearOptions().map((opt) => (
+                      <option key={opt.value} value={opt.value} className="bg-slate-900 text-white py-1">
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-                <div className="flex items-center gap-1">
+                {/* Quarter Presets */}
+                <div className="flex items-center bg-white/10 p-0.5 rounded-lg border border-white/15 text-xs font-medium">
                   {[
                     { label: "All Year", val: "" },
                     { label: "Q1", val: "Q1" },
@@ -270,39 +320,8 @@ export default function DashboardPage() {
                   ))}
                 </div>
               </div>
-            )}
-
-            {/* Dynamic CTA Buttons based on Permissions */}
-            {canCreateInvoice && (
-              <Link
-                href="/dashboard/invoices/create"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs shadow-2xs transition"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>New Invoice</span>
-              </Link>
-            )}
-
-            {canCreateProforma && (
-              <Link
-                href="/dashboard/proforma/create"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs shadow-2xs transition"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>New Proforma</span>
-              </Link>
-            )}
-
-            {canCreateProject && (
-              <Link
-                href="/dashboard/projects/create"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-xs transition backdrop-blur-xs"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>New Project</span>
-              </Link>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* ========================================================================= */}

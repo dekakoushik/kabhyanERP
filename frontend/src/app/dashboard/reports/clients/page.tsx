@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import ReportHeader from "@/components/ReportHeader";
 import { api, ReportClientsResponse } from "@/lib/api";
+import { getCurrentFiscalYear } from "@/lib/fiscalYear";
 import {
   Users,
   Building,
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 
 export default function ClientPortfolioReportsPage() {
-  const [fy, setFy] = useState("2026-2027");
+  const [fy, setFy] = useState(getCurrentFiscalYear());
   const [quarter, setQuarter] = useState("");
   const [data, setData] = useState<ReportClientsResponse | null>(null);
   const [loading, setLoading] = useState(true);

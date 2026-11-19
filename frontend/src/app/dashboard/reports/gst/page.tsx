@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import ReportHeader from "@/components/ReportHeader";
 import { api, ReportGstResponse } from "@/lib/api";
+import { getCurrentFiscalYear } from "@/lib/fiscalYear";
 import {
   Receipt,
   Download,
@@ -19,7 +20,7 @@ import {
 } from "lucide-react";
 
 export default function GstReportsPage() {
-  const [fy, setFy] = useState("2026-2027");
+  const [fy, setFy] = useState(getCurrentFiscalYear());
   const [quarter, setQuarter] = useState("");
   const [activeGstrTab, setActiveGstrTab] = useState<"t4" | "t7" | "t11a" | "t11b" | "t13">("t4");
   const [data, setData] = useState<ReportGstResponse | null>(null);
