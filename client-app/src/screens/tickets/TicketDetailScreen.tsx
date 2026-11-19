@@ -16,6 +16,7 @@ import { colors } from "../../theme/colors";
 import { fonts } from "../../theme/typography";
 import { Badge } from "../../components/Badge";
 import { portalApi, SupportTicket, TicketMessage } from "../../api/portal";
+import { getEcho } from "../../utils/echo";
 
 export const TicketDetailScreen: React.FC<{ route: any }> = ({ route }) => {
   const { ticketId } = route.params;
@@ -38,6 +39,40 @@ export const TicketDetailScreen: React.FC<{ route: any }> = ({ route }) => {
 
   useEffect(() => {
     fetchTicket();
+  }, [ticketId]);
+
+  // Real-Time Reverb Live Chat Listener for Support Ticket
+  useEffect(() => {
+    let activeChannel: any = null;
+
+    getEcho().then((echo) => {
+      if (!echo) return;
+      activeChannel = echo
+        .private(`ticket.${ticketId}`)
+        .listen(".TicketReplyCreated", (data: any) => {
+          setTicket((prev: any) => {
+            if (!prev) return prev;
+            const existingReplies = (prev.replies || []) as any[];
+            const exists = existingReplies.some((r) => r.id === data.reply?.id);
+            if (exists) return prev;
+            return {
+              ...prev,
+              status: data.status || prev.status,
+              replies: [...existingReplies, data.reply],
+            };
+          });
+        });
+    });
+
+    return () => {
+      if (activeChannel) {
+        try {
+          activeChannel.stopListening(".TicketReplyCreated");
+        } catch (e) {
+          // Safe ignore
+        }
+      }
+    };
   }, [ticketId]);
 
   const handleSendReply = async () => {

@@ -341,6 +341,13 @@ class ClientPortalController extends Controller
             Log::warning('[ClientPortalController] Failed to notify PM of client upload: ' . $e->getMessage());
         }
 
+        // Broadcast real-time WebSocket event via Reverb
+        try {
+            broadcast(new \App\Events\ProjectFileRequestUpdated($fileRequest));
+        } catch (\Throwable $e) {
+            Log::warning('[Reverb] Broadcast failed: ' . $e->getMessage());
+        }
+
         return response()->json([
             'message' => 'File uploaded and submitted for Project Manager review successfully.',
             'file_request' => $fileRequest->fresh(['requester:id,name']),
@@ -504,6 +511,13 @@ class ClientPortalController extends Controller
             MailNotificationService::sendTicketReply($ticket, $reply, false);
         } catch (\Throwable $e) {
             Log::error("Failed to send client portal reply email: " . $e->getMessage());
+        }
+
+        // Broadcast real-time WebSocket event via Reverb
+        try {
+            broadcast(new \App\Events\TicketReplyCreated($ticket, $reply));
+        } catch (\Throwable $e) {
+            Log::warning('[Reverb] Broadcast failed: ' . $e->getMessage());
         }
 
         return response()->json([

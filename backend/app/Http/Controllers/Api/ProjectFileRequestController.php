@@ -106,6 +106,13 @@ class ProjectFileRequestController extends Controller
             Log::warning('[ProjectFileRequestController] Failed to send document request notification: ' . $e->getMessage());
         }
 
+        // Broadcast real-time WebSocket event via Reverb
+        try {
+            broadcast(new \App\Events\ProjectFileRequestCreated($fileRequest));
+        } catch (\Throwable $e) {
+            Log::warning('[Reverb] Broadcast failed: ' . $e->getMessage());
+        }
+
         return response()->json([
             'message' => 'File request sent to client successfully.',
             'file_request' => $fileRequest,
@@ -178,6 +185,13 @@ class ProjectFileRequestController extends Controller
             }
         } catch (\Throwable $e) {
             Log::warning('[ProjectFileRequestController] Failed to send document review notification: ' . $e->getMessage());
+        }
+
+        // Broadcast real-time WebSocket event via Reverb
+        try {
+            broadcast(new \App\Events\ProjectFileRequestUpdated($fileRequest));
+        } catch (\Throwable $e) {
+            Log::warning('[Reverb] Broadcast failed: ' . $e->getMessage());
         }
 
         $message = $validated['status'] === 'approved'
@@ -260,6 +274,13 @@ class ProjectFileRequestController extends Controller
         $project->update([
             'show_tasks_to_client' => (bool)$validated['show_tasks_to_client'],
         ]);
+
+        // Broadcast real-time WebSocket event via Reverb
+        try {
+            broadcast(new \App\Events\ProjectTaskVisibilityToggled($project));
+        } catch (\Throwable $e) {
+            Log::warning('[Reverb] Broadcast failed: ' . $e->getMessage());
+        }
 
         return response()->json([
             'message' => $project->show_tasks_to_client

@@ -15,6 +15,7 @@ import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { portalApi, Project, ProjectFileRequest } from "../../api/portal";
 import { formatDate } from "../../utils/date";
+import { getEcho } from "../../utils/echo";
 
 export const ProjectDetailScreen: React.FC<{ route: any }> = ({ route }) => {
   const { projectId } = route.params;
@@ -35,6 +36,62 @@ export const ProjectDetailScreen: React.FC<{ route: any }> = ({ route }) => {
       }
     }
     load();
+  }, [projectId]);
+
+  // Real-Time Reverb WebSocket Channel Listener
+  useEffect(() => {
+    let activeChannel: any = null;
+
+    getEcho().then((echo) => {
+      if (!echo) return;
+      activeChannel = echo
+        .private(`project.${projectId}`)
+        .listen(".ProjectFileRequestCreated", (data: any) => {
+          setProject((prev: any) => {
+            if (!prev) return prev;
+            const existing = (prev.file_requests || []) as ProjectFileRequest[];
+            const exists = existing.some((r) => r.id === data.file_request?.id);
+            if (exists) return prev;
+            return {
+              ...prev,
+              file_requests: [data.file_request, ...existing],
+            };
+          });
+        })
+        .listen(".ProjectFileRequestUpdated", (data: any) => {
+          setProject((prev: any) => {
+            if (!prev) return prev;
+            const existing = (prev.file_requests || []) as ProjectFileRequest[];
+            return {
+              ...prev,
+              file_requests: existing.map((r) =>
+                r.id === data.file_request?.id ? data.file_request : r
+              ),
+            };
+          });
+        })
+        .listen(".ProjectTaskVisibilityToggled", (data: any) => {
+          setProject((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              show_tasks_to_client: data.show_tasks_to_client,
+            };
+          });
+        });
+    });
+
+    return () => {
+      if (activeChannel) {
+        try {
+          activeChannel.stopListening(".ProjectFileRequestCreated");
+          activeChannel.stopListening(".ProjectFileRequestUpdated");
+          activeChannel.stopListening(".ProjectTaskVisibilityToggled");
+        } catch (e) {
+          // Safe ignore
+        }
+      }
+    };
   }, [projectId]);
 
   if (loading || !project) {
