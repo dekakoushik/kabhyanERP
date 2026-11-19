@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -15,23 +15,36 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../theme/colors";
 import { fonts } from "../../theme/typography";
 import { Badge } from "../../components/Badge";
-import { portalApi, SupportTicket, TicketMessage } from "../../api/portal";
+import { portalApi, SupportTicket, TicketReplyItem } from "../../api/portal";
+import { formatDate } from "../../utils/date";
 import { getEcho } from "../../utils/echo";
 
-export const TicketDetailScreen: React.FC<{ route: any }> = ({ route }) => {
+interface UnifiedMessageItem {
+  id: string;
+  isInitial: boolean;
+  isStaff: boolean;
+  senderName: string;
+  message: string;
+  createdAt: string;
+}
+
+export const TicketDetailScreen: React.FC<{ route: any; navigation: any }> = ({
+  route,
+  navigation,
+}) => {
   const { ticketId } = route.params;
   const [ticket, setTicket] = useState<SupportTicket | null>(null);
   const [loading, setLoading] = useState(true);
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
+  const flatListRef = useRef<FlatList>(null);
 
   const fetchTicket = async () => {
     try {
-      setLoading(true);
       const res = await portalApi.getTicket(ticketId);
       setTicket(res.ticket);
     } catch (err: any) {
-      Alert.alert("Error", err.message || "Failed to load ticket.");
+      Alert.alert("Error", err.message || "Failed to load support ticket.");
     } finally {
       setLoading(false);
     }
@@ -40,6 +53,15 @@ export const TicketDetailScreen: React.FC<{ route: any }> = ({ route }) => {
   useEffect(() => {
     fetchTicket();
   }, [ticketId]);
+
+  // Set navigation header title to clean ticket number
+  useEffect(() => {
+    if (ticket) {
+      navigation.setOptions({
+        title: `#${ticket.ticket_number || ticket.id}`,
+      });
+    }
+  }, [ticket, navigation]);
 
   // Real-Time Reverb Live Chat Listener for Support Ticket
   useEffect(() => {
@@ -52,7 +74,7 @@ export const TicketDetailScreen: React.FC<{ route: any }> = ({ route }) => {
         .listen(".TicketReplyCreated", (data: any) => {
           setTicket((prev: any) => {
             if (!prev) return prev;
-            const existingReplies = (prev.replies || []) as any[];
+            const existingReplies = (prev.replies || []) as TicketReplyItem[];
             const exists = existingReplies.some((r) => r.id === data.reply?.id);
             if (exists) return prev;
             return {
@@ -61,6 +83,10 @@ export const TicketDetailScreen: React.FC<{ route: any }> = ({ route }) => {
               replies: [...existingReplies, data.reply],
             };
           });
+          // Scroll to bottom on new message
+          setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+          }, 200);
         });
     });
 
@@ -76,15 +102,23 @@ export const TicketDetailScreen: React.FC<{ route: any }> = ({ route }) => {
   }, [ticketId]);
 
   const handleSendReply = async () => {
-    if (!replyText.trim()) return;
+    if (!replyText.trim() || sending) return;
 
+    const messageContent = replyText.trim();
     try {
       setSending(true);
-      await portalApi.replyTicket(ticketId, replyText.trim());
+      const res = await portalApi.replyTicket(ticketId, messageContent);
       setReplyText("");
-      fetchTicket();
+      if (res.ticket) {
+        setTicket(res.ticket);
+      } else {
+        fetchTicket();
+      }
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 150);
     } catch (err: any) {
-      Alert.alert("Error", err.message || "Failed to send message.");
+      Alert.alert("Error", err.message || "Failed to send message reply.");
     } finally {
       setSending(false);
     }
@@ -93,13 +127,61 @@ export const TicketDetailScreen: React.FC<{ route: any }> = ({ route }) => {
   if (loading || !ticket) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="small" color={colors.primary} />
         <Text style={styles.loadingText}>Loading ticket discussion...</Text>
       </View>
     );
   }
 
-  const messages = ticket.messages || [];
+  // Build unified thread list: initial description + all replies
+  const threadMessages: UnifiedMessageItem[] = [];
+
+  // 1. Initial Request (if description exists)
+  if (ticket.description) {
+    threadMessages.push({
+      id: `initial-${ticket.id}`,
+      isInitial: true,
+      isStaff: false,
+      senderName: "You (Original Request)",
+      message: ticket.description,
+      createdAt: ticket.created_at,
+    });
+  }
+
+  // 2. Replies (from both staff and client)
+  const replies = ticket.replies || (ticket.messages as any) || [];
+  replies.forEach((r: any) => {
+    const isStaff = Boolean(r.is_staff_reply || r.sender_type === "staff");
+    const senderName = isStaff
+      ? r.staff?.name || "Kabhyan Support"
+      : "You";
+    threadMessages.push({
+      id: String(r.id),
+      isInitial: false,
+      isStaff,
+      senderName,
+      message: r.message,
+      createdAt: r.created_at,
+    });
+  });
+
+  const renderStatusBadge = (status: string) => {
+    const s = (status || "open").toLowerCase();
+    switch (s) {
+      case "resolved":
+      case "closed":
+        return <Badge label="RESOLVED" variant="success" size="sm" />;
+      case "in_progress":
+        return <Badge label="IN PROGRESS" variant="info" size="sm" />;
+      case "awaiting_client_reply":
+        return <Badge label="AWAITING REPLY" variant="purple" size="sm" />;
+      default:
+        return <Badge label="OPEN" variant="warning" size="sm" />;
+    }
+  };
+
+  const isUrgent = ticket.priority === "urgent" || ticket.priority === "critical";
+  const isHigh = ticket.priority === "high";
 
   return (
     <KeyboardAvoidingView
@@ -107,80 +189,152 @@ export const TicketDetailScreen: React.FC<{ route: any }> = ({ route }) => {
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       style={styles.container}
     >
-      {/* Top Details Card */}
-      <View style={styles.headerBox}>
-        <View style={styles.headerRow}>
-          <Text style={styles.ticketNum}>#{ticket.ticket_number || ticket.id}</Text>
-          <Badge label={(ticket.status || "open").replace("_", " ")} variant="info" />
+      {/* Compact Ticket Header Card */}
+      <View style={styles.headerCard}>
+        <View style={styles.headerTopRow}>
+          <View style={styles.idGroup}>
+            <Text style={styles.ticketIdText}>
+              #{ticket.ticket_number || ticket.id}
+            </Text>
+            {isUrgent ? (
+              <View style={styles.urgentPill}>
+                <View style={[styles.priorityDot, { backgroundColor: colors.danger }]} />
+                <Text style={styles.urgentText}>URGENT</Text>
+              </View>
+            ) : isHigh ? (
+              <View style={styles.highPill}>
+                <View style={[styles.priorityDot, { backgroundColor: "#EA580C" }]} />
+                <Text style={styles.highText}>HIGH</Text>
+              </View>
+            ) : null}
+          </View>
+          {renderStatusBadge(ticket.status)}
         </View>
-        <Text style={styles.subject}>{ticket.subject}</Text>
+
+        <Text style={styles.subjectText}>{ticket.subject}</Text>
+
+        {/* Linked Project / Assignee Row */}
+        <View style={styles.metaRow}>
+          {ticket.project?.name ? (
+            <View style={styles.metaItem}>
+              <Ionicons name="briefcase-outline" size={11} color={colors.textSecondary} />
+              <Text style={styles.metaValue} numberOfLines={1}>
+                {ticket.project.name}
+              </Text>
+            </View>
+          ) : null}
+
+          {ticket.project?.name && ticket.assignee?.name ? (
+            <Text style={styles.metaBullet}>•</Text>
+          ) : null}
+
+          {ticket.assignee?.name ? (
+            <View style={styles.metaItem}>
+              <Ionicons name="person-outline" size={11} color={colors.textSecondary} />
+              <Text style={styles.metaValue} numberOfLines={1}>
+                Assigned: {ticket.assignee.name}
+              </Text>
+            </View>
+          ) : null}
+        </View>
       </View>
 
       {/* Messages Thread */}
       <FlatList
-        data={messages}
-        keyExtractor={(item, idx) => String(item.id || idx)}
-        contentContainerStyle={styles.messagesList}
-        renderItem={({ item }: { item: TicketMessage }) => {
-          const isClient = item.sender_type === "client";
+        ref={flatListRef}
+        data={threadMessages}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.messagesContainer}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item }) => {
+          const isMe = !item.isStaff;
           return (
             <View
               style={[
-                styles.bubbleWrapper,
-                isClient ? styles.bubbleRight : styles.bubbleLeft,
+                styles.messageRow,
+                isMe ? styles.messageRowMe : styles.messageRowStaff,
               ]}
             >
-              <Text style={styles.senderName}>
-                {item.sender_name || (isClient ? "You" : "Kabhyan Support")}
-              </Text>
+              {/* Sender Name & Badge */}
+              <View
+                style={[
+                  styles.senderHeader,
+                  isMe ? styles.senderHeaderMe : styles.senderHeaderStaff,
+                ]}
+              >
+                <Text style={styles.senderNameText}>{item.senderName}</Text>
+                {item.isStaff && (
+                  <View style={styles.staffTag}>
+                    <Text style={styles.staffTagText}>TEAM</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Message Bubble */}
               <View
                 style={[
                   styles.bubble,
-                  isClient ? styles.bubbleClient : styles.bubbleStaff,
+                  isMe ? styles.bubbleMe : styles.bubbleStaff,
+                  item.isInitial && styles.bubbleInitial,
                 ]}
               >
                 <Text
                   style={[
-                    styles.messageText,
-                    isClient ? styles.msgTextClient : styles.msgTextStaff,
+                    styles.messageBody,
+                    isMe ? styles.messageBodyMe : styles.messageBodyStaff,
                   ]}
                 >
                   {item.message}
                 </Text>
               </View>
-              <Text style={styles.timeText}>{item.created_at || "Just now"}</Text>
+
+              {/* Timestamp */}
+              <Text
+                style={[
+                  styles.timestampText,
+                  isMe ? styles.timestampMe : styles.timestampStaff,
+                ]}
+              >
+                {formatDate(item.createdAt)}
+              </Text>
             </View>
           );
         }}
         ListEmptyComponent={
-          <View style={styles.emptyMessages}>
-            <Text style={styles.emptyMessagesText}>No message updates recorded yet.</Text>
+          <View style={styles.emptyContainer}>
+            <Ionicons name="chatbubbles-outline" size={32} color={colors.textMuted} />
+            <Text style={styles.emptyTitle}>No Updates Yet</Text>
+            <Text style={styles.emptySubtitle}>
+              Send a reply below to reach our engineering support team.
+            </Text>
           </View>
         }
       />
 
-      {/* Reply Input Bar */}
-      <View style={styles.replyBar}>
+      {/* Bottom Sticky Reply Input */}
+      <View style={styles.inputContainer}>
         <TextInput
-          style={styles.replyInput}
-          placeholder="Type your message..."
+          style={styles.textInput}
+          placeholder="Type a reply to engineering..."
           placeholderTextColor={colors.textMuted}
           value={replyText}
           onChangeText={setReplyText}
           multiline
+          maxLength={2000}
         />
         <TouchableOpacity
           onPress={handleSendReply}
           disabled={sending || !replyText.trim()}
           style={[
-            styles.sendButton,
-            (!replyText.trim() || sending) && styles.sendButtonDisabled,
+            styles.sendBtn,
+            (!replyText.trim() || sending) && styles.sendBtnDisabled,
           ]}
+          activeOpacity={0.8}
         >
           {sending ? (
-            <ActivityIndicator size="small" color={colors.textLight} />
+            <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Ionicons name="send" size={16} color={colors.textLight} />
+            <Ionicons name="send" size={15} color="#FFFFFF" />
           )}
         </TouchableOpacity>
       </View>
@@ -195,131 +349,239 @@ const styles = StyleSheet.create({
   },
   centerContainer: {
     flex: 1,
-    justifyContent: "center",
     alignItems: "center",
+    justifyContent: "center",
   },
   loadingText: {
-    marginTop: 10,
+    marginTop: 8,
     fontFamily: fonts.medium,
-    fontSize: 13,
+    fontSize: 12,
     color: colors.textSecondary,
   },
-  headerBox: {
+  headerCard: {
     backgroundColor: colors.card,
-    padding: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  headerRow: {
+  headerTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 4,
   },
-  ticketNum: {
+  idGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  ticketIdText: {
     fontFamily: fonts.bold,
     fontSize: 12,
     color: colors.primary,
   },
-  subject: {
-    fontFamily: fonts.bold,
-    fontSize: 15,
-    color: colors.text,
+  urgentPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 4,
+    backgroundColor: colors.dangerBg,
+    borderWidth: 1,
+    borderColor: colors.dangerBorder,
+    gap: 3.5,
   },
-  messagesList: {
-    padding: 16,
+  urgentText: {
+    fontFamily: fonts.bold,
+    fontSize: 8.5,
+    color: colors.danger,
+    letterSpacing: 0.4,
+  },
+  highPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 4,
+    backgroundColor: "#FFF7ED",
+    borderWidth: 1,
+    borderColor: "#FED7AA",
+    gap: 3.5,
+  },
+  highText: {
+    fontFamily: fonts.bold,
+    fontSize: 8.5,
+    color: "#EA580C",
+    letterSpacing: 0.4,
+  },
+  priorityDot: {
+    width: 4.5,
+    height: 4.5,
+    borderRadius: 2.5,
+  },
+  subjectText: {
+    fontFamily: fonts.bold,
+    fontSize: 14.5,
+    color: colors.text,
+    lineHeight: 19,
+    marginBottom: 4,
+  },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  metaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  metaValue: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: colors.textSecondary,
+  },
+  metaBullet: {
+    fontSize: 9,
+    color: colors.textMuted,
+  },
+  messagesContainer: {
+    padding: 12,
     paddingBottom: 20,
   },
-  bubbleWrapper: {
-    marginBottom: 14,
-    maxWidth: "80%",
+  messageRow: {
+    marginBottom: 12,
+    maxWidth: "84%",
   },
-  bubbleLeft: {
-    alignSelf: "flex-start",
-  },
-  bubbleRight: {
+  messageRowMe: {
     alignSelf: "flex-end",
   },
-  senderName: {
-    fontFamily: fonts.bold,
-    fontSize: 10,
-    color: colors.textMuted,
+  messageRowStaff: {
+    alignSelf: "flex-start",
+  },
+  senderHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
     marginBottom: 3,
   },
-  bubble: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 16,
+  senderHeaderMe: {
+    justifyContent: "flex-end",
   },
-  bubbleClient: {
+  senderHeaderStaff: {
+    justifyContent: "flex-start",
+  },
+  senderNameText: {
+    fontFamily: fonts.bold,
+    fontSize: 10.5,
+    color: colors.textMuted,
+  },
+  staffTag: {
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 3,
+  },
+  staffTagText: {
+    fontFamily: fonts.bold,
+    fontSize: 8,
+    color: colors.primary,
+    letterSpacing: 0.5,
+  },
+  bubble: {
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 12,
+  },
+  bubbleMe: {
     backgroundColor: colors.primary,
-    borderBottomRightRadius: 4,
+    borderBottomRightRadius: 3,
   },
   bubbleStaff: {
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
-    borderBottomLeftRadius: 4,
+    borderBottomLeftRadius: 3,
   },
-  messageText: {
+  bubbleInitial: {
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+  },
+  messageBody: {
     fontFamily: fonts.regular,
-    fontSize: 13,
+    fontSize: 12.5,
     lineHeight: 18,
   },
-  msgTextClient: {
+  messageBodyMe: {
     color: colors.textLight,
   },
-  msgTextStaff: {
+  messageBodyStaff: {
     color: colors.text,
   },
-  timeText: {
+  timestampText: {
     fontFamily: fonts.regular,
-    fontSize: 10,
+    fontSize: 9.5,
     color: colors.textMuted,
-    marginTop: 3,
-    alignSelf: "flex-end",
+    marginTop: 2,
   },
-  emptyMessages: {
+  timestampMe: {
+    textAlign: "right",
+  },
+  timestampStaff: {
+    textAlign: "left",
+  },
+  emptyContainer: {
     alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 40,
+    gap: 6,
   },
-  emptyMessagesText: {
+  emptyTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.text,
+  },
+  emptySubtitle: {
     fontFamily: fonts.regular,
     fontSize: 12,
     color: colors.textMuted,
+    textAlign: "center",
+    maxWidth: 240,
   },
-  replyBar: {
+  inputContainer: {
     flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    alignItems: "flex-end",
     backgroundColor: colors.card,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+    gap: 8,
   },
-  replyInput: {
+  textInput: {
     flex: 1,
+    minHeight: 36,
+    maxHeight: 90,
     backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    maxHeight: 100,
-    fontFamily: fonts.regular,
-    fontSize: 13,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 12.5,
     color: colors.text,
+    fontFamily: fonts.regular,
   },
-  sendButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+  sendBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: 8,
   },
-  sendButtonDisabled: {
-    opacity: 0.5,
+  sendBtnDisabled: {
+    backgroundColor: colors.border,
   },
 });

@@ -297,16 +297,31 @@ export interface TicketMessage {
   created_at: string;
 }
 
+export interface TicketReplyItem {
+  id: number;
+  ticket_id: number;
+  client_id?: number | null;
+  user_id?: number | null;
+  message: string;
+  is_staff_reply: boolean;
+  created_at: string;
+  staff?: { id: number; name: string; avatar?: string };
+  client?: { id: number; name: string; company_name?: string };
+}
+
 export interface SupportTicket {
   id: number;
   ticket_number: string;
   subject: string;
+  description?: string;
   type?: "issue" | "change_request" | "improvement" | "query" | "billing" | string;
   status: "open" | "in_progress" | "awaiting_client_reply" | "resolved" | "closed" | string;
   priority: "low" | "medium" | "high" | "urgent" | "critical" | string;
   created_at: string;
   project?: { id: number; name: string; code?: string };
+  assignee?: { id: number; name: string; avatar?: string };
   replies_count?: number;
+  replies?: TicketReplyItem[];
   messages?: TicketMessage[];
 }
 
@@ -531,7 +546,7 @@ export const portalApi = {
     }),
 
   replyTicket: (id: number | string, message: string) =>
-    apiClient<{ success: boolean; message: TicketMessage }>(`/portal/tickets/${id}/reply`, {
+    apiClient<{ message: string; reply?: TicketReplyItem; ticket?: SupportTicket; success?: boolean }>(`/portal/tickets/${id}/reply`, {
       method: "POST",
       body: JSON.stringify({ message }),
     }),

@@ -63,7 +63,7 @@ export const TicketsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     return { all: tickets.length, open, resolved };
   }, [tickets]);
 
-  // Filtered tickets based on search and status filter
+  // Filtered tickets based on search query and status tab
   const filteredTickets = useMemo(() => {
     return tickets.filter((item) => {
       if (statusFilter === "open") {
@@ -84,7 +84,7 @@ export const TicketsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     });
   }, [tickets, statusFilter, searchQuery]);
 
-  // Status badge helper
+  // Clean compact status badge
   const renderStatusBadge = (status: string) => {
     const s = (status || "open").toLowerCase();
     switch (s) {
@@ -103,7 +103,7 @@ export const TicketsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const renderTicketCard = ({ item }: { item: SupportTicket }) => {
     const isUrgent = item.priority === "urgent" || item.priority === "critical";
     const isHigh = item.priority === "high";
-    const replies = item.replies_count || 0;
+    const replies = item.replies_count || (item.replies ? item.replies.length : 0);
 
     return (
       <TouchableOpacity
@@ -111,7 +111,7 @@ export const TicketsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         onPress={() => navigation.navigate("TicketDetail", { ticketId: item.id })}
       >
         <Card style={styles.ticketCard}>
-          {/* Card Top Row: Ticket ID + Priority (Left) | Status Badge (Right) */}
+          {/* Top Row: Ticket ID + Priority Indicator | Status Badge */}
           <View style={styles.cardHeaderRow}>
             <View style={styles.idGroup}>
               <Text style={styles.ticketIdText}>
@@ -141,17 +141,17 @@ export const TicketsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           {/* Linked Project (Optional) */}
           {item.project?.name ? (
             <View style={styles.projectRow}>
-              <Ionicons name="briefcase-outline" size={12} color={colors.textSecondary} />
+              <Ionicons name="briefcase-outline" size={11} color={colors.textSecondary} />
               <Text style={styles.projectName} numberOfLines={1}>
                 {item.project.name}
               </Text>
             </View>
           ) : null}
 
-          {/* Divider */}
+          {/* Hairline Divider */}
           <View style={styles.cardDivider} />
 
-          {/* Card Footer: Date & Replies (Left) | Chevron (Right) */}
+          {/* Footer: Date & Updates Count | Chevron */}
           <View style={styles.cardFooterRow}>
             <View style={styles.footerMetaGroup}>
               <View style={styles.metaItem}>
@@ -189,34 +189,13 @@ export const TicketsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
   return (
     <View style={styles.container}>
-      {/* Crisp Top Action Bar */}
-      <View style={styles.topHeader}>
-        <View style={styles.headerTitleGroup}>
-          <Text style={styles.headerTitle}>Support</Text>
-          {counts.open > 0 ? (
-            <View style={styles.openCounterPill}>
-              <Text style={styles.openCounterText}>{counts.open} open</Text>
-            </View>
-          ) : null}
-        </View>
-
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={styles.newTicketBtn}
-          onPress={() => navigation.navigate("CreateTicket")}
-        >
-          <Ionicons name="add" size={16} color="#FFFFFF" />
-          <Text style={styles.newTicketBtnText}>New Ticket</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Clean Search Input Bar */}
-      <View style={styles.searchContainer}>
+      {/* Compact Search & Filter Control Bar */}
+      <View style={styles.controlHeader}>
         <View style={styles.searchBar}>
-          <Ionicons name="search-outline" size={16} color={colors.textMuted} />
+          <Ionicons name="search-outline" size={15} color={colors.textMuted} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search tickets by # or subject..."
+            placeholder="Search tickets by #, subject, or project..."
             placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -231,52 +210,57 @@ export const TicketsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             </TouchableOpacity>
           )}
         </View>
-      </View>
 
-      {/* Segmented Filter Tabs */}
-      <View style={styles.filterTabsContainer}>
-        {(
-          [
-            { key: "all", label: "All", count: counts.all },
-            { key: "open", label: "Open", count: counts.open },
-            { key: "resolved", label: "Resolved", count: counts.resolved },
-          ] as const
-        ).map((tab) => {
-          const isActive = statusFilter === tab.key;
-          return (
-            <TouchableOpacity
-              key={tab.key}
-              style={[styles.filterChip, isActive && styles.filterChipActive]}
-              onPress={() => setStatusFilter(tab.key)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
-                {tab.label}
-              </Text>
-              <View
-                style={[
-                  styles.filterCountBadge,
-                  isActive && styles.filterCountBadgeActive,
-                ]}
+        {/* Compact Segmented Filter Tabs */}
+        <View style={styles.filterTabsRow}>
+          {(
+            [
+              { key: "all", label: "All", count: counts.all },
+              { key: "open", label: "Open", count: counts.open },
+              { key: "resolved", label: "Resolved", count: counts.resolved },
+            ] as const
+          ).map((tab) => {
+            const isActive = statusFilter === tab.key;
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                style={[styles.filterChip, isActive && styles.filterChipActive]}
+                onPress={() => setStatusFilter(tab.key)}
+                activeOpacity={0.7}
               >
                 <Text
                   style={[
-                    styles.filterCountText,
-                    isActive && styles.filterCountTextActive,
+                    styles.filterChipText,
+                    isActive && styles.filterChipTextActive,
                   ]}
                 >
-                  {tab.count}
+                  {tab.label}
                 </Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+                <View
+                  style={[
+                    styles.filterCountBadge,
+                    isActive && styles.filterCountBadgeActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterCountText,
+                      isActive && styles.filterCountTextActive,
+                    ]}
+                  >
+                    {tab.count}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
       {/* Content List */}
       {loading ? (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="small" color={colors.primary} />
           <Text style={styles.loadingText}>Loading support tickets...</Text>
         </View>
       ) : (
@@ -285,6 +269,7 @@ export const TicketsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           keyExtractor={(item) => String(item.id)}
           renderItem={renderTicketCard}
           contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -306,8 +291,8 @@ export const TicketsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
               }
               description={
                 searchQuery
-                  ? `No tickets match "${searchQuery}". Clear your search to see all records.`
-                  : "You have no tickets under this filter. Tap '+ New Ticket' above to request engineering support."
+                  ? `No tickets match "${searchQuery}". Clear your search to view all records.`
+                  : "You have no support tickets under this status. Tap '+ New' in the top bar to raise a ticket."
               }
             />
           }
@@ -322,93 +307,46 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  topHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 10,
+  controlHeader: {
     backgroundColor: colors.card,
-  },
-  headerTitleGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  headerTitle: {
-    fontFamily: fonts.bold,
-    fontSize: 18,
-    color: colors.text,
-    letterSpacing: -0.3,
-  },
-  openCounterPill: {
-    backgroundColor: colors.primaryLight,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  openCounterText: {
-    fontFamily: fonts.bold,
-    fontSize: 11,
-    color: colors.primary,
-  },
-  newTicketBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.primary,
     paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
-    gap: 4,
-  },
-  newTicketBtnText: {
-    fontFamily: fonts.bold,
-    fontSize: 12,
-    color: colors.textLight,
-  },
-  searchContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 8,
-    backgroundColor: colors.card,
+    paddingTop: 10,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    gap: 8,
   },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: colors.background,
-    borderRadius: 10,
+    borderRadius: 8,
     paddingHorizontal: 10,
-    height: 38,
+    height: 36,
     borderWidth: 1,
     borderColor: colors.border,
   },
   searchInput: {
     flex: 1,
-    marginLeft: 8,
-    fontSize: 13,
+    marginLeft: 6,
+    fontSize: 12.5,
     color: colors.text,
     fontFamily: fonts.regular,
   },
-  filterTabsContainer: {
+  filterTabsRow: {
     flexDirection: "row",
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    backgroundColor: colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: 8,
+    gap: 6,
   },
   filterChip: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 8,
+    borderRadius: 6,
     backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.border,
-    gap: 6,
+    gap: 5,
   },
   filterChipActive: {
     backgroundColor: colors.secondary,
@@ -416,7 +354,7 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontFamily: fonts.medium,
-    fontSize: 12,
+    fontSize: 11.5,
     color: colors.textSecondary,
   },
   filterChipTextActive: {
@@ -425,12 +363,12 @@ const styles = StyleSheet.create({
   },
   filterCountBadge: {
     backgroundColor: colors.border,
-    borderRadius: 6,
+    borderRadius: 4,
     paddingHorizontal: 5,
     paddingVertical: 1,
   },
   filterCountBadgeActive: {
-    backgroundColor: "rgba(255,255,255,0.22)",
+    backgroundColor: "rgba(255, 255, 255, 0.22)",
   },
   filterCountText: {
     fontFamily: fonts.bold,
@@ -442,8 +380,8 @@ const styles = StyleSheet.create({
     color: colors.textLight,
   },
   listContent: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: 12,
+    paddingBottom: 100, // Safe clearance for bottom tab bar
   },
   centerContainer: {
     flex: 1,
@@ -451,86 +389,87 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   loadingText: {
-    marginTop: 10,
+    marginTop: 8,
     fontFamily: fonts.medium,
-    fontSize: 13,
+    fontSize: 12,
     color: colors.textSecondary,
   },
   ticketCard: {
-    marginBottom: 10,
-    borderRadius: 12,
+    marginBottom: 8,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 14,
+    padding: 12,
+    backgroundColor: colors.card,
   },
   cardHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 6,
+    marginBottom: 5,
   },
   idGroup: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
     flex: 1,
-    marginRight: 8,
+    marginRight: 6,
   },
   ticketIdText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontFamily: fonts.bold,
     color: colors.primary,
   },
   urgentPill: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
     borderRadius: 4,
     backgroundColor: colors.dangerBg,
     borderWidth: 1,
     borderColor: colors.dangerBorder,
-    gap: 4,
+    gap: 3.5,
   },
   urgentText: {
     fontFamily: fonts.bold,
-    fontSize: 9,
+    fontSize: 8.5,
     color: colors.danger,
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   highPill: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
     borderRadius: 4,
     backgroundColor: "#FFF7ED",
     borderWidth: 1,
     borderColor: "#FED7AA",
-    gap: 4,
+    gap: 3.5,
   },
   highText: {
     fontFamily: fonts.bold,
-    fontSize: 9,
+    fontSize: 8.5,
     color: "#EA580C",
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   priorityDot: {
-    width: 5,
-    height: 5,
+    width: 4.5,
+    height: 4.5,
     borderRadius: 2.5,
   },
   subject: {
     fontFamily: fonts.bold,
-    fontSize: 14,
+    fontSize: 13.5,
     color: colors.text,
-    lineHeight: 19,
-    marginBottom: 4,
+    lineHeight: 18,
+    marginBottom: 2,
   },
   projectRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
+    gap: 4,
     marginTop: 2,
     marginBottom: 4,
   },
@@ -543,7 +482,7 @@ const styles = StyleSheet.create({
   cardDivider: {
     height: 1,
     backgroundColor: colors.borderLight,
-    marginVertical: 10,
+    marginVertical: 8,
   },
   cardFooterRow: {
     flexDirection: "row",
@@ -553,7 +492,7 @@ const styles = StyleSheet.create({
   footerMetaGroup: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   metaItem: {
     flexDirection: "row",
@@ -566,7 +505,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   metaBullet: {
-    fontSize: 10,
+    fontSize: 9,
     color: colors.textMuted,
   },
 });

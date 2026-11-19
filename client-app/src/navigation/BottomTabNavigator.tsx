@@ -23,6 +23,31 @@ export const BottomTabNavigator: React.FC<{ navigation: any }> = ({ navigation }
   const bottomBarPadding = insets.bottom > 0 ? insets.bottom : 8;
   const bottomBarHeight = 56 + bottomBarPadding;
 
+  const renderTicketsHeaderRight = () => (
+    <View style={styles.headerRightGroup}>
+      <TouchableOpacity
+        activeOpacity={0.8}
+        style={styles.headerNewTicketBtn}
+        onPress={() => navigation.navigate("CreateTicket")}
+      >
+        <Ionicons name="add" size={15} color="#FFFFFF" />
+        <Text style={styles.headerNewTicketText}>New</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => navigation.navigate("Profile")}
+        style={styles.avatarButtonCompact}
+        aria-label="Account Profile"
+      >
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>
+            {user?.name ? user.name.slice(0, 2).toUpperCase() : "KB"}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    </View>
+  );
+
   const renderHeaderRight = () => (
     <TouchableOpacity
       activeOpacity={0.8}
@@ -116,6 +141,7 @@ export const BottomTabNavigator: React.FC<{ navigation: any }> = ({ navigation }
         options={{
           title: "Support Desk",
           tabBarLabel: "Support",
+          headerRight: renderTicketsHeaderRight,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? "help-buoy" : "help-buoy-outline"} size={size} color={color} />
           ),
@@ -142,6 +168,29 @@ const styles = StyleSheet.create({
     width: 140,
     height: 38,
     marginLeft: 4,
+  },
+  headerRightGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 16,
+    gap: 10,
+  },
+  headerNewTicketBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    gap: 4,
+  },
+  headerNewTicketText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.textLight,
+  },
+  avatarButtonCompact: {
+    marginLeft: 2,
   },
   avatarButton: {
     marginRight: 16,
