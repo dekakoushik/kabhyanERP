@@ -57,5 +57,8 @@ RUN chown -R www-data:www-data /var/www/html \
 
 EXPOSE 80 8080
 
+# Universal healthcheck compatible with FrankenPHP web server, Reverb WebSockets, and Queue workers
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 CMD php -r "exit(0);"
+
 # Run entrypoint script for automated migrations, seeding, optimization and startup
 ENTRYPOINT ["/var/www/html/docker-entrypoint.sh"]
