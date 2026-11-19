@@ -156,7 +156,10 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="mt-6 text-center text-xs text-slate-500">
-          © 2026 Kabhyan Technologies. All rights reserved.
+          © {new Date().getFullYear()} Kabhyan Technologies. All rights reserved. •{" "}
+          <Link href="/privacy-policy" className="hover:underline text-slate-600 hover:text-blue-600">
+            Privacy Policy
+          </Link>
         </p>
       </div>
     </div>
