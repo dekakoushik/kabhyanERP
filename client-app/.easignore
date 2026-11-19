@@ -1,6 +1,10 @@
 node_modules/
 .expo/
 dist/
+build/
+*.aab
+*.apk
+playstore-assets/
 android/
 ios/
 
