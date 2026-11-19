@@ -31,8 +31,11 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-av
     && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
 # Enable Apache rewrite module for Laravel routing and suppress ServerName warning
+# Silence routine Apache access logs from flooding container stdout, while keeping error.log on stderr for crashes
 RUN a2enmod rewrite \
-    && echo "ServerName localhost" >> /etc/apache2/apache2.conf
+    && echo "ServerName localhost" >> /etc/apache2/apache2.conf \
+    && rm -f /var/log/apache2/access.log \
+    && ln -sf /dev/null /var/log/apache2/access.log
 
 # Production PHP Tuning
 RUN { \
