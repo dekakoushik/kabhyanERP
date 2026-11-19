@@ -192,21 +192,22 @@ export const TicketsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       {/* Compact Search & Filter Control Bar */}
       <View style={styles.controlHeader}>
         <View style={styles.searchBar}>
-          <Ionicons name="search-outline" size={15} color={colors.textMuted} />
+          <Ionicons name="search-outline" size={16} color="#64748B" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search tickets by #, subject, or project..."
-            placeholderTextColor={colors.textMuted}
+            placeholder="Search tickets..."
+            placeholderTextColor="#64748B"
             value={searchQuery}
             onChangeText={setSearchQuery}
             returnKeyType="search"
+            autoCorrect={false}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity
               onPress={() => setSearchQuery("")}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+              <Ionicons name="close-circle" size={16} color="#64748B" />
             </TouchableOpacity>
           )}
         </View>
@@ -319,19 +320,21 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.background,
+    backgroundColor: "#F1F5F9",
     borderRadius: 8,
     paddingHorizontal: 10,
-    height: 36,
+    height: 38,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: "#CBD5E1",
   },
   searchInput: {
     flex: 1,
-    marginLeft: 6,
-    fontSize: 12.5,
+    height: "100%",
+    paddingVertical: 0,
+    marginLeft: 8,
+    fontSize: 13,
     color: colors.text,
-    fontFamily: fonts.regular,
+    fontFamily: fonts.medium,
   },
   filterTabsRow: {
     flexDirection: "row",
