@@ -51,7 +51,7 @@ chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 777 /var/www/html/storage/app/public
 
 # 6. Service Execution Router (FrankenPHP Web / Laravel Reverb / Queue Worker)
-if [ "$CONTAINER_ROLE" = "reverb" ] || [ "$1" = "reverb" ]; then
+if [ "$CONTAINER_ROLE" = "reverb" ] || [ "$CONTAINER_ROLE" = "websocket" ] || [ "$1" = "reverb" ] || [[ "$*" == *"reverb"* ]]; then
     echo "[Kabhyan ERP] Automated startup complete. Launching Laravel Reverb WebSocket Server on 0.0.0.0:8080..."
     exec php artisan reverb:start --host=0.0.0.0 --port=8080 --hostname="${REVERB_HOST:-ws.erp.kabhyan.com}"
 fi
