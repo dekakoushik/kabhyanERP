@@ -10,12 +10,21 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Image,
+  Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { colors } from "../../theme/colors";
 import { fonts } from "../../theme/typography";
 import { Badge } from "../../components/Badge";
-import { portalApi, SupportTicket, TicketReplyItem } from "../../api/portal";
+import {
+  portalApi,
+  SupportTicket,
+  TicketReplyItem,
+  TicketAttachment,
+  ChosenAttachment,
+} from "../../api/portal";
 import { formatDate } from "../../utils/date";
 import { getEcho } from "../../utils/echo";
 
@@ -25,6 +34,7 @@ interface UnifiedMessageItem {
   isStaff: boolean;
   senderName: string;
   message: string;
+  attachments?: TicketAttachment[];
   createdAt: string;
 }
 
@@ -36,6 +46,8 @@ export const TicketDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   const [ticket, setTicket] = useState<SupportTicket | null>(null);
   const [loading, setLoading] = useState(true);
   const [replyText, setReplyText] = useState("");
+  const [selectedAttachment, setSelectedAttachment] = useState<ChosenAttachment | null>(null);
+  const [previewModalImage, setPreviewModalImage] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
@@ -94,21 +106,48 @@ export const TicketDetailScreen: React.FC<{ route: any; navigation: any }> = ({
       if (activeChannel) {
         try {
           activeChannel.stopListening(".TicketReplyCreated");
-        } catch (e) {
+        } catch {
           // Safe ignore
         }
       }
     };
   }, [ticketId]);
 
-  const handleSendReply = async () => {
-    if (!replyText.trim() || sending) return;
+  const pickReplyImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        quality: 0.8,
+      });
 
-    const messageContent = replyText.trim();
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const filename =
+          asset.fileName || asset.uri.split("/").pop() || `reply_img_${Date.now()}.jpg`;
+
+        setSelectedAttachment({
+          uri: asset.uri,
+          name: filename,
+          type: asset.mimeType || "image/jpeg",
+        });
+      }
+    } catch {
+      Alert.alert("Error", "Could not access image library.");
+    }
+  };
+
+  const handleSendReply = async () => {
+    if ((!replyText.trim() && !selectedAttachment) || sending) return;
+
+    const messageContent = replyText.trim() || (selectedAttachment ? "Attached image" : "");
+    const attachmentsToSend = selectedAttachment ? [selectedAttachment] : [];
+
     try {
       setSending(true);
-      const res = await portalApi.replyTicket(ticketId, messageContent);
+      const res = await portalApi.replyTicket(ticketId, messageContent, attachmentsToSend);
       setReplyText("");
+      setSelectedAttachment(null);
       if (res.ticket) {
         setTicket(res.ticket);
       } else {
@@ -144,6 +183,7 @@ export const TicketDetailScreen: React.FC<{ route: any; navigation: any }> = ({
       isStaff: false,
       senderName: "You (Original Request)",
       message: ticket.description,
+      attachments: ticket.attachments || [],
       createdAt: ticket.created_at,
     });
   }
@@ -161,6 +201,7 @@ export const TicketDetailScreen: React.FC<{ route: any; navigation: any }> = ({
       isStaff,
       senderName,
       message: r.message,
+      attachments: r.attachments || [],
       createdAt: r.created_at,
     });
   });
@@ -278,14 +319,40 @@ export const TicketDetailScreen: React.FC<{ route: any; navigation: any }> = ({
                   item.isInitial && styles.bubbleInitial,
                 ]}
               >
-                <Text
-                  style={[
-                    styles.messageBody,
-                    isMe ? styles.messageBodyMe : styles.messageBodyStaff,
-                  ]}
-                >
-                  {item.message}
-                </Text>
+                {/* Bubble Text */}
+                {Boolean(item.message) && (
+                  <Text
+                    style={[
+                      styles.messageBody,
+                      isMe ? styles.messageBodyMe : styles.messageBodyStaff,
+                    ]}
+                  >
+                    {item.message}
+                  </Text>
+                )}
+
+                {/* Bubble Image Attachments */}
+                {Boolean(item.attachments && item.attachments.length > 0) && (
+                  <View style={styles.attachmentsGrid}>
+                    {item.attachments!.map((att: TicketAttachment) => (
+                      <TouchableOpacity
+                        key={att.id || att.url}
+                        activeOpacity={0.85}
+                        onPress={() => setPreviewModalImage(att.url)}
+                        style={styles.chatImageWrapper}
+                      >
+                        <Image
+                          source={{ uri: att.url }}
+                          style={styles.chatImage}
+                          resizeMode="cover"
+                        />
+                        <View style={styles.expandIconBadge}>
+                          <Ionicons name="scan-outline" size={12} color="#FFFFFF" />
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
               </View>
 
               {/* Timestamp */}
@@ -311,23 +378,58 @@ export const TicketDetailScreen: React.FC<{ route: any; navigation: any }> = ({
         }
       />
 
-      {/* Bottom Sticky Reply Input */}
+      {/* Selected Image Micro Preview Bar */}
+      {selectedAttachment && (
+        <View style={styles.stagedAttachmentBar}>
+          <View style={styles.stagedThumbnailWrapper}>
+            <Image source={{ uri: selectedAttachment.uri }} style={styles.stagedThumbnail} />
+            <TouchableOpacity
+              style={styles.removeStagedBtn}
+              onPress={() => setSelectedAttachment(null)}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            >
+              <Ionicons name="close" size={11} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.stagedFilename} numberOfLines={1}>
+            {selectedAttachment.name}
+          </Text>
+        </View>
+      )}
+
+      {/* Bottom Sticky Reply Input Bar */}
       <View style={styles.inputContainer}>
+        {/* Attach Image Button */}
+        <TouchableOpacity
+          style={styles.attachBtn}
+          onPress={pickReplyImage}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={selectedAttachment ? "image" : "image-outline"}
+            size={20}
+            color={selectedAttachment ? colors.primary : colors.textSecondary}
+          />
+        </TouchableOpacity>
+
+        {/* Text Input */}
         <TextInput
           style={styles.textInput}
-          placeholder="Type a reply to engineering..."
-          placeholderTextColor={colors.textMuted}
+          placeholder="Type a reply..."
+          placeholderTextColor="#64748B"
           value={replyText}
           onChangeText={setReplyText}
           multiline
           maxLength={2000}
         />
+
+        {/* Send Button */}
         <TouchableOpacity
           onPress={handleSendReply}
-          disabled={sending || !replyText.trim()}
+          disabled={sending || (!replyText.trim() && !selectedAttachment)}
           style={[
             styles.sendBtn,
-            (!replyText.trim() || sending) && styles.sendBtnDisabled,
+            (!replyText.trim() && !selectedAttachment || sending) && styles.sendBtnDisabled,
           ]}
           activeOpacity={0.8}
         >
@@ -338,6 +440,31 @@ export const TicketDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Fullscreen Image Preview Modal */}
+      <Modal
+        visible={Boolean(previewModalImage)}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setPreviewModalImage(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <TouchableOpacity
+            style={styles.modalCloseBtn}
+            onPress={() => setPreviewModalImage(null)}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Ionicons name="close" size={26} color="#FFFFFF" />
+          </TouchableOpacity>
+          {previewModalImage && (
+            <Image
+              source={{ uri: previewModalImage }}
+              style={styles.fullscreenImage}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -519,6 +646,34 @@ const styles = StyleSheet.create({
   messageBodyStaff: {
     color: colors.text,
   },
+  attachmentsGrid: {
+    marginTop: 8,
+    gap: 6,
+  },
+  chatImageWrapper: {
+    position: "relative",
+    width: 200,
+    height: 140,
+    borderRadius: 8,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.08)",
+  },
+  chatImage: {
+    width: "100%",
+    height: "100%",
+  },
+  expandIconBadge: {
+    position: "absolute",
+    bottom: 6,
+    right: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 4,
+    backgroundColor: "rgba(15, 23, 42, 0.7)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   timestampText: {
     fontFamily: fonts.regular,
     fontSize: 9.5,
@@ -549,6 +704,46 @@ const styles = StyleSheet.create({
     textAlign: "center",
     maxWidth: 240,
   },
+  stagedAttachmentBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.card,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: 10,
+  },
+  stagedThumbnailWrapper: {
+    position: "relative",
+    width: 44,
+    height: 44,
+    borderRadius: 6,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  stagedThumbnail: {
+    width: "100%",
+    height: "100%",
+  },
+  removeStagedBtn: {
+    position: "absolute",
+    top: 2,
+    right: 2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: "rgba(15, 23, 42, 0.8)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stagedFilename: {
+    flex: 1,
+    fontFamily: fonts.regular,
+    fontSize: 11.5,
+    color: colors.textSecondary,
+  },
   inputContainer: {
     flexDirection: "row",
     alignItems: "flex-end",
@@ -559,13 +754,23 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     gap: 8,
   },
+  attachBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F1F5F9",
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+  },
   textInput: {
     flex: 1,
     minHeight: 36,
     maxHeight: 90,
-    backgroundColor: colors.background,
+    backgroundColor: "#F1F5F9",
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: "#CBD5E1",
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -583,5 +788,27 @@ const styles = StyleSheet.create({
   },
   sendBtnDisabled: {
     backgroundColor: colors.border,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.92)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalCloseBtn: {
+    position: "absolute",
+    top: 48,
+    right: 20,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fullscreenImage: {
+    width: "92%",
+    height: "80%",
   },
 });

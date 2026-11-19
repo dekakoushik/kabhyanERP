@@ -470,6 +470,12 @@ class ClientPortalController extends Controller
             'description' => $description,
         ]);
 
+        // Process any attached images/screenshots
+        $attachments = $this->processTicketAttachments($request, "tickets/{$ticket->id}/attachments");
+        if (!empty($attachments)) {
+            $ticket->update(['attachments' => $attachments]);
+        }
+
         $ticket->load(['client', 'project']);
 
         try {
@@ -521,6 +527,12 @@ class ClientPortalController extends Controller
             'is_staff_reply' => false,
         ]);
 
+        // Process any attached images for this reply
+        $replyAttachments = $this->processTicketAttachments($request, "tickets/{$ticket->id}/replies");
+        if (!empty($replyAttachments)) {
+            $reply->update(['attachments' => $replyAttachments]);
+        }
+
         // Move status back to in_progress if was awaiting reply
         if ($ticket->status === 'awaiting_client_reply') {
             $ticket->update(['status' => 'in_progress']);
@@ -547,6 +559,71 @@ class ClientPortalController extends Controller
             'reply' => $reply,
             'ticket' => $ticket,
         ]);
+    }
+
+    /**
+     * Process uploaded image attachments for a ticket or reply.
+     *
+     * @param Request $request
+     * @param string $directory Subdirectory under storage/app/public/
+     * @return array
+     */
+    protected function processTicketAttachments(Request $request, string $directory): array
+    {
+        $rawFiles = [];
+
+        // Support various common input keys (attachments, attachments[], images, images[], file)
+        if ($request->hasFile('attachments')) {
+            $files = $request->file('attachments');
+            $rawFiles = is_array($files) ? $files : [$files];
+        } elseif ($request->hasFile('images')) {
+            $files = $request->file('images');
+            $rawFiles = is_array($files) ? $files : [$files];
+        } elseif ($request->hasFile('file')) {
+            $files = $request->file('file');
+            $rawFiles = is_array($files) ? $files : [$files];
+        }
+
+        if (empty($rawFiles)) {
+            return [];
+        }
+
+        $sanitizer = app(FileSanitizerService::class);
+        $absoluteDirPath = Storage::disk('public')->path($directory);
+        if (!file_exists($absoluteDirPath)) {
+            @mkdir($absoluteDirPath, 0775, true);
+        }
+
+        $storedAttachments = [];
+
+        foreach ($rawFiles as $uploadedFile) {
+            if (!$uploadedFile || !$uploadedFile->isValid()) {
+                continue;
+            }
+
+            try {
+                // Sanitize and validate file against allowed image formats
+                $sanitized = $sanitizer->sanitizeAndValidate($uploadedFile, 'images');
+                $storedFilename = $sanitized['safe_stored_filename'];
+
+                $path = $uploadedFile->storeAs($directory, $storedFilename, 'public');
+                $url = url(Storage::url($path));
+
+                $storedAttachments[] = [
+                    'id' => uniqid('att_'),
+                    'name' => $sanitized['sanitized_original_filename'],
+                    'path' => $path,
+                    'url' => $url,
+                    'mime_type' => $uploadedFile->getClientMimeType() ?: $sanitized['detected_mime'],
+                    'size' => $uploadedFile->getSize(),
+                    'created_at' => now()->toIso8601String(),
+                ];
+            } catch (\Throwable $e) {
+                Log::warning('[Ticket Attachment] Sanitization / upload failed for file: ' . $e->getMessage());
+            }
+        }
+
+        return $storedAttachments;
     }
 
     /**

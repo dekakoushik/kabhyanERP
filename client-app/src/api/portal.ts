@@ -297,6 +297,22 @@ export interface TicketMessage {
   created_at: string;
 }
 
+export interface TicketAttachment {
+  id: string;
+  name: string;
+  path: string;
+  url: string;
+  mime_type?: string;
+  size?: number;
+  created_at?: string;
+}
+
+export interface ChosenAttachment {
+  uri: string;
+  name: string;
+  type?: string;
+}
+
 export interface TicketReplyItem {
   id: number;
   ticket_id: number;
@@ -304,6 +320,7 @@ export interface TicketReplyItem {
   user_id?: number | null;
   message: string;
   is_staff_reply: boolean;
+  attachments?: TicketAttachment[];
   created_at: string;
   staff?: { id: number; name: string; avatar?: string };
   client?: { id: number; name: string; company_name?: string };
@@ -317,6 +334,7 @@ export interface SupportTicket {
   type?: "issue" | "change_request" | "improvement" | "query" | "billing" | string;
   status: "open" | "in_progress" | "awaiting_client_reply" | "resolved" | "closed" | string;
   priority: "low" | "medium" | "high" | "urgent" | "critical" | string;
+  attachments?: TicketAttachment[];
   created_at: string;
   project?: { id: number; name: string; code?: string };
   assignee?: { id: number; name: string; avatar?: string };
@@ -539,24 +557,143 @@ export const portalApi = {
   getTicket: (id: number | string) =>
     apiClient<{ ticket: SupportTicket }>(`/portal/tickets/${id}`),
 
-  createTicket: (data: {
-    subject: string;
-    message?: string;
-    description?: string;
-    priority?: string;
-    project_id?: number;
-    type?: string;
-  }) =>
-    apiClient<{ success: boolean; ticket: SupportTicket }>("/portal/tickets", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
+  createTicket: async (
+    data: {
+      subject: string;
+      message?: string;
+      description?: string;
+      priority?: string;
+      project_id?: number;
+      type?: string;
+    },
+    attachments: ChosenAttachment[] = []
+  ) => {
+    const fields = {
+      subject: data.subject,
+      description: data.description || data.message,
+      message: data.message || data.description,
+      priority: data.priority,
+      project_id: data.project_id,
+      type: data.type || "query",
+    };
 
-  replyTicket: (id: number | string, message: string) =>
-    apiClient<{ message: string; reply?: TicketReplyItem; ticket?: SupportTicket; success?: boolean }>(`/portal/tickets/${id}/reply`, {
-      method: "POST",
-      body: JSON.stringify({ message }),
-    }),
+    if (attachments.length === 0) {
+      return apiClient<{ success: boolean; ticket: SupportTicket }>("/portal/tickets", {
+        method: "POST",
+        body: JSON.stringify(fields),
+      });
+    }
+
+    const token = await getStoredToken();
+    const url = `${API_BASE_URL}/portal/tickets`;
+
+    return new Promise<{ success: boolean; ticket: SupportTicket }>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", url);
+      xhr.setRequestHeader("Accept", "application/json");
+      if (token) {
+        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            resolve(JSON.parse(xhr.responseText));
+          } catch {
+            resolve({ success: true, ticket: {} as any });
+          }
+        } else {
+          try {
+            const errJson = JSON.parse(xhr.responseText);
+            reject(new Error(errJson.message || `Submission failed with status ${xhr.status}`));
+          } catch {
+            reject(new Error(`Submission failed with status ${xhr.status}`));
+          }
+        }
+      };
+
+      xhr.onerror = () => reject(new Error("Network connection error during ticket creation."));
+
+      const formData = new FormData();
+      Object.entries(fields).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) {
+          formData.append(k, String(v));
+        }
+      });
+
+      attachments.forEach((att, idx) => {
+        formData.append("attachments[]", {
+          uri: att.uri,
+          name: att.name || `image_${idx}.jpg`,
+          type: att.type || "image/jpeg",
+        } as any);
+      });
+
+      xhr.send(formData);
+    });
+  },
+
+  replyTicket: async (
+    id: number | string,
+    message: string,
+    attachments: ChosenAttachment[] = []
+  ) => {
+    if (attachments.length === 0) {
+      return apiClient<{ message: string; reply?: TicketReplyItem; ticket?: SupportTicket; success?: boolean }>(
+        `/portal/tickets/${id}/reply`,
+        {
+          method: "POST",
+          body: JSON.stringify({ message }),
+        }
+      );
+    }
+
+    const token = await getStoredToken();
+    const url = `${API_BASE_URL}/portal/tickets/${id}/reply`;
+
+    return new Promise<{ message: string; reply?: TicketReplyItem; ticket?: SupportTicket; success?: boolean }>(
+      (resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", url);
+        xhr.setRequestHeader("Accept", "application/json");
+        if (token) {
+          xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+        }
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              resolve(JSON.parse(xhr.responseText));
+            } catch {
+              resolve({ message: "Reply sent", success: true });
+            }
+          } else {
+            try {
+              const errJson = JSON.parse(xhr.responseText);
+              reject(new Error(errJson.message || `Reply failed with status ${xhr.status}`));
+            } catch {
+              reject(new Error(`Reply failed with status ${xhr.status}`));
+            }
+          }
+        };
+
+        xhr.onerror = () => reject(new Error("Network connection error during reply upload."));
+
+        const formData = new FormData();
+        formData.append("message", message);
+
+        attachments.forEach((att, idx) => {
+          formData.append("attachments[]", {
+            uri: att.uri,
+            name: att.name || `reply_${idx}.jpg`,
+            type: att.type || "image/jpeg",
+          } as any);
+        });
+
+        xhr.send(formData);
+      }
+    );
+  },
 
   // Push Notification Device Tokens
   registerDeviceToken: (data: { push_token: string; platform: string; device_name?: string }) =>
