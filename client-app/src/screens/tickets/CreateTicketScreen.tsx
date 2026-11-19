@@ -5,7 +5,8 @@ import {
   TextInput,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
   Alert,
 } from "react-native";
 import { colors } from "../../theme/colors";
@@ -14,32 +15,56 @@ import { Card } from "../../components/Card";
 import { Button } from "../../components/Button";
 import { portalApi } from "../../api/portal";
 
+/**
+ * Intelligent priority resolution deduced automatically from ticket subject and context.
+ * Clients are not given manual priority selectors to avoid bias and ensure objective SLAs.
+ */
+function deducePriority(subject: string, message: string): "low" | "medium" | "high" | "urgent" {
+  const text = (subject + " " + message).toLowerCase();
+  if (/\b(urgent|critical|emergency|down|outage|crash|blocker|fatal|production)\b/.test(text)) {
+    return "urgent";
+  }
+  if (/\b(error|bug|broken|failed|failure|issue|cannot|not working|problem|glitch)\b/.test(text)) {
+    return "high";
+  }
+  if (/\b(inquiry|question|info|query|clarification|how to|feedback)\b/.test(text)) {
+    return "low";
+  }
+  return "medium";
+}
+
 export const CreateTicketScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
-  const [priority, setPriority] = useState<"low" | "medium" | "high" | "urgent">("medium");
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (!subject.trim() || !message.trim()) {
-      Alert.alert("Incomplete", "Please provide both a ticket subject and a detailed message.");
+      Alert.alert("Incomplete", "Please provide both a ticket subject and a detailed description.");
       return;
     }
 
     try {
       setSubmitting(true);
+      const priority = deducePriority(subject, message);
       await portalApi.createTicket({
         subject: subject.trim(),
         message: message.trim(),
+        description: message.trim(),
+        type: "query",
         priority,
       });
 
-      Alert.alert("Success", "Your support ticket has been registered. An engineer will follow up shortly.", [
-        {
-          text: "OK",
-          onPress: () => navigation.goBack(),
-        },
-      ]);
+      Alert.alert(
+        "Ticket Registered",
+        "Your support ticket has been registered. Our engineering team has been notified and will follow up shortly.",
+        [
+          {
+            text: "View Tickets",
+            onPress: () => navigation.goBack(),
+          },
+        ]
+      );
     } catch (err: any) {
       Alert.alert("Error", err.message || "Failed to submit ticket.");
     } finally {
@@ -48,74 +73,57 @@ export const CreateTicketScreen: React.FC<{ navigation: any }> = ({ navigation }
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Card style={styles.card}>
-        <Text style={styles.title}>New Support Ticket</Text>
-        <Text style={styles.subtitle}>
-          Submit inquiries, milestone feedback, or technical assistance requests.
-        </Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 88 : 0}
+      style={styles.container}
+    >
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Card style={styles.card}>
+          <Text style={styles.title}>New Support Ticket</Text>
+          <Text style={styles.subtitle}>
+            Submit technical assistance requests, inquiries, or feedback. Priority and routing will be assessed automatically.
+          </Text>
 
-        {/* Priority Selection */}
-        <Text style={styles.label}>Priority Level</Text>
-        <View style={styles.priorityRow}>
-          {(["low", "medium", "high", "urgent"] as const).map((p) => {
-            const isSelected = priority === p;
-            return (
-              <TouchableOpacity
-                key={p}
-                style={[
-                  styles.priorityBtn,
-                  isSelected && styles.priorityBtnActive,
-                  isSelected && p === "urgent" && styles.priorityBtnUrgent,
-                ]}
-                onPress={() => setPriority(p)}
-              >
-                <Text
-                  style={[
-                    styles.priorityText,
-                    isSelected && styles.priorityTextActive,
-                    isSelected && p === "urgent" && styles.priorityTextUrgent,
-                  ]}
-                >
-                  {p.toUpperCase()}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+          {/* Subject Input */}
+          <Text style={styles.label}>Subject</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Brief summary of your request or issue..."
+            placeholderTextColor="#64748B"
+            value={subject}
+            onChangeText={setSubject}
+            returnKeyType="next"
+            autoCapitalize="sentences"
+          />
 
-        {/* Subject Input */}
-        <Text style={styles.label}>Subject</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Brief summary of the issue or requirement"
-          placeholderTextColor={colors.textMuted}
-          value={subject}
-          onChangeText={setSubject}
-        />
+          {/* Detailed Description */}
+          <Text style={styles.label}>Description</Text>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="Describe your request in detail, including deliverables, URLs, or steps involved..."
+            placeholderTextColor="#64748B"
+            value={message}
+            onChangeText={setMessage}
+            multiline
+            numberOfLines={5}
+            textAlignVertical="top"
+          />
 
-        {/* Message Input */}
-        <Text style={styles.label}>Description</Text>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder="Describe your request in detail, including steps, URLs, or deliverables involved..."
-          placeholderTextColor={colors.textMuted}
-          value={message}
-          onChangeText={setMessage}
-          multiline
-          numberOfLines={6}
-          textAlignVertical="top"
-        />
-
-        {/* Submit */}
-        <Button
-          title="Submit Ticket"
-          onPress={handleSubmit}
-          loading={submitting}
-          style={styles.submitBtn}
-        />
-      </Card>
-    </ScrollView>
+          {/* Submit Action */}
+          <Button
+            title="Submit Ticket"
+            onPress={handleSubmit}
+            loading={submitting}
+            style={styles.submitBtn}
+          />
+        </Card>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -125,14 +133,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: 16,
+    padding: 12,
+    paddingBottom: 40,
   },
   card: {
-    padding: 20,
+    padding: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
   },
   title: {
     fontFamily: fonts.bold,
-    fontSize: 18,
+    fontSize: 16,
     color: colors.text,
   },
   subtitle: {
@@ -140,67 +153,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 4,
-    marginBottom: 20,
+    marginBottom: 16,
     lineHeight: 18,
   },
   label: {
     fontFamily: fonts.bold,
-    fontSize: 12,
+    fontSize: 11.5,
     color: colors.textSecondary,
     marginBottom: 6,
   },
-  priorityRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 16,
-  },
-  priorityBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-    alignItems: "center",
-  },
-  priorityBtnActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  priorityBtnUrgent: {
-    backgroundColor: colors.danger,
-    borderColor: colors.danger,
-  },
-  priorityText: {
-    fontFamily: fonts.medium,
-    fontSize: 11,
-    color: colors.textSecondary,
-  },
-  priorityTextActive: {
-    fontFamily: fonts.bold,
-    color: colors.textLight,
-  },
-  priorityTextUrgent: {
-    fontFamily: fonts.bold,
-    color: colors.textLight,
-  },
   input: {
-    backgroundColor: colors.background,
+    backgroundColor: "#F1F5F9",
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    borderColor: "#CBD5E1",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
     fontFamily: fonts.regular,
-    fontSize: 14,
+    fontSize: 13,
     color: colors.text,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   textArea: {
-    minHeight: 120,
+    minHeight: 110,
   },
   submitBtn: {
-    marginTop: 8,
-    paddingVertical: 14,
+    marginTop: 4,
+    paddingVertical: 12,
   },
 });

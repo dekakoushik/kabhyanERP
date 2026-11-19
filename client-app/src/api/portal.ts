@@ -539,7 +539,14 @@ export const portalApi = {
   getTicket: (id: number | string) =>
     apiClient<{ ticket: SupportTicket }>(`/portal/tickets/${id}`),
 
-  createTicket: (data: { subject: string; message: string; priority: string }) =>
+  createTicket: (data: {
+    subject: string;
+    message?: string;
+    description?: string;
+    priority?: string;
+    project_id?: number;
+    type?: string;
+  }) =>
     apiClient<{ success: boolean; ticket: SupportTicket }>("/portal/tickets", {
       method: "POST",
       body: JSON.stringify(data),

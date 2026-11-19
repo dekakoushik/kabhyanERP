@@ -417,10 +417,32 @@ class ClientPortalController extends Controller
         $validated = $request->validate([
             'project_id' => 'nullable|exists:projects,id',
             'subject' => 'required|string|max:255',
-            'type' => 'required|in:issue,change_request,improvement,query,billing',
-            'priority' => 'required|in:low,medium,high,critical',
-            'description' => 'required|string',
+            'type' => 'nullable|in:issue,change_request,improvement,query,billing',
+            'priority' => 'nullable|in:low,medium,high,critical,urgent',
+            'description' => 'nullable|string',
+            'message' => 'nullable|string',
         ]);
+
+        $description = $validated['description'] ?? $validated['message'] ?? $validated['subject'];
+        $type = $validated['type'] ?? 'query';
+
+        // Intelligent priority deduction based on subject & description
+        $priority = $validated['priority'] ?? null;
+        if (empty($priority)) {
+            $text = strtolower($validated['subject'] . ' ' . $description);
+            if (preg_match('/\b(urgent|critical|emergency|down|outage|crash|blocker|fatal|production)\b/', $text)) {
+                $priority = 'critical';
+            } elseif (preg_match('/\b(error|bug|broken|failed|failure|issue|cannot|not working|problem|glitch)\b/', $text)) {
+                $priority = 'high';
+            } elseif (preg_match('/\b(inquiry|question|info|query|clarification|how to|feedback)\b/', $text)) {
+                $priority = 'low';
+            } else {
+                $priority = 'medium';
+            }
+        }
+        if ($priority === 'urgent') {
+            $priority = 'critical';
+        }
 
         // Ensure project belongs to client if specified
         if (!empty($validated['project_id'])) {
@@ -442,10 +464,10 @@ class ClientPortalController extends Controller
             'client_id' => $client->id,
             'project_id' => $validated['project_id'] ?? null,
             'subject' => $validated['subject'],
-            'type' => $validated['type'],
-            'priority' => $validated['priority'],
+            'type' => $type,
+            'priority' => $priority,
             'status' => 'open',
-            'description' => $validated['description'],
+            'description' => $description,
         ]);
 
         $ticket->load(['client', 'project']);
