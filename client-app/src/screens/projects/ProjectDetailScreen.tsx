@@ -81,106 +81,98 @@ export const ProjectDetailScreen: React.FC<{ route: any }> = ({ route }) => {
         </View>
       </Card>
 
-      {/* SECTION 1: REQUESTED DOCUMENTS */}
-      <View style={styles.sectionHeader}>
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-          <Text style={styles.sectionTitle}>Requested Documents</Text>
-          {fileRequests.length > 0 && (
-            <Badge label={`${fileRequests.length}`} variant="neutral" />
-          )}
+      {/* SECTION 1: REQUESTED DOCUMENTS (ONLY SHOWN IF DOCUMENTS ARE REQUESTED) */}
+      {fileRequests.length > 0 && (
+        <View style={{ marginBottom: 4 }}>
+          <View style={styles.sectionHeader}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <Text style={styles.sectionTitle}>Requested Documents</Text>
+              <Badge label={`${fileRequests.length}`} variant="neutral" />
+            </View>
+          </View>
+
+          {fileRequests.map((req) => {
+            const isApproved = req.status === "approved";
+            const isSubmitted = req.status === "submitted";
+            const isRejected = req.status === "rejected";
+
+            return (
+              <Card key={req.id} style={styles.docCard}>
+                <View style={styles.docTopRow}>
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <Text style={styles.docTitle}>{req.title}</Text>
+                    {req.due_date && (
+                      <Text style={styles.docDueText}>Due: {formatDate(req.due_date)}</Text>
+                    )}
+                  </View>
+                  <Badge
+                    label={
+                      isApproved
+                        ? "Approved"
+                        : isSubmitted
+                        ? "In Review"
+                        : isRejected
+                        ? "Revision Needed"
+                        : "Awaiting Upload"
+                    }
+                    variant={
+                      isApproved
+                        ? "success"
+                        : isSubmitted
+                        ? "info"
+                        : isRejected
+                        ? "danger"
+                        : "warning"
+                    }
+                  />
+                </View>
+
+                {req.description && (
+                  <Text style={styles.docDesc}>{req.description}</Text>
+                )}
+
+                {req.file_type_allowed && (
+                  <Text style={styles.docFormat}>
+                    Format: {req.file_type_allowed}
+                  </Text>
+                )}
+
+                {req.review_notes && isRejected && (
+                  <View style={styles.revisionBox}>
+                    <Text style={styles.revisionTitle}>Revision Notes:</Text>
+                    <Text style={styles.revisionText}>{req.review_notes}</Text>
+                  </View>
+                )}
+
+                {req.file_name && (
+                  <View style={styles.uploadedFileRow}>
+                    <Ionicons name="attach" size={16} color={colors.primary} />
+                    <Text style={styles.uploadedFileName} numberOfLines={1}>
+                      {req.file_name}
+                    </Text>
+                  </View>
+                )}
+
+                {!isApproved && (
+                  <TouchableOpacity
+                    style={styles.uploadBtn}
+                    activeOpacity={0.8}
+                    onPress={handleOpenUploadPortal}
+                  >
+                    <Ionicons name="cloud-upload-outline" size={15} color="#fff" />
+                    <Text style={styles.uploadBtnText}>
+                      {req.file_name ? "Re-upload File via Portal" : "Upload File via Portal"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </Card>
+            );
+          })}
         </View>
-      </View>
-
-      {fileRequests.length === 0 ? (
-        <Card style={styles.emptyCard}>
-          <Ionicons name="document-text-outline" size={30} color={colors.textMuted} />
-          <Text style={styles.emptyTitle}>No documents requested</Text>
-          <Text style={styles.emptySub}>
-            Your project lead has not requested any additional files or documents.
-          </Text>
-        </Card>
-      ) : (
-        fileRequests.map((req) => {
-          const isApproved = req.status === "approved";
-          const isSubmitted = req.status === "submitted";
-          const isRejected = req.status === "rejected";
-
-          return (
-            <Card key={req.id} style={styles.docCard}>
-              <View style={styles.docTopRow}>
-                <View style={{ flex: 1, marginRight: 8 }}>
-                  <Text style={styles.docTitle}>{req.title}</Text>
-                  {req.due_date && (
-                    <Text style={styles.docDueText}>Due: {formatDate(req.due_date)}</Text>
-                  )}
-                </View>
-                <Badge
-                  label={
-                    isApproved
-                      ? "Approved"
-                      : isSubmitted
-                      ? "In Review"
-                      : isRejected
-                      ? "Revision Needed"
-                      : "Awaiting Upload"
-                  }
-                  variant={
-                    isApproved
-                      ? "success"
-                      : isSubmitted
-                      ? "info"
-                      : isRejected
-                      ? "danger"
-                      : "warning"
-                  }
-                />
-              </View>
-
-              {req.description && (
-                <Text style={styles.docDesc}>{req.description}</Text>
-              )}
-
-              {req.file_type_allowed && (
-                <Text style={styles.docFormat}>
-                  Format: {req.file_type_allowed}
-                </Text>
-              )}
-
-              {req.review_notes && isRejected && (
-                <View style={styles.revisionBox}>
-                  <Text style={styles.revisionTitle}>Revision Notes:</Text>
-                  <Text style={styles.revisionText}>{req.review_notes}</Text>
-                </View>
-              )}
-
-              {req.file_name && (
-                <View style={styles.uploadedFileRow}>
-                  <Ionicons name="attach" size={16} color={colors.primary} />
-                  <Text style={styles.uploadedFileName} numberOfLines={1}>
-                    {req.file_name}
-                  </Text>
-                </View>
-              )}
-
-              {!isApproved && (
-                <TouchableOpacity
-                  style={styles.uploadBtn}
-                  activeOpacity={0.8}
-                  onPress={handleOpenUploadPortal}
-                >
-                  <Ionicons name="cloud-upload-outline" size={15} color="#fff" />
-                  <Text style={styles.uploadBtnText}>
-                    {req.file_name ? "Re-upload File via Portal" : "Upload File via Portal"}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </Card>
-          );
-        })
       )}
 
       {/* SECTION 2: DELIVERABLES */}
-      <View style={[styles.sectionHeader, { marginTop: 16 }]}>
+      <View style={[styles.sectionHeader, { marginTop: fileRequests.length > 0 ? 12 : 4 }]}>
         <Text style={styles.sectionTitle}>Deliverables</Text>
       </View>
 
